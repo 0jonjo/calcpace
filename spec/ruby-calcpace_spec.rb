@@ -24,4 +24,11 @@ describe Run do
     expect(run.calculate_timerun(pace, 10)).to eq(3600)
   end  
 
+  it "calculate a distance" do
+    run = Run.new
+    pace = run.convert_to_seconds('00:06:00')
+    time = run.convert_to_seconds('01:00:00')
+    expect(run.calculate_distance(pace,time)).to eq(10)
+  end  
+
 end

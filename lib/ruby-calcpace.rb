@@ -17,4 +17,8 @@ class Run
     pace = pace * distance 
   end
 
+  def calculate_distance(pace, time)
+    distance = time / pace
+  end  
+
 end    
