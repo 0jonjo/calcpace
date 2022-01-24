@@ -27,4 +27,11 @@ describe Run do
     expect(run.calculate_distance(360,3600)).to eq(10)
   end  
 
+  it "print all run informations" do
+    run = Run.new
+    run.time = "01:00:00"
+    run.pace = "00:06:00"
+    run.distance = 10 
+    expect(run.print_informations).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
+  end                                       
 end
