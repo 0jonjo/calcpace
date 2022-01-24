@@ -15,7 +15,7 @@ cd ruby-calcpace
 
 ### Instale as dependências
 
-Uusando [Bundler](https://github.com/bundler/bundler)
+Usando [Bundler](https://github.com/bundler/bundler)
 
 ```shell
 bundle install
