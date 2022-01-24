@@ -9,15 +9,15 @@ run.distance = gets.chomp.to_f
 puts "Insert pace (XX:XX:XX) or ENTER"
 run.pace = gets.chomp
 
-if run.pace == ''
+if run.pace.empty?
   run_time_adapted = run.convert_to_seconds(run.time)
   run_pace_calculate = run.calculate_pace(run_time_adapted, run.distance)
   run.pace = run.convert_to_clocktime(run_pace_calculate)
-elsif run.time == ''
+elsif run.time.empty?
   run_pace_adapted = run.convert_to_seconds(run.pace)
   run_time_calculate = run.calculate_timerun(run_pace_adapted, run.distance)
   run.time = run.convert_to_clocktime(run_time_calculate)
-elsif run.distance == 0.0
+elsif run.distance.zero?
   run_time_adapted = run.convert_to_seconds(run.time)
   run_pace_adapted = run.convert_to_seconds(run.pace)
   run.distance = run.calculate_distance(run_time_adapted, run_pace_adapted)
