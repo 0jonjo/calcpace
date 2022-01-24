@@ -22,7 +22,7 @@ elsif run.distance == 0.0
   run_pace_adapted = run.convert_to_seconds(run.pace)
   run.distance = run.calculate_distance(run_time_adapted, run_pace_adapted)
 else 
-  raise ArgumentError, "It needs only two informations to calculate something"  
+  raise ArgumentError, "It only takes two pieces of data to calculate something."  
 end
 
 puts run.informations_to_print
