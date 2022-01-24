@@ -2,9 +2,9 @@ class Run
 
   attr_accessor :time, :pace, :distance
 
-  def initialize
-    @time, @pace, @distance = 0
-  end
+#  def initialize
+#    @time, @pace, @distance = 0
+#  end
 
   def convert_to_seconds(time)
     hour, minute, seconds = time.split(':')

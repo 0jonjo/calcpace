@@ -14,21 +14,17 @@ describe Run do
   
   it "calculate a pace" do
     run = Run.new
-    runtime = run.convert_to_seconds('01:00:00')
-    expect(run.calculate_pace(runtime, 10)).to eq(360)
+    expect(run.calculate_pace(3600, 10)).to eq(360)
   end  
 
   it "calculate a time run" do
     run = Run.new
-    pace = run.convert_to_seconds('00:06:00')
-    expect(run.calculate_timerun(pace, 10)).to eq(3600)
+    expect(run.calculate_timerun(360, 10)).to eq(3600)
   end  
 
   it "calculate a distance" do
     run = Run.new
-    pace = run.convert_to_seconds('00:06:00')
-    time = run.convert_to_seconds('01:00:00')
-    expect(run.calculate_distance(pace,time)).to eq(10)
+    expect(run.calculate_distance(360,3600)).to eq(10)
   end  
 
 end
