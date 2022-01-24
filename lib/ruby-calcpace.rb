@@ -19,11 +19,11 @@ class Run
     time = pace * distance 
   end
 
-  def calculate_distance(pace, time)
+  def calculate_distance(time, pace)
     distance = time / pace
   end  
 
-  def print_informations
+  def informations_to_print
     "You ran #{distance} km in #{time} at #{pace} pace."
   end
 end    
