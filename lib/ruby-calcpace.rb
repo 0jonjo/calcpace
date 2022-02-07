@@ -3,11 +3,19 @@ class Run
   attr_reader :time, :pace, :distance
 
   def time(time_run)
-    @time = time_run
+    if time_run.negative? || time_run == 0
+      raise "Time can't be zero or negative"
+    else    
+      @time = time_run
+    end  
   end
 
   def pace(pace_run)
-    @pace = pace_run
+    if pace_run.negative? || pace_run == 0
+      raise "Pace can't be zero or negative"  
+    else
+      @pace = pace_run
+    end
   end
 
   def distance(distance_run)

@@ -69,20 +69,37 @@ describe Run do
     expect{Run.new.calculate_distance(0, 360)}.to raise_error("Can't accept zero or negative values")
   end
 
-  it "calculate a distance negative error" do
+  it "set a distance negative error" do
     expect{Run.new.distance(-10)}.to raise_error("Distance can't be zero or negative")
   end
 
-  it "calculate a distance zero error" do
+  it "set a distance zero error" do
     expect{Run.new.distance(0)}.to raise_error("Distance can't be zero or negative")
   end
 
+  it "set a pace negative error" do
+    expect{Run.new.pace(-10)}.to raise_error("Pace can't be zero or negative")
+  end
+
+  it "set a pace zero error" do
+    expect{Run.new.pace(0)}.to raise_error("Pace can't be zero or negative")
+  end
+
+  it "set a time negative error" do
+    expect{Run.new.time(-10)}.to raise_error("Time can't be zero or negative")
+  end
+
+  it "set a time zero error" do
+    expect{Run.new.time(0)}.to raise_error("Time can't be zero or negative")
+  end
+
+  # Have to think about when convert time and pace.
   it "recieve all run informations" do
     run = Run.new
-    run.time("01:00:00")
-    run.pace("00:06:00")
+    run.time(3600)
+    run.pace(360)
     run.distance(10) 
-    expect(run.informations_to_print).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
+    expect(run.informations_to_print).to eq("You ran 10 km in 3600 at 360 pace.")
   end   
   
   # it "" do
