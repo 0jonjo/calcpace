@@ -11,7 +11,7 @@ class Run
   end
 
   def distance(distance_run)
-    if distance_run.negative? || distance_run.zero?
+    if distance_run.negative? || distance_run == 0
       raise "Distance can't be zero or negative"  
     else
       @distance = distance_run
@@ -24,7 +24,7 @@ class Run
   end
 
   def convert_to_clocktime(seconds)
-    if seconds.negative?
+    if seconds.negative? || seconds == 0
       raise "Clocktime can't be zero or negative"
     else  
       Time.at(seconds).utc.strftime("%H:%M:%S")
@@ -32,15 +32,31 @@ class Run
   end
 
   def calculate_pace(time, distance)
-    @pace = time / distance 
+    @calculate_pace = time / distance 
+    if @calculate_pace.negative? || @calculate_pace == 0
+      raise ("Can't accept zero or negative values")
+    else
+      @calculate_pace
+    end  
+    
   end
 
   def calculate_timerun(pace, distance)
-    @time = pace * distance 
+    @calculate_timerun = pace * distance
+    if @calculate_timerun.negative? || @calculate_timerun == 0
+      raise ("Can't accept zero or negative values")
+    else
+      @calculate_timerun
+    end  
   end
 
   def calculate_distance(time, pace)
-    @distance = time / pace
+    @calculate_distance = time / pace
+    if @calculate_distance.negative? || @calculate_distance == 0
+      raise ("Can't accept zero or negative values")
+    else
+      @calculate_distance
+    end  
   end  
 
   def informations_to_print
