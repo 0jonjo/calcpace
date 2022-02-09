@@ -89,15 +89,6 @@ describe Run do
     expect{Run.new.set_time(0)}.to raise_error("Time can't be zero or negative.")
   end
 
-  # Have to think about when convert time and pace.
-  it "set all and print all run informations" do
-    run = Run.new
-    run.set_time(3600)
-    run.set_pace(360)
-    run.set_distance(10) 
-    expect(run.informations_to_print).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
-  end   
-
   it "set and get all run informations " do
     run = Run.new
     run.set_time(3600)
@@ -106,5 +97,13 @@ describe Run do
     expect(run.time).to eq(3600)
     expect(run.pace).to eq(360)
     expect(run.distance).to eq(10)
+  end   
+
+  it "print all run informations" do
+    run = Run.new
+    run.set_time(3600)
+    run.set_pace(360)
+    run.set_distance(10) 
+    expect(run.informations_to_print).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
   end   
 end
