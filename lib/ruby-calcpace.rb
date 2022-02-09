@@ -2,7 +2,7 @@ class Run
 
   attr_reader :time, :pace, :distance
 
-  def time(time_run)
+  def set_time(time_run)
     if time_run.negative? || time_run == 0
       raise "Time can't be zero or negative"
     else    
@@ -10,7 +10,7 @@ class Run
     end  
   end
 
-  def pace(pace_run)
+  def set_pace(pace_run)
     if pace_run.negative? || pace_run == 0
       raise "Pace can't be zero or negative"  
     else
@@ -18,7 +18,7 @@ class Run
     end
   end
 
-  def distance(distance_run)
+  def set_distance(distance_run)
     if distance_run.negative? || distance_run == 0
       raise "Distance can't be zero or negative"  
     else
@@ -71,10 +71,3 @@ class Run
     "You ran #{@distance} km in #{@time} at #{@pace} pace."
   end
 end    
-
-# run = Run.new
-# run.time("01:00:00")
-# run.pace("00:06:00")
-#run.distance(10) 
-
-# p run.time 
