@@ -1,6 +1,6 @@
 class Run
 
-  attr_reader :time, :pace, :distance
+  attr_reader :time, :pace, :distance, :clocktime, :clockpace
 
   def set_time(time_run)
     if time_run.negative? || time_run == 0
@@ -25,7 +25,15 @@ class Run
       @distance = distance_run
     end
   end  
-  
+
+  def set_clocktime(time_on_seconds)
+    @clocktime = convert_to_clocktime(time_on_seconds) 
+  end
+
+  def set_clockpace(pace_on_seconds)
+    @clockpace = convert_to_clocktime(pace_on_seconds) 
+  end
+
   def convert_to_seconds(time)
     hour, minute, seconds = time.split(':')
     adjustedtime = ((hour.to_i)*3600) + ((minute.to_i)*60) + seconds.to_i
@@ -68,6 +76,6 @@ class Run
   end  
 
   def informations_to_print
-    "You ran #{@distance} km in #{@time} at #{@pace} pace."
+    "You ran #{@distance} km in #{@clocktime} at #{@clockpace} pace."
   end
 end    
