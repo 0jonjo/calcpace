@@ -1,4 +1,4 @@
-require_relative 'ruby-calcpace'
+require_relative 'run'
 
 run = Run.new
 
@@ -19,4 +19,4 @@ else
   raise ArgumentError, "It only takes two pieces of data to calculate something."  
 end
 
-puts run.informations_to_print
+puts run.to_s

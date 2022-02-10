@@ -1,5 +1,5 @@
 require 'rspec'
-require './lib/ruby-calcpace.rb'
+require './src/run.rb'
 
 describe Run do
   it "convert a run time to seconds" do
@@ -104,6 +104,6 @@ describe Run do
     run.set_time(3600)
     run.set_pace(360)
     run.set_distance(10) 
-    expect(run.informations_to_print).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
+    expect(run.to_s).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
   end   
 end

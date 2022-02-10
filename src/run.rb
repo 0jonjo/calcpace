@@ -2,6 +2,12 @@ class Run
 
   attr_reader :time, :pace, :distance
 
+  def initialize
+    @time = time
+    @pace = pace
+    @distance = distance
+  end  
+
   def set_time(time_run)
     if time_run.negative? || time_run == 0
       raise "Time can't be zero or negative."
@@ -67,7 +73,7 @@ class Run
     end  
   end  
 
-  def informations_to_print
+  def to_s
     "You ran #{@distance} km in #{convert_to_clocktime(@time)} at #{convert_to_clocktime(@pace)} pace."
   end
 end    
