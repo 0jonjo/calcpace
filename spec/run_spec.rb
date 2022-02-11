@@ -3,19 +3,19 @@ require './src/run.rb'
 
 describe Run do
   it "convert a run time to seconds" do
-    expect(Run.new.convert_to_seconds("01:11:02")).to eq(4262)
+    expect(Run.convert_to_seconds("01:11:02")).to eq(4262)
   end
 
   it "convert seconds to a clocktime" do
-    expect(Run.new.convert_to_clocktime(4262)).to eq("01:11:02")
+    expect(Run.convert_to_clocktime(4262)).to eq("01:11:02")
   end
 
   it "convert seconds to a clocktime error negative" do
-    expect{Run.new.convert_to_clocktime(-331)}.to raise_error("Clocktime can't be zero or negative.")
+    expect{Run.convert_to_clocktime(-331)}.to raise_error("Clocktime can't be zero or negative.")
   end
  
   it "convert seconds to a clocktime error 0" do
-    expect{Run.new.convert_to_clocktime(0)}.to raise_error("Clocktime can't be zero or negative.")
+    expect{Run.convert_to_clocktime(0)}.to raise_error("Clocktime can't be zero or negative.")
   end
 
   it "calculate a pace" do
@@ -74,19 +74,11 @@ describe Run do
   end
 
   it "set a pace negative error" do
-    expect{Run.new.set_pace(-10)}.to raise_error("Pace can't be zero or negative.")
-  end
-
-  it "set a pace zero error" do
-    expect{Run.new.set_pace(0)}.to raise_error("Pace can't be zero or negative.")
+    expect{Run.new.set_pace(-10)}.to raise_error("Pace can't be negative.")
   end
 
   it "set a time negative error" do
-    expect{Run.new.set_time(-10)}.to raise_error("Time can't be zero or negative.")
-  end
-
-  it "set a time zero error" do
-    expect{Run.new.set_time(0)}.to raise_error("Time can't be zero or negative.")
+    expect{Run.new.set_time(-10)}.to raise_error("Time can't be negative.")
   end
 
   it "set and get all run informations " do
