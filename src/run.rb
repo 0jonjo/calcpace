@@ -1,11 +1,12 @@
 class Run
 
-  attr_reader :time, :pace, :distance
+  attr_reader :time, :pace, :distance, :mph
 
-  def initialize time, pace, distance
+  def initialize time, pace, distance, mph
     @time = time
     @pace = pace
     @distance = distance
+    @mph = mph
   end  
 
   def set_time time_run
@@ -31,6 +32,10 @@ class Run
       @distance = distance_run
     end
   end  
+
+  def set_mph true_or_false
+    @mph = true_or_false
+  end    
 
   def calculate_pace
     @pace = @time / @distance 
@@ -72,7 +77,7 @@ class Run
   end
 
   def to_s
-    "You ran #{@distance} km in #{Run.convert_to_clocktime(@time)} at #{Run.convert_to_clocktime(@pace)} pace."
+    "You ran #{@distance} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
   end
 
   def self.convert_to_seconds time
@@ -87,5 +92,4 @@ class Run
       Time.at(seconds).utc.strftime("%H:%M:%S")
     end
   end
-
 end    
