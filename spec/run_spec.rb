@@ -19,20 +19,20 @@ describe Run do
   end
 
   it "calculate a pace" do
-    expect(Run.new.calculate_pace(3600, 10)).to eq(360)
+    expect(Run.new(3600, 0, 10).calculate_pace).to eq(360)
   end  
 
-  it "calculate a pace error negative" do
-    expect{Run.new.calculate_pace(-10, 3600)}.to raise_error("Can't accept zero or negative values.")
+  it "calculate a pace error distance negative" do
+    expect{Run.new(3600, 0, -10).calculate_pace}.to raise_error("Can't accept zero or negative values.")
   end
 
   # Have to adjust text error to sub 1 cases?
   it "calculate a pace with error sub 1" do
-    expect{Run.new.calculate_pace(3599, 3600)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(3599, 0, 3600).calculate_pace}.to raise_error("Can't accept zero or negative values.")
   end
   
   it "calculate a pace with error time 0" do
-    expect{Run.new.calculate_pace(0, 10)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(0, 10, 10).calculate_pace}.to raise_error("Can't accept zero or negative values.")
   end 
 
   # Have to handle divide by 0 specific error
@@ -41,48 +41,48 @@ describe Run do
   # end 
 
   it "calculate a time run" do
-    expect(Run.new.calculate_timerun(360, 10)).to eq(3600)
+    expect(Run.new(0, 360, 10).calculate_timerun).to eq(3600)
   end  
 
   it "calculate a timerun with error negative" do
-    expect{Run.new.calculate_timerun(-360, 360)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(0, -360, 360).calculate_timerun}.to raise_error("Can't accept zero or negative values.")
   end
 
   it "calculate a timerun with error pace 0" do
-    expect{Run.new.calculate_timerun(0, 360)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(0, 0, 360).calculate_timerun}.to raise_error("Can't accept zero or negative values.")
   end
 
   it "calculate a distance" do
-    expect(Run.new.calculate_distance(3600, 360)).to eq(10)
+    expect(Run.new(3600, 360, 0).calculate_distance).to eq(10)
   end  
 
   it "calculate a distance with time error negative" do
-    expect{Run.new.calculate_distance(-360, 360)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(-360, 360, 0).calculate_distance}.to raise_error("Can't accept zero or negative values.")
   end
 
   # Have to adjust pace error to sub 1 cases?
   it "calculate a distance with pace error sub 1" do
-    expect{Run.new.calculate_distance(3599, 3600)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(3599, 3600, 0).calculate_distance}.to raise_error("Can't accept zero or negative values.")
   end
 
   it "calculate a distance with error time 0" do
-    expect{Run.new.calculate_distance(0, 360)}.to raise_error("Can't accept zero or negative values.")
+    expect{Run.new(0, 360, 0).calculate_distance}.to raise_error("Can't accept zero or negative values.")
   end
 
   it "set a distance negative error" do
-    expect{Run.new.set_distance(-10)}.to raise_error("Distance can't be negative.")
+    expect{Run.new(0, 0, 0).set_distance(-10)}.to raise_error("Distance can't be negative.")
   end
 
   it "set a pace negative error" do
-    expect{Run.new.set_pace(-10)}.to raise_error("Pace can't be negative.")
+    expect{Run.new(0, 0, 0).set_pace(-10)}.to raise_error("Pace can't be negative.")
   end
 
   it "set a time negative error" do
-    expect{Run.new.set_time(-10)}.to raise_error("Time can't be negative.")
+    expect{Run.new(0, 0, 0).set_time(-10)}.to raise_error("Time can't be negative.")
   end
 
   it "set and get all run informations " do
-    run = Run.new
+    run = Run.new(0, 0, 0)
     run.set_time(3600)
     run.set_pace(360)
     run.set_distance(10)
@@ -92,10 +92,7 @@ describe Run do
   end   
 
   it "print all run informations" do
-    run = Run.new
-    run.set_time(3600)
-    run.set_pace(360)
-    run.set_distance(10) 
+    run = Run.new(3600, 360, 10)
     expect(run.to_s).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
   end   
 end

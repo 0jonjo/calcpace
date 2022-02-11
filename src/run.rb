@@ -2,7 +2,7 @@ class Run
 
   attr_reader :time, :pace, :distance
 
-  def initialize
+  def initialize time, pace, distance
     @time = time
     @pace = pace
     @distance = distance
@@ -32,33 +32,44 @@ class Run
     end
   end  
 
-  def calculate_pace time, distance
-    calculate_pace = time / distance 
-    if calculate_pace.negative? || calculate_pace == 0
+  def calculate_pace
+    @pace = @time / @distance 
+    if @pace.negative? || @pace == 0
       raise ("Can't accept zero or negative values.")
     else
-      calculate_pace
-    end  
-    
-  end
-
-  def calculate_timerun pace, distance 
-    calculate_timerun = pace * distance
-    if calculate_timerun.negative? || calculate_timerun == 0
-      raise ("Can't accept zero or negative values.")
-    else
-      calculate_timerun
+      @pace
     end  
   end
 
-  def calculate_distance time, pace
-    calculate_distance = time / pace
-    if calculate_distance.negative? || calculate_distance == 0
+  def calculate_timerun 
+    @time = @pace * @distance
+    if @time.negative? || @time == 0
       raise ("Can't accept zero or negative values.")
     else
-      calculate_distance
+      @time
+    end  
+  end
+
+  def calculate_distance
+    @distance = @time / @pace
+    if @distance.negative? || @distance == 0
+      raise ("Can't accept zero or negative values.")
+    else
+      @distance
     end  
   end  
+
+  def choose_calculus 
+    if @pace.zero?
+      calculate_pace
+    elsif @time.zero?
+      calculate_timerun
+    elsif @distance.zero?
+      calculate_distance
+    else 
+      raise ArgumentError, "It only takes two pieces of data to calculate something."  
+    end
+  end
 
   def to_s
     "You ran #{@distance} km in #{Run.convert_to_clocktime(@time)} at #{Run.convert_to_clocktime(@pace)} pace."
@@ -76,5 +87,5 @@ class Run
       Time.at(seconds).utc.strftime("%H:%M:%S")
     end
   end
-  
+
 end    
