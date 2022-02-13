@@ -82,7 +82,7 @@ class Run
 
   def self.convert_to_seconds time
     hour, minute, seconds = time.split(':')
-    adjustedtime = ((hour.to_i)*3600) + ((minute.to_i)*60) + seconds.to_i
+    ((hour.to_i)*3600) + ((minute.to_i)*60) + seconds.to_i
   end
 
   def self.convert_to_clocktime seconds
