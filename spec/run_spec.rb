@@ -99,6 +99,10 @@ describe Run do
     expect(run.mph).to eq(false)
   end   
 
+  it "set to run to MPH" do
+    expect{Run.new(0, 0, 0, false).set_mph("teste") }.to raise_error("MPH can be only true or false.")
+  end 
+
   it "print all run informations" do
     run = Run.new(3600, 360, 10, false)
     expect(run.to_s).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")

@@ -34,7 +34,11 @@ class Run
   end  
 
   def set_mph true_or_false
-    @mph = true_or_false
+    if true_or_false == true || true_or_false == false
+      @mph = true_or_false
+    else
+      raise "MPH can be only true or false."
+    end
   end    
 
   def calculate_pace
