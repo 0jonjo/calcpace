@@ -1,6 +1,3 @@
-require 'rspec'
-require './src/run.rb'
-
 describe Run do
   it "convert a run time to seconds" do
     expect(Run.convert_to_seconds("01:11:02")).to eq(4262)
