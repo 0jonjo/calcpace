@@ -24,7 +24,7 @@ bundle install
 ## Use a calculadora
 
 ```shell
-ruby /lib/calculator.rb
+ruby /lib/main.rb
 ```
 
 Insira duas das três opções solicitadas: o tempo de corrida (HH:MM:SS), a distância (XX.XX km) ou o pace - kms por minuto - (HH:MM:SS). Ele retorna uma string com o cálculo da informação que não foi inserida pelo usuário.
@@ -54,7 +54,7 @@ bundle install
 ## Use the calculator
 
 ```shell
-ruby /lib/calculator.rb
+ruby /lib/main.rb
 ```
 
 Enter two of the three options: race time (HH:MM:SS), distance (XX.XX km) or pace - kms per minute - (HH:MM:SS). It returns a string with the information that was not entered by user. 
