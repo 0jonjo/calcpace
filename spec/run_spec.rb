@@ -2,20 +2,20 @@ require "run"
 
 describe Run do
 
-  context "Run class convert tests" do  
-    it "run time to seconds" do
+  context "Convert tests" do  
+    it "#convert_to_seconds" do
       expect(Run.convert_to_seconds("01:11:02")).to eq(4262)
     end
 
-    it "seconds to clocktime" do
+    it "#convert_to_clocktime" do
       expect(Run.convert_to_clocktime(4262)).to eq("01:11:02")
     end
 
-    it "seconds to clocktime error negative" do
+    it "#convert_to_clocktime error negative" do
       expect{Run.convert_to_clocktime(-331)}.to raise_error("Clocktime can't be zero or negative.")
     end
   
-    it "convert clocktime error 0" do
+    it "#convert_to_clocktime error 0" do
       expect{Run.convert_to_clocktime(0)}.to raise_error("Clocktime can't be zero or negative.")
     end
   end

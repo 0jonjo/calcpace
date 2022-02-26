@@ -1,41 +1,29 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (5.2.6)
-      concurrent-ruby (~> 1.0, >= 1.0.2)
-      i18n (>= 0.7, < 2)
-      minitest (~> 5.1)
-      tzinfo (~> 1.1)
-    concurrent-ruby (1.1.9)
     diff-lcs (1.5.0)
-    i18n (1.8.11)
-      concurrent-ruby (~> 1.0)
-    minitest (5.15.0)
-    rake (13.0.6)
-    rspec (3.10.0)
-      rspec-core (~> 3.10.0)
-      rspec-expectations (~> 3.10.0)
-      rspec-mocks (~> 3.10.0)
-    rspec-core (3.10.1)
-      rspec-support (~> 3.10.0)
-    rspec-expectations (3.10.2)
+    rspec (3.11.0)
+      rspec-core (~> 3.11.0)
+      rspec-expectations (~> 3.11.0)
+      rspec-mocks (~> 3.11.0)
+    rspec-core (3.11.0)
+      rspec-support (~> 3.11.0)
+    rspec-expectations (3.11.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.10.0)
-    rspec-mocks (3.10.2)
+      rspec-support (~> 3.11.0)
+    rspec-mocks (3.11.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.10.0)
-    rspec-support (3.10.3)
-    thread_safe (0.3.6)
-    tzinfo (1.2.9)
-      thread_safe (~> 0.1)
+      rspec-support (~> 3.11.0)
+    rspec-support (3.11.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  activesupport
-  rake
-  rspec
+  rspec (~> 3.10)
+
+RUBY VERSION
+   ruby 3.0.0p0
 
 BUNDLED WITH
    1.17.3

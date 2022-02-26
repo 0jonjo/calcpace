@@ -2,6 +2,6 @@
 
 source 'https://rubygems.org'
 
-gem 'activesupport'
-gem 'rake'
-gem 'rspec'
+ruby '3.0.0'
+
+gem 'rspec', '~> 3.10'
