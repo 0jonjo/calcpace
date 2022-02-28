@@ -111,7 +111,7 @@ describe Run do
     it "#set_mph" do
       run = Run.new(0, 0, 0, false)
       run.set_mph(true) 
-      expect(run.mph).to eq(true)
+      expect(run.mph).to be true
     end   
 
     it "#set_mph error" do
