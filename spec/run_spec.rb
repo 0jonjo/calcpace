@@ -37,12 +37,12 @@ describe Run do
     it "with error time 0" do
       expect{Run.new(0, 10, 10, false).calculate_pace}.to raise_error("Can't accept zero or negative values.")
     end 
-  end  
-
-  # Have to handle divide by 0 specific error
-  # it "calculate a pace error distance 0" do
-  #  expect{Run.new.calculate_pace(10, 0)}.to raise_error("Pace can't be zero or negative")
-  # end 
+  
+    # Have to handle divide by 0 specific error
+    xit "error distance 0" do
+      expect{Run.new.calculate_pace(10, 0)}.to raise_error("Pace can't be zero or negative")
+    end 
+  end
   
   context "#calculate_timerun" do
     it "with all ok" do
