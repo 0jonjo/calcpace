@@ -12,11 +12,11 @@ describe Run do
     end
 
     it ":convert_to_clocktime error negative" do
-      expect{Run.convert_to_clocktime(-331)}.to raise_error("Clocktime can't be zero or negative.")
+      expect{Run.convert_to_clocktime(-331)}.to raise_error("It can't be negative.")
     end
   
     it ":convert_to_clocktime error 0" do
-      expect{Run.convert_to_clocktime(0)}.to raise_error("Clocktime can't be zero or negative.")
+      expect{Run.convert_to_clocktime(0)}.to raise_error("It can't be zero.")
     end
   end
   

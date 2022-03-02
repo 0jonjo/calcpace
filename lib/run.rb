@@ -72,11 +72,9 @@ class Run
   end
 
   def self.convert_to_clocktime seconds
-    if seconds.negative? || seconds == 0
-      raise "Clocktime can't be zero or negative."
-    else  
-      Time.at(seconds).utc.strftime("%H:%M:%S")
-    end
+    Run.raise_negative(seconds)
+    Run.raise_zero(seconds) 
+    Time.at(seconds).utc.strftime("%H:%M:%S")
   end
   
   def self.raise_negative number
