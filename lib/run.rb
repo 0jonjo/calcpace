@@ -10,27 +10,18 @@ class Run
   end  
 
   def set_time time_run
-    if time_run.negative?
-      raise "Time can't be negative."
-    else    
-      @time = time_run
-    end  
+    Run.raise_negative(time_run)   
+    @time = time_run
   end
 
   def set_pace pace_run 
-    if pace_run.negative?
-      raise "Pace can't be negative."  
-    else
-      @pace = pace_run
-    end
+    Run.raise_negative(pace_run)
+    @pace = pace_run
   end
 
   def set_distance distance_run
-    if distance_run.negative?
-      raise "Distance can't be negative."  
-    else
-      @distance = distance_run
-    end
+    Run.raise_negative(distance_run)
+    @distance = distance_run
   end  
 
   def set_mph true_or_false
@@ -43,29 +34,20 @@ class Run
 
   def calculate_pace
     @pace = @time / @distance 
-    if @pace.negative? || @pace == 0
-      raise ("Can't accept zero or negative values.")
-    else
-      @pace
-    end  
+    Run.raise_negative(@pace)
+    Run.raise_zero(@pace) 
   end
 
   def calculate_timerun 
     @time = @pace * @distance
-    if @time.negative? || @time == 0
-      raise ("Can't accept zero or negative values.")
-    else
-      @time
-    end  
+    Run.raise_negative(@time)
+    Run.raise_zero(@time)  
   end
 
   def calculate_distance
     @distance = @time / @pace
-    if @distance.negative? || @distance == 0
-      raise ("Can't accept zero or negative values.")
-    else
-      @distance
-    end  
+    Run.raise_negative(@distance)
+    Run.raise_zero(@distance) 
   end  
 
   def choose_calculus 
@@ -95,5 +77,21 @@ class Run
     else  
       Time.at(seconds).utc.strftime("%H:%M:%S")
     end
+  end
+  
+  def self.raise_negative number
+    if number.negative?
+      raise "It can't be negative."
+    else
+      number
+    end    
+  end
+
+  def self.raise_zero number
+    if number.zero?
+      raise "It can't be zero."
+    else
+      number
+    end    
   end
 end    
