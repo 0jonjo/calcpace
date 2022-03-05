@@ -11,17 +11,17 @@ class Run
 
   def set_time time_run
     Run.raise_negative(time_run)   
-    @time = time_run
+    @time = time_run if time_run.integer?
   end
 
   def set_pace pace_run 
     Run.raise_negative(pace_run)
-    @pace = pace_run
+    @pace = pace_run if pace_run.integer?
   end
 
   def set_distance distance_run
     Run.raise_negative(distance_run)
-    @distance = distance_run
+    @distance = distance_run if distance_run.integer?
   end  
 
   def set_mph true_or_false
