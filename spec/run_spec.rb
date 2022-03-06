@@ -57,9 +57,8 @@ describe Run do
       expect{Run.new(0, 10, 10, false).calculate_pace}.to raise_error("It can't be zero.")
     end 
   
-    # Have to handle divide by 0 specific error
-    xit "error distance 0" do
-      expect{Run.new.calculate_pace(10, 0)}.to raise_error("Pace can't be zero or negative")
+    it "error distance 0" do
+      expect{Run.new(10, 0, 0, false).calculate_pace}.to raise_error(ZeroDivisionError)
     end 
   end
   
