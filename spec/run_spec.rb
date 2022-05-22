@@ -148,4 +148,21 @@ describe Run do
       expect(run.to_s).to eq("You ran 10 mph in 01:00:00 at 00:06:00 pace.")
     end
   end  
+  context "#choose_calculus" do
+    it "active calculate_pace" do
+      expect(Run.new(3600, 0, 10, false).choose_calculus).to eq(360)
+    end
+
+    it "active calculate_timerun" do
+      expect(Run.new(0, 360, 10, false).choose_calculus).to eq(3600)
+    end
+
+    it "active calculate_distance" do
+      expect(Run.new(3600, 360, 0, false).choose_calculus).to eq(10)
+    end
+
+    it "raise error" do
+      expect{Run.new(3600, 360, 10, false).choose_calculus}.to raise_error("It only takes two pieces of data to calculate something.")
+    end
+  end
 end
