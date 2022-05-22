@@ -21,7 +21,7 @@ class Run
 
   def set_distance distance_run
     Run.raise_negative(distance_run)
-    @distance = distance_run if distance_run.integer?
+    @distance = distance_run
   end  
 
   def set_mph true_or_false
