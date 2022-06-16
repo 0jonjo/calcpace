@@ -47,19 +47,6 @@ describe Run do
     it "with error distance negative" do
       expect{Run.new(3600, 0, -10, false).calculate_pace}.to raise_error("It can't be negative.")
     end
-
-    # Have to adjust text error to sub 1 cases?
-    it "with error sub 1" do
-      expect{Run.new(3599, 0, 3600, false).calculate_pace}.to raise_error("It can't be zero.")
-    end
-    
-    it "with error time 0" do
-      expect{Run.new(0, 10, 10, false).calculate_pace}.to raise_error("It can't be zero.")
-    end 
-  
-    it "error distance 0" do
-      expect{Run.new(10, 0, 0, false).calculate_pace}.to raise_error(ZeroDivisionError)
-    end 
   end
   
   context "#calculate_timerun" do
@@ -83,11 +70,6 @@ describe Run do
 
     it "with error time negative" do
       expect{Run.new(-360, 360, 0, false).calculate_distance}.to raise_error("It can't be negative.")
-    end
-
-    # Have to adjust pace error to sub 1 cases?
-    it "with error pace sub 1" do
-      expect{Run.new(3599, 3600, 0, false).calculate_distance}.to raise_error("It can't be zero.")
     end
 
     it "with error time 0" do

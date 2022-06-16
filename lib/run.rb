@@ -45,7 +45,7 @@ class Run
   end
 
   def calculate_distance
-    @distance = @time / @pace
+    @distance = @time.to_f / @pace
     Run.raise_negative(@distance)
     Run.raise_zero(@distance) 
   end  
@@ -63,7 +63,7 @@ class Run
   end
 
   def to_s
-    "You ran #{@distance} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
+    "You ran #{@distance.round(2)} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
   end
 
   def self.convert_to_seconds time
