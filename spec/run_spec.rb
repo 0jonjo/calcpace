@@ -11,12 +11,12 @@ describe Run do
       expect(Run.check_digits_distance('7')).to eq(7)
     end
 
+    it ":get_distance == ''" do
+      expect(Run.check_digits_distance('0')).to eq(0.0)
+    end
+
     it ":check_distance not a number" do
       expect{Run.check_digits_distance('test')}.to raise_error("It must be a X.X number")
-    end
-    
-    it ":check_distance with a blank string" do
-      expect{Run.check_digits_distance('')}.to raise_error("It must be a X.X number")
     end
   end  
 

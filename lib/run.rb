@@ -67,6 +67,7 @@ class Run
   end
 
   def self.check_digits_distance distance_string
+    distance_string = "0" if distance_string == ''
     (distance_string =~ /\d/) ? distance_string.to_f : (raise "It must be a X.X number")   
   end
 
