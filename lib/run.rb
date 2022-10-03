@@ -66,6 +66,10 @@ class Run
     "You ran #{@distance.round(2)} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
   end
 
+  def self.check_digits_distance distance_string
+    (distance_string =~ /\d/) ? distance_string.to_f : (raise "It must be a X.X number")   
+  end
+
   def self.convert_to_seconds time
     hour, minute, seconds = time.split(':')
     ((hour.to_i)*3600) + ((minute.to_i)*60) + seconds.to_i

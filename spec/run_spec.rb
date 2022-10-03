@@ -2,6 +2,24 @@ require "run"
 
 describe Run do
 
+  context "Get distance and time format" do  
+    it ":get_distance true X.X" do
+      expect(Run.check_digits_distance('7.2')).to eq(7.2)
+    end
+
+    it ":get_distance true X" do
+      expect(Run.check_digits_distance('7')).to eq(7)
+    end
+
+    it ":check_distance not a number" do
+      expect{Run.check_digits_distance('test')}.to raise_error("It must be a X.X number")
+    end
+    
+    it ":check_distance with a blank string" do
+      expect{Run.check_digits_distance('')}.to raise_error("It must be a X.X number")
+    end
+  end  
+
   context "Convert tests" do  
     it ":convert_to_seconds" do
       expect(Run.convert_to_seconds("01:11:02")).to eq(4262)

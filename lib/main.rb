@@ -8,7 +8,7 @@ run.set_mph(gets.chomp.empty? ? false : true)
 puts "Insert time run (XX:XX:XX) or ENTER"
 run.set_time(Run.convert_to_seconds(gets.chomp))
 puts "Insert distance (XX.XX) or ENTER"
-run.set_distance(gets.chomp.to_f)
+run.set_distance(Run.check_digits_distance(gets.chomp))
 puts "Insert pace (XX:XX:XX) or ENTER"
 run.set_pace(Run.convert_to_seconds(gets.chomp))
 
