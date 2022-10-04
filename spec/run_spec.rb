@@ -3,22 +3,50 @@ require "run"
 describe Run do
 
   context "Get distance and time format" do  
-    it ":get_distance true X.X" do
+    it ":check_digits_distance true X.X" do
       expect(Run.check_digits_distance('7.2')).to eq(7.2)
     end
 
-    it ":get_distance true X" do
+    it ":check_digits_distance true X" do
       expect(Run.check_digits_distance('7')).to eq(7)
     end
 
-    it ":get_distance == ''" do
+    it ":check_digits_distance == ''" do
       expect(Run.check_digits_distance('0')).to eq(0.0)
     end
 
-    it ":check_distance not a number" do
+    it ":check_digits_distance not a number" do
       expect{Run.check_digits_distance('test')}.to raise_error("It must be a X.X number")
     end
-  end  
+
+    it ":check_digits_time true XX:XX:XX" do
+      expect(Run.check_digits_time('01:02:03')).to eq('01:02:03')
+    end
+
+    it ":check_digits_time true X:X:X" do
+      expect(Run.check_digits_time('1:2:3')).to eq('1:2:3')
+    end
+
+    it ":check_digits_time true XX:XX" do
+      expect(Run.check_digits_time('01:02')).to eq('01:02')
+    end
+
+    it ":check_digits_time true XX-XX" do
+      expect(Run.check_digits_time('01-02')).to eq('01:02')
+    end
+
+    it ":check_digits_time true blanket" do
+      expect(Run.check_digits_time('')).to eq('')
+    end
+
+    it ":check_digits_distance not a number raise error" do
+      expect{Run.check_digits_time('test')}.to raise_error("It must be a XX:XX:XX time")
+    end
+    
+    it ":check_digits_distance AA:AA letter raise error " do
+      expect{Run.check_digits_time('AA:AA')}.to raise_error("It must be a XX:XX:XX time")
+    end
+  end 
 
   context "Convert tests" do  
     it ":convert_to_seconds" do

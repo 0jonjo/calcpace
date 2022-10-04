@@ -71,6 +71,11 @@ class Run
     (distance_string =~ /\d/) ? distance_string.to_f : (raise "It must be a X.X number")   
   end
 
+  def self.check_digits_time time_string
+    return time_string = '' if time_string == ''
+    time_string =~ /\d{0,2}(:|-)*?\d{1,2}(:|-)\d{1,2}/ ? time_string.gsub("-", ":") : (raise "It must be a XX:XX:XX time")   
+  end
+
   def self.convert_to_seconds time
     hour, minute, seconds = time.split(':')
     ((hour.to_i)*3600) + ((minute.to_i)*60) + seconds.to_i
