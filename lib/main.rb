@@ -3,7 +3,7 @@ require_relative 'run'
 run = Run.new(0, 0, 0)
 Run.check_argv_length
 
-case ARGV[0]
+case ARGV[0][0].downcase
 when "p"
   run.set_time(Run.convert_to_seconds(Run.check_digits_time(ARGV[1]))) 
   run.set_distance(Run.check_digits_distance(ARGV[2])) 

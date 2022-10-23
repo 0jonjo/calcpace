@@ -3,7 +3,7 @@ require "run"
 describe Run do
 
   context "ARGV" do  
-    it ":argv lenght < 3" do
+    xit ":argv lenght < 3" do
       expect{ARGV = ""}.to raise_error("It must be a X.X number")
     end
   end
@@ -93,83 +93,78 @@ describe Run do
 
   context "#calculate_pace" do
     it "with all ok" do
-      expect(Run.new(3600, 0, 10, false).calculate_pace).to eq(360)
+      expect(Run.new(3600, 0, 10).calculate_pace).to eq(360)
     end  
 
     it "with error distance negative" do
-      expect{Run.new(3600, 0, -10, false).calculate_pace}.to raise_error("It can't be negative.")
+      expect{Run.new(3600, 0, -10).calculate_pace}.to raise_error("It can't be negative.")
     end
   end
   
   context "#calculate_timerun" do
     it "with all ok" do
-      expect(Run.new(0, 360, 10, false).calculate_timerun).to eq(3600)
+      expect(Run.new(0, 360, 10).calculate_timerun).to eq(3600)
     end  
 
     it "with error negative" do
-      expect{Run.new(0, -360, 360, false).calculate_timerun}.to raise_error("It can't be negative.")
+      expect{Run.new(0, -360, 360).calculate_timerun}.to raise_error("It can't be negative.")
     end
 
     it "with error pace 0" do
-      expect{Run.new(0, 0, 360, false).calculate_timerun}.to raise_error("It can't be zero.")
+      expect{Run.new(0, 0, 360).calculate_timerun}.to raise_error("It can't be zero.")
     end
   end
 
   context "#calculate_distance" do
     it "with all ok" do
-      expect(Run.new(3600, 360, 0, false).calculate_distance).to eq(10)
+      expect(Run.new(3600, 360, 0).calculate_distance).to eq(10)
     end
 
     it "with error time negative" do
-      expect{Run.new(-360, 360, 0, false).calculate_distance}.to raise_error("It can't be negative.")
+      expect{Run.new(-360, 360, 0).calculate_distance}.to raise_error("It can't be negative.")
     end
 
     it "with error time 0" do
-      expect{Run.new(0, 360, 0, false).calculate_distance}.to raise_error("It can't be zero.")
+      expect{Run.new(0, 360, 0).calculate_distance}.to raise_error("It can't be zero.")
     end
   end  
 
   context "set distance pace and time" do
     it "#set_distance" do
-      run = Run.new(0, 0, 0, false)
+      run = Run.new(0, 0, 0)
       run.set_distance(10)
       expect(run.distance).to eq(10)
     end
 
     it "#set_distance with negative error" do
-      expect{Run.new(0, 0, 0, false).set_distance(-10)}.to raise_error("It can't be negative.")
+      expect{Run.new(0, 0, 0).set_distance(-10)}.to raise_error("It can't be negative.")
     end
 
     it "#set_pace" do
-      run = Run.new(0, 0, 0, false)
+      run = Run.new(0, 0, 0)
       run.set_pace(10)
       expect(run.pace).to eq(10)
     end
 
     it "#set_pace with negative error" do
-      expect{Run.new(0, 0, 0, false).set_pace(-10)}.to raise_error("It can't be negative.")
+      expect{Run.new(0, 0, 0).set_pace(-10)}.to raise_error("It can't be negative.")
     end
 
     it "#set_time" do
-      run = Run.new(0, 0, 0, false)
+      run = Run.new(0, 0, 0)
       run.set_time(10)
       expect(run.time).to eq(10)
     end
 
     it "#set_time negative error" do
-      expect{Run.new(0, 0, 0, false).set_time(-10)}.to raise_error("It can't be negative.")
+      expect{Run.new(0, 0, 0).set_time(-10)}.to raise_error("It can't be negative.")
     end
   end  
 
   context "#print_informations" do
-    it "with mph false" do
-      run = Run.new(3600, 360, 10, false)
+    it "all ok" do
+      run = Run.new(3600, 360, 10)
       expect(run.to_s).to eq("You ran 10 km in 01:00:00 at 00:06:00 pace.")
-    end
-    
-    it "with mph true" do
-      run = Run.new(3600, 360, 10, true)
-      expect(run.to_s).to eq("You ran 10 mph in 01:00:00 at 00:06:00 pace.")
     end
   end  
 end
