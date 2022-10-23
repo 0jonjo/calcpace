@@ -50,20 +50,12 @@ class Run
     Run.raise_zero(@distance) 
   end  
 
-  def choose_calculus 
-    if @pace.zero?
-      calculate_pace
-    elsif @time.zero?
-      calculate_timerun
-    elsif @distance.zero?
-      calculate_distance
-    else 
-      raise ArgumentError, "It only takes two pieces of data to calculate something."  
-    end
-  end
-
   def to_s
     "You ran #{@distance.round(2)} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
+  end
+
+  def self.check_argv_length
+    (raise "It must be exactly three arguments") if ARGV.length != 3  
   end
 
   def self.check_digits_distance distance_string
