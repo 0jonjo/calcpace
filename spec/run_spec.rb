@@ -159,16 +159,6 @@ describe Run do
     it "#set_time negative error" do
       expect{Run.new(0, 0, 0, false).set_time(-10)}.to raise_error("It can't be negative.")
     end
-
-    it "#set_mph" do
-      run = Run.new(0, 0, 0, false)
-      run.set_mph(true) 
-      expect(run.mph).to be true
-    end   
-
-    it "#set_mph error" do
-      expect{Run.new(0, 0, 0, false).set_mph("teste") }.to raise_error("MPH can be only true or false.")
-    end 
   end  
 
   context "#print_informations" do

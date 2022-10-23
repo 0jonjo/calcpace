@@ -1,12 +1,11 @@
 class Run
 
-  attr_reader :time, :pace, :distance, :mph
+  attr_reader :time, :pace, :distance
 
-  def initialize time, pace, distance, mph
+  def initialize time, pace, distance
     @time = time
     @pace = pace
     @distance = distance
-    @mph = mph
   end  
 
   def set_time time_run
@@ -23,15 +22,7 @@ class Run
     Run.raise_negative(distance_run)
     @distance = distance_run
   end  
-
-  def set_mph true_or_false
-    if true_or_false == true || true_or_false == false
-      @mph = true_or_false
-    else
-      raise "MPH can be only true or false."
-    end
-  end    
-
+   
   def calculate_pace
     @pace = @time / @distance 
     Run.raise_negative(@pace)
@@ -51,7 +42,7 @@ class Run
   end  
 
   def to_s
-    "You ran #{@distance.round(2)} " + (@mph ? "mph" : "km") + " in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
+    "You ran #{@distance.round(2)}" + " km in " + Run.convert_to_clocktime(@time) + " at " + Run.convert_to_clocktime(@pace) + " pace."
   end
 
   def self.check_argv_length
