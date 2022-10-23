@@ -29,21 +29,21 @@ Utilize p para calcular o pace e informe o tempo de corrida (HH:MM:SS) e a dist�
 
 ```shell
 ruby lib/main.rb p 01:00:00 10
-You ran 10.0 km in 01:00:00 at 00:06:00 pace.
+00:06:00
 ```
 
 Utilize t para calcular o tempo de corrida e informe o pace (HH:MM:SS) e a distância (X.X) em quilômetros. 
 
 ```shell
 ruby lib/main.rb t 00:05:00 12
-You ran 12.0 km in 01:00:00 at 00:05:00 pace.
+01:00:00
 ```
 
 Utilize d para calcular o tempo de corrida e informe o tempo de corrida (HH:MM:SS) e pace (HH:MM:SS). 
 
 ```shell
 ruby lib/main.rb d 01:30:00 00:05:00
-You ran 18.0 km in 01:30:00 at 00:05:00 pace.
+18.0
 ```
 
 Caso alguns dos parâmetros não esteja no padrão que o programa utiliza ele informa qual o problema em um erro (em inglês). 
