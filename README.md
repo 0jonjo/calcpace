@@ -29,8 +29,6 @@ Utilize p para calcular o pace e informe o tempo de corrida (HH:MM:SS) e a dist√
 
 ```shell
 ruby lib/main.rb p 01:00:00 10
-```
-```shell
 You ran 10.0 km in 01:00:00 at 00:06:00 pace.
 ```
 
@@ -38,8 +36,6 @@ Utilize t para calcular o tempo de corrida e informe o pace (HH:MM:SS) e a dist√
 
 ```shell
 ruby lib/main.rb t 00:05:00 12
-```
-```shell
 You ran 12.0 km in 01:00:00 at 00:05:00 pace.
 ```
 
@@ -47,8 +43,6 @@ Utilize d para calcular o tempo de corrida e informe o tempo de corrida (HH:MM:S
 
 ```shell
 ruby lib/main.rb d 01:30:00 00:05:00
-```
-```shell
 You ran 18.0 km in 01:30:00 at 00:05:00 pace.
 ```
 
@@ -83,8 +77,6 @@ Choose p to calculate pace and enter running time (HH:MM:SS) and distance (X.X) 
 
 ```shell
 ruby lib/main.rb p 01:00:00 10
-```
-```shell
 You ran 10.0 km in 01:00:00 at 00:06:00 pace.
 ```
 
@@ -92,16 +84,13 @@ Choose t to calculate running time and enter pace  (HH:MM:SS) and distance (X.X)
 
 ```shell
 ruby lib/main.rb t 00:05:00 12
-```
-```shell
 You ran 12.0 km in 01:00:00 at 00:05:00 pace.
+```
 
 Choose d to calculate distance in kilometers and enter running time (HH:MM:SS) and pace (HH:MM:SS).
 
 ```shell
 ruby lib/main.rb d 01:30:00 00:05:00
-```
-```shell
 You ran 18.0 km in 01:30:00 at 00:05:00 pace.
 ```
 
