@@ -1,5 +1,4 @@
 module RunCheck
-
   def check_argv_length
     (raise "It must be exactly three arguments") if ARGV.length != 3  
   end
