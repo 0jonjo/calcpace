@@ -43,7 +43,7 @@ describe RunCheck do
     end
 
     it ":check_digits_time true blanket" do
-      expect(run.check_digits_time('')).to eq('')
+      expect{run.check_digits_time('')}.to raise_error("It must be a XX:XX:XX time")
     end
 
     it ":check_digits_distance not a number raise error" do
