@@ -1,24 +1,27 @@
-require_relative 'run'
+require_relative 'run_calc'
+require_relative 'run_convert'
+require_relative 'run_check'
 
-run = Run.new(0, 0, 0)
-run.check_argv_length
+check_argv_length(ARGV)
 
 case ARGV[0][0].downcase
 when "p"
-  run.time=(run.convert_to_seconds(run.check_digits_time(ARGV[1]))) 
-  run.distance=(run.check_digits_distance(ARGV[2])) 
-  run.pace=(run.calculate_pace(run.time, run.distance).to_i)
-  puts run.convert_to_clocktime(run.pace)
-when "t"  
-  run.pace=(run.convert_to_seconds(run.check_digits_time(ARGV[1]))) 
-  run.distance=(run.check_digits_distance(ARGV[2]))
-  run.time=(run.calculate_timerun(run.pace, run.distance).to_i)  
-  puts run.convert_to_clocktime(run.time)
+  run_time = convert_to_seconds(check_digits_time(ARGV[1]))
+  run_distance = check_digits_distance(ARGV[2])
+  run_pace = calculate_pace(run_time, run_distance).to_i
+  raise_negative(run_pace)
+  puts convert_to_clocktime(run_pace)
+when "t"
+  run_pace = convert_to_seconds(check_digits_time(ARGV[1]))
+  run_distance = check_digits_distance(ARGV[2])
+  run_time = calculate_timerun(run_pace, run_distance).to_i
+  raise_negative(run_time)
+  puts convert_to_clocktime(run_time)
 when "d"
-  run.time=(run.convert_to_seconds(run.check_digits_time(ARGV[1]))) 
-  run.pace=(run.convert_to_seconds(run.check_digits_time(ARGV[2]))) 
-  run.distance=(run.calculate_distance(run.time, run.pace))
-  puts run.distance  
-else 
+  run_time = convert_to_seconds(check_digits_time(ARGV[1]))
+  run_pace = convert_to_seconds(check_digits_time(ARGV[2]))
+  run_distance = calculate_distance(run_time, run_pace)
+  puts run_distance
+else
   raise ArgumentError, "You have to choose p (pace), t (time run) or d (distance)."  
 end
