@@ -1,55 +1,5 @@
 # CALCPACE
 
-### [PT-BR]
-
-Um projeto de estudo de TDD em Ruby baseado em outro projeto meu, o [Calcpace (originalmente em Python)](https://github.com/0jonjo/calcpace-py). Ele calcula o pace de corrida, o tempo de corrida ou a distância a partir de dados inseridos pelo usuário.
-
-## Instalação
-
-### Clone o repositório
-
-```shell
-git clone git@github.com:0jonjo/calcpace.git
-cd calcpace
-```
-
-### Instale as dependências
-
-Usando [Bundler](https://github.com/bundler/bundler)
-
-```shell
-bundle install
-```
-
-## Use a calculadora
-
-Chamar main.rb informe a opção de cálculo e os dados da corrida. 
-
-Utilize p para calcular o pace e informe o tempo de corrida (HH:MM:SS) e a distância (X.X) em quilômetros. 
-
-```shell
-ruby lib/main.rb p 01:00:00 10
-00:06:00
-```
-
-Utilize t para calcular o tempo de corrida e informe o pace (HH:MM:SS) e a distância (X.X) em quilômetros. 
-
-```shell
-ruby lib/main.rb t 00:05:00 12
-01:00:00
-```
-
-Utilize d para calcular o tempo de corrida e informe o tempo de corrida (HH:MM:SS) e pace (HH:MM:SS). 
-
-```shell
-ruby lib/main.rb d 01:30:00 00:05:00
-18.0
-```
-
-Caso alguns dos parâmetros não esteja no padrão que o programa utiliza ele informa qual o problema em um erro (em inglês). 
-
-### [EN]
-
 A TDD Ruby study project to calculate the running pace, the predicted running time or distance. It's based on my original [Python Calcpace](https://github.com/0jonjo/calcpace-py).
 
 ## Install
