@@ -23,7 +23,10 @@ jobs:
     strategy:
       matrix:
         ruby-version: ['3.0.5']
-
+    outputs:
+      output1: ${{ steps.TestPace.outputs.test }}
+      output2: ${{ steps.TestTimeRun.outputs.test }}
+      output3: ${{ steps.TestDistance.outputs.test }} 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
@@ -42,3 +45,5 @@ jobs:
       run: ruby lib/main.rb t 00:05:00 12
     - id: TestDistance 
       run: ruby lib/main.rb d 01:30:00 00:05:00
+    - name: Check calc results
+      run: echo ${{ steps.TestPace.outputs.test }}
