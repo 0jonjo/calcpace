@@ -24,9 +24,6 @@ jobs:
       matrix:
         ruby-version: ['3.0.5']
     env:
-      OUTPUT1: ${{ steps.pace.outputs.stdout }}
-      OUTPUT2: ${{ steps.timerun.outputs.stdout }}
-      OUTPUT3: ${{ steps.distance.outputs.stdout }}
       OUTPUT4: "test 4"
     steps:
     - uses: actions/checkout@v3
@@ -47,8 +44,6 @@ jobs:
     - id: distance 
       run: ruby lib/main.rb d 01:30:00 00:05:00
     - name: Check calc results
-      run: | 
-        echo $OUTPUT1
-        echo $OUTPUT2
-        echo $OUTPUT3
-        echo
+      if: ${{ '${{ env.OUTPUT4 }}' = '${{ OUTPUT4 }}' }}
+      run: echo pass
+        
