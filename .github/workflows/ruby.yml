@@ -40,9 +40,13 @@ jobs:
     - name: Check calc run time
       run: ruby lib/main.rb t 00:05:00 12
     - id: distance
+        outputs:
+          out:
+            description: 'Some output'
+            value: ${{ steps.distance.outputs.out }}
       run:  ruby lib/main.rb d 01:30:00 00:05:00 >> $GITHUB_OUTPUT
     - name: Pass or fail
-      if: steps.distance.outputs != 18.0 
+      if: steps.distance.outputs.out != 18.0 
       run: exit 1
 
         
