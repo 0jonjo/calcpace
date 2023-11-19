@@ -39,7 +39,6 @@ jobs:
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
       run: bundle exec rspec
-    - name: Run calc tests
     - id: pace
       run: ruby lib/main.rb p 01:00:00 10
     - id: timerun
