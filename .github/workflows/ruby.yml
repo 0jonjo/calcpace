@@ -41,9 +41,9 @@ jobs:
       run: ruby lib/main.rb t 00:05:00 12
     - name: Check calc distance
     - id: distance
-      run:  echo "calc_distance=$((ruby lib/main.rb d 01:30:00 00:05:00))" >> $GITHUB_OUTPUT
+      run:  ruby lib/main.rb d 01:30:00 00:05:00 >> $GITHUB_OUTPUT
     - name: Pass or fail
-      if: steps.distance.outputs.calc_distance != '18.0' 
+      if: steps.distance.outputs != '18.0' 
       run: exit 1
 
         
