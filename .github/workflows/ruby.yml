@@ -43,7 +43,7 @@ jobs:
     - id: distance
       run:  echo "calc_distance=$((ruby lib/main.rb d 01:30:00 00:05:00))" >> $GITHUB_OUTPUT
     - name: Pass or fail
-      run: |
-        if [[ ${{ steps.distance.outputs.calc_distance }} == "18.0" ]]; then exit 0; else exit 1; fi
+      if: steps.distance.outputs.calc_distance != '18.0' 
+      run: exit 1
 
         
