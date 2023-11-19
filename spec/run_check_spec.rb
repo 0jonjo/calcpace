@@ -37,7 +37,7 @@ describe 'run_check' do
     end
 
     it ':check_digits_time true XX:XX:XX' do
-      expect(check_digits_time('01:02:03')).to eq('01:02:99')
+      expect(check_digits_time('01:02:03')).to eq('01:02:03')
     end
 
     it ':check_digits_time true X:X:X' do
