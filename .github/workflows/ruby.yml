@@ -24,9 +24,9 @@ jobs:
       matrix:
         ruby-version: ['3.0.5']
     outputs:
-      output1: ${{ steps.TestPace.outputs.test }}
-      output2: ${{ steps.TestTimeRun.outputs.test }}
-      output3: ${{ steps.TestDistance.outputs.test }} 
+      output1: ${{ steps.pace.outputs.test }}
+      output2: ${{ steps.timerun.outputs.test }}
+      output3: ${{ steps.distance.outputs.test }} 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
@@ -39,11 +39,15 @@ jobs:
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
       run: bundle exec rspec
-    - id: TestPace
+    - name: Run calc tests
+    - id: pace
       run: ruby lib/main.rb p 01:00:00 10
-    - id: TestTimeRun
+    - id: timerun
       run: ruby lib/main.rb t 00:05:00 12
-    - id: TestDistance 
+    - id: distance 
       run: ruby lib/main.rb d 01:30:00 00:05:00
     - name: Check calc results
-      run: echo $output1
+      run: | 
+        echo $output1
+        echo $output2
+        echo $output3
