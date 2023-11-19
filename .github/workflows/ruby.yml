@@ -23,10 +23,11 @@ jobs:
     strategy:
       matrix:
         ruby-version: ['3.0.5']
-    outputs:
-      output1: ${{ steps.pace.outputs.stdout }}
-      output2: ${{ steps.timerun.outputs.stdout }}
-      output3: ${{ steps.distance.outputs.stdout }} 
+    env:
+      OUTPUT1: ${{ steps.pace.outputs.stdout }}
+      OUTPUT2: ${{ steps.timerun.outputs.stdout }}
+      OUTPUT3: ${{ steps.distance.outputs.stdout }}
+      OUTPUT4: "test 4"
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
@@ -47,6 +48,7 @@ jobs:
       run: ruby lib/main.rb d 01:30:00 00:05:00
     - name: Check calc results
       run: | 
-        echo $output1
-        echo $output2
-        echo $output3
+        echo $OUTPUT1
+        echo $OUTPUT2
+        echo $OUTPUT3
+        echo
