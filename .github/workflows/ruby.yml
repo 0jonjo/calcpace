@@ -23,8 +23,6 @@ jobs:
     strategy:
       matrix:
         ruby-version: ['3.0.5']
-    env:
-      OUTPUT4: "test 4"
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
@@ -37,13 +35,10 @@ jobs:
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
     - name: Run tests
       run: bundle exec rspec
-    - id: pace
+    - name: Check calc pace
       run: ruby lib/main.rb p 01:00:00 10
-    - id: timerun
+    - name: Check calc run time
       run: ruby lib/main.rb t 00:05:00 12
-    - id: distance 
+    - name: Check calc distance 
       run: ruby lib/main.rb d 01:30:00 00:05:00
-    - name: Check calc results
-      if: ${{ '${{ env.OUTPUT4 }}' == '${{ OUTPUT4 }}' }}
-      run: echo pass
         
