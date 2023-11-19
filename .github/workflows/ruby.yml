@@ -39,7 +39,6 @@ jobs:
       run: ruby lib/main.rb p 01:00:00 10
     - name: Check calc run time
       run: ruby lib/main.rb t 00:05:00 12
-    - name: Check calc distance
     - id: distance
       run:  ruby lib/main.rb d 01:30:00 00:05:00
     - name: Pass or fail
