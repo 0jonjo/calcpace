@@ -24,9 +24,9 @@ jobs:
       matrix:
         ruby-version: ['3.0.5']
     outputs:
-      output1: ${{ steps.pace.outputs.test }}
-      output2: ${{ steps.timerun.outputs.test }}
-      output3: ${{ steps.distance.outputs.test }} 
+      output1: ${{ steps.pace.outputs.stdout }}
+      output2: ${{ steps.timerun.outputs.stdout }}
+      output3: ${{ steps.distance.outputs.stdout }} 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
