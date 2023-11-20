@@ -9,6 +9,14 @@ def check_argv_modal(argv_modal)
                                                                                                 t].include?(argv_modal)
 end
 
+def checks_argv(argv)
+  check_argv_length(argv)
+  check_argv_modal(argv[0][0].downcase)
+  check_digits_time(argv[1])
+  check_digits_distance(argv[2])
+  raise_negative(argv[2].to_i)
+end
+
 def check_digits_distance(distance_string)
   distance_string =~ /\d/ ? distance_string.to_f : (raise 'It must be a X.X number')
 end
@@ -18,7 +26,7 @@ def check_digits_time(time_string)
 end
 
 def raise_negative(number)
-  raise "It can't be negative." if number.negative?
+ raise "It can't be negative." if number.negative?
 
-  number
+ number
 end
