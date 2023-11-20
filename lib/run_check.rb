@@ -14,7 +14,7 @@ def checks_argv(argv)
   check_argv_modal(argv[0][0].downcase)
   check_digits_time(argv[1])
   check_digits_distance(argv[2])
-  raise_negative(argv[2].to_i)
+  raise_negative(argv[2])
 end
 
 def check_digits_distance(distance_string)
@@ -26,7 +26,5 @@ def check_digits_time(time_string)
 end
 
 def raise_negative(number)
- raise "It can't be negative." if number.negative?
-
- number
+  raise "It can't be negative." if number.to_i.negative?
 end

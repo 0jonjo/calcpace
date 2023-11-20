@@ -20,12 +20,16 @@ describe 'run_check' do
   end
 
   context 'Check negative digits' do
-    it ':raise_negative true' do
+    it ':raise_negative when receive negative number' do
       expect { raise_negative(-1) }.to raise_error("It can't be negative.")
     end
 
-    it ':raise_negative false' do
-      expect(raise_negative(1)).to eq(1)
+    it 'not raise_negative when receive positive number' do
+      expect{ raise_negative(1) }.not_to raise_error
+    end
+
+    it 'not raise_negative when receive positive number' do
+      expect{ raise_negative('00:05:00'.to_i) }.not_to raise_error
     end
   end
 
