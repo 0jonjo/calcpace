@@ -4,6 +4,11 @@ def check_argv_length(argv)
   (raise 'It must be exactly three arguments') if argv.length != 3
 end
 
+def check_argv_modal(argv_modal)
+  (raise ArgumentError, 'You have to choose p (pace), t (time run) or d (distance).') unless %w[p d
+                                                                                                t].include?(argv_modal)
+end
+
 def check_digits_distance(distance_string)
   distance_string =~ /\d/ ? distance_string.to_f : (raise 'It must be a X.X number')
 end

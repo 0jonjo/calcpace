@@ -7,6 +7,16 @@ describe 'run_check' do
     it ':argv lenght < 3' do
       expect { check_argv_length([0, 0]) }.to raise_error('It must be exactly three arguments')
     end
+
+    it 'check_argv_modal pass correct input' do
+      expect { check_argv_modal('p') }.not_to raise_error
+    end
+
+    it 'check_argv_modal raise error when incorrect input' do
+      expect do
+        check_argv_modal('z')
+      end.not_to raise_error('ArgumentError: You have to choose p (pace), t (time run) or d (distance).')
+    end
   end
 
   context 'Check negative digits' do

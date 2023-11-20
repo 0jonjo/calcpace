@@ -8,7 +8,5 @@ def calculate(calc_modal, time_or_pace, distance_or_pace)
     convert_to_clocktime((time_or_pace * distance_or_pace.to_i))
   when 'd'
     (time_or_pace.to_f / convert_to_seconds(distance_or_pace)).round(2)
-  else
-    raise ArgumentError, 'You have to choose p (pace), t (time run) or d (distance).'
   end
 end

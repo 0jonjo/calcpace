@@ -17,9 +17,5 @@ describe 'run_calculate' do
     it 'in correct distance' do
       expect(calculate('d', 5400, '00:05:00')).to eq(18.0)
     end
-
-    it 'in error when unexpected calc_modal' do
-      expect { calculate('x', 5400, '00:05:00') }.to raise_error('You have to choose p (pace), t (time run) or d (distance).')
-    end
   end
 end
