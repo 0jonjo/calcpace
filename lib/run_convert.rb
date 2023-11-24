@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 def convert_to_seconds(time)
-  hour, minute, seconds = time.split(':')
-  (hour.to_i * 3600) + (minute.to_i * 60) + seconds.to_i
+  hour, minute, seconds = time.split(':').map(&:to_i)
+  (hour * 3600) + (minute * 60) + seconds
 end
 
 def convert_to_clocktime(seconds)
