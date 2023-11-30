@@ -4,7 +4,7 @@ require 'run_check'
 
 describe 'run_check' do
   context 'ARGV' do
-    it ':argv lenght < 3' do
+    it ':argv length < 3' do
       expect { check_argv_length([0, 0]) }.to raise_error('It must be exactly three arguments')
     end
 
@@ -13,9 +13,7 @@ describe 'run_check' do
     end
 
     it 'check_argv_modal raise error when incorrect input' do
-      expect do
-        check_argv_modal('z')
-      end.not_to raise_error('ArgumentError: You have to choose p (pace), t (time run) or d (distance).')
+      expect { check_argv_modal('z') }.to raise_error("You have to choose p (pace), t (time run) or d (distance).")
     end
   end
 
@@ -25,11 +23,11 @@ describe 'run_check' do
     end
 
     it 'not raise_negative when receive positive number' do
-      expect{ raise_negative(1) }.not_to raise_error
+      expect { raise_negative(1) }.not_to raise_error
     end
 
     it 'not raise_negative when receive positive number' do
-      expect{ raise_negative('00:05:00'.to_i) }.not_to raise_error
+      expect { raise_negative('00:05:00'.to_i) }.not_to raise_error
     end
   end
 
@@ -70,11 +68,12 @@ describe 'run_check' do
       expect { check_digits_time('') }.to raise_error('It must be a XX:XX:XX time')
     end
 
-    it ':check_digits_distance not a number raise error' do
+    it 'check_digits_time true XX:XX' do
+      expect { check_digits_time('AA:AA') }.to raise_error('It must be a XX:XX:XX time')
       expect { check_digits_time('test') }.to raise_error('It must be a XX:XX:XX time')
     end
 
-    it ':check_digits_distance AA:AA letter raise error ' do
+    it ':check_digits_time AA:AA letter raise error ' do
       expect { check_digits_time('AA:AA') }.to raise_error('It must be a XX:XX:XX time')
     end
   end
