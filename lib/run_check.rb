@@ -5,7 +5,7 @@ def check_argv_length(argv)
 end
 
 def check_argv_modal(argv_modal)
-  raise ArgumentError, 'You have to choose p (pace), t (time run) or d (distance).' unless %w[p d
+  raise ArgumentError, 'You have to choose p (pace), t (time run), d (distance) or c (convert).' unless %w[p d
                                                                                               t c].include?(argv_modal)
 end
 
