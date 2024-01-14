@@ -46,14 +46,14 @@ ruby lib/main.rb d 01:30:00 00:05:00
 
 Choose c to convert distance.
 
-Enter km and the distance in kilometers to convert miles.
+Enter km and the distance in kilometers to convert to miles.
 
 ```shell
 ruby lib/main.rb c km 10
 6.21
 ```
 
-Enter mi and the distance in miles to convert kilometers.
+Enter mi and the distance in miles to convert to kilometers.
 
 ```shell
 ruby lib/main.rb c mi 10
