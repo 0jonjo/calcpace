@@ -16,9 +16,8 @@ end
 def convert_distance(unit, distance)
   case unit
   when 'km'
-    (distance * 0.621371)
+    distance * 0.621371
   when 'mi'
-    (distance * 1.60934)
+    distance * 1.60934
   end
 end
-

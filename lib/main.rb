@@ -6,4 +6,4 @@ require_relative 'run_convert'
 
 checks_argv(ARGV)
 
-puts calculate(ARGV[0][0].downcase,(ARGV[1]), ARGV[2])
+puts calculate(ARGV[0][0].downcase, (ARGV[1]), ARGV[2])
