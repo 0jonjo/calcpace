@@ -13,7 +13,9 @@ describe 'run_check' do
     end
 
     it 'check_argv_modal raise error when incorrect input' do
-      expect { check_argv_modal('z') }.to raise_error('You have to choose p (pace), t (time run), d (distance) or c (convert).')
+      expect do
+        check_argv_modal('z')
+      end.to raise_error('You have to choose p (pace), t (time run), d (distance) or c (convert).')
     end
   end
 
