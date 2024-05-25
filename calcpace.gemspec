@@ -1,11 +1,23 @@
+# frozen_string_literal: true
+
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '0.1.0'
-  s.summary     = 'Calcpace'
-  s.description = 'Calculate pace, time, distance and speed for running and cycling.'
+  s.version     = '0.2.0'
+  s.summary     = 'Calcpace: calculate time and distances for activities such as running and cycling.'
+  s.description = 'Calculate pace, total time, distance and easily convert distances (kilometers and miles) for activities like running and cycling. Get readable results in HH:MM:SS or X.X format for time and distance calculations.'
   s.authors     = ['Joao Gilberto Saraiva']
   s.email       = 'joaogilberto@tuta.io'
-  s.files       = ['lib/calcpace.rb']
+  s.files       = ['lib/calcpace.rb', 'lib/calcpace/calculator.rb', 'lib/calcpace/checker.rb', 'lib/calcpace/converter.rb']
+  s.test_files  = ['test/calcpace/test_calculator.rb', 'test/calcpace/test_checker.rb', 'test/calcpace/test_converter.rb']
+  s.add_development_dependency 'minitest', '~> 5.14'
+  s.add_development_dependency 'rake', '~> 13.0'
+  s.add_development_dependency 'rake-compiler', '~> 1.0'
+  s.add_development_dependency 'rdoc', '~> 6.2'
+  s.add_development_dependency 'rubocop', '~> 0.79'
+  s.add_development_dependency 'rubocop-minitest', '~> 0.11'
+  s.required_ruby_version = '>= 2.7.0'
+  s.post_install_message = "It's time to grab your sneakers or hop on your bike and start exercising! Thank you for installing Calcpace!"
+  s.metadata    = { 'source_code_uri' => 'https://github.com/0jonjo/calcpace' }
   s.homepage    = 'https://github.com/0jonjo/calcpace'
   s.license     = 'MIT'
 end
