@@ -15,6 +15,6 @@ module Checker
   end
 
   def check_unit(unit)
-    raise 'It must be km or mi' unless ['km', 'mi'].include?(unit)
+    raise 'It must be km or mi' unless %w[km mi].include?(unit)
   end
 end
