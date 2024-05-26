@@ -1,65 +1,60 @@
-# CALCPACE
+# Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
-A TDD Ruby study project to calculate the running pace, the predicted running time or distance. It's based on my original [Python Calcpace](https://github.com/0jonjo/calcpace-py).
+Calcpace is a Ruby gem designed to assist with calculations related to running and cycling activities. It can calculate pace, total time, and distance, and also convert distances between miles and kilometers. Results are provided in a readable format, with times in HH:MM:SS and distances in X.X format.
 
-## Install
+## Installation
 
-### Clone the repository
+### Add to your Gemfile
 
-```shell
-git clone git@github.com:0jonjo/ruby-calcpace.git
-cd ruby-calcpace
+```ruby
+gem 'calcpace', '~> 0.2.0'
 ```
 
-### Install dependencies
+Then run bundle install.
 
-Using [Bundler](https://github.com/bundler/bundler)
+### Usage
 
-```shell
-bundle install
+### Calculate Pace
+
+To calculate pace, provide the total time (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
+
+```ruby
+Calcpace.new.pace('01:00:00', 12) # => "00:05:00"
 ```
 
-## Use the calculator
+### Calculate Total Time
 
-Use main.rb informs the calculation option and the running (jogging) data.
+To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
 
-Choose p to calculate pace and enter running time (HH:MM:SS) and distance (X.X) in kilometers or miles.
-
-```shell
-ruby lib/main.rb p 01:00:00 10
-00:06:00
+```ruby
+Calcpace.new.total_time('00:05:00', 12) # => "01:00:00"
 ```
 
-Choose t to calculate running time and enter pace (HH:MM:SS) and distance (X.X) in kilometers or miles.
+### Calculate Distance
 
-```shell
-ruby lib/main.rb t 00:05:00 12
-01:00:00
+To calculate distance, provide the running time (in HH:MM:SS format) and pace (in HH:MM:SS format).
+
+```ruby
+Calcpace.new.distance('01:30:00', '00:05:00') # => 18.0
 ```
 
-Choose d to calculate distance in kilometers or miles and enter running time (HH:MM:SS) and pace (HH:MM:SS).
+### Convert Distances
 
-```shell
-ruby lib/main.rb d 01:30:00 00:05:00
-18.0
+To convert distances, provide the distance and the unit of measurement (either 'km' for kilometers or 'mi' for miles).
+
+```ruby
+Calcpace.new.convert_distance(10, 'km') # => 6.21
+Calcpace.new.convert_distance(10, 'mi') # => 16.09
 ```
 
-Choose c to convert distance.
+### Error Handling
 
-Enter km and the distance in kilometers to convert to miles.
+If the provided parameters do not meet the expected formats, Calcpace will raise an error detailing the issue. The gem always returns data using the same distance unit (kilometers or miles) that was used as input.
 
-```shell
-ruby lib/main.rb c km 10
-6.21
-```
+## Contributing
 
-Enter mi and the distance in miles to convert to kilometers.
+We welcome contributions to Calcpace! To contribute, you can clone this repository and submit a pull request. Please ensure that your code adheres to our style guidelines and includes tests where appropriate.
 
-```shell
-ruby lib/main.rb c mi 10
-16.09
-```
+## License
 
-If some of the parameters are not in the standard that the program uses, it informs what the problem is in an error.
-
-It's important to input data using the same standard (kilometers or miles) to obtain the correct result.
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
