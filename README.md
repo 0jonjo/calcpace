@@ -12,6 +12,12 @@ gem 'calcpace', '~> 0.2.0'
 
 Then run bundle install.
 
+### Install the gem manually
+
+```bash
+gem install calcpace
+```
+
 ### Usage
 
 ### Calculate Pace
@@ -45,6 +51,18 @@ To convert distances, provide the distance and the unit of measurement (either '
 ```ruby
 Calcpace.new.convert_distance(10, 'km') # => 6.21
 Calcpace.new.convert_distance(10, 'mi') # => 16.09
+```
+
+### Other Useful Methods
+
+Calcpace also provides other useful methods to convert values and check the validity of input.
+
+```ruby
+calcpace = Calcpace.new
+calcpace.convert_to_seconds('01:00:00') # => 3600
+calcpace.convert_to_clock_time(3600) # => "01:00:00"
+calcpace.check_digits_time('01:00:00') # => nil
+calcpace.check_digits_time('01-00-00') # => It must be a XX:XX:XX time (RuntimeError)
 ```
 
 ### Error Handling
