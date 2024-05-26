@@ -26,12 +26,19 @@ To calculate pace, provide the total time (in HH:MM:SS format) and distance (in 
 
 ```ruby
 Calcpace.new.pace('01:00:00', 12) # => "00:05:00"
+```ruby
+Calcpace.new.pace('01:00:00', 12) # => "00:05:00"
 ```
 
 ### Calculate Total Time
 
 To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
+### Calculate Total Time
 
+To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
+
+```ruby
+Calcpace.new.total_time('00:05:00', 12) # => "01:00:00"
 ```ruby
 Calcpace.new.total_time('00:05:00', 12) # => "01:00:00"
 ```
@@ -39,7 +46,12 @@ Calcpace.new.total_time('00:05:00', 12) # => "01:00:00"
 ### Calculate Distance
 
 To calculate distance, provide the running time (in HH:MM:SS format) and pace (in HH:MM:SS format).
+### Calculate Distance
 
+To calculate distance, provide the running time (in HH:MM:SS format) and pace (in HH:MM:SS format).
+
+```ruby
+Calcpace.new.distance('01:30:00', '00:05:00') # => 18.0
 ```ruby
 Calcpace.new.distance('01:30:00', '00:05:00') # => 18.0
 ```
