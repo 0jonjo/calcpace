@@ -4,4 +4,9 @@ source 'https://rubygems.org'
 
 ruby '3.0.5'
 
-gem 'rspec', '~> 3.10'
+gem 'minitest', '~> 5.14'
+gem 'rake', '~> 13.0'
+gem 'rake-compiler', '~> 1.0'
+gem 'rdoc', '~> 6.2'
+gem 'rubocop', '~> 0.79'
+gem 'rubocop-minitest', '~> 0.11'
