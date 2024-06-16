@@ -29,12 +29,4 @@ class TestCalculator < Minitest::Test
     assert_raises(RuntimeError) { @checker.distance('01:00:00', '') }
     assert_equal 18.0, @checker.distance('01:30:00', '00:05:00')
   end
-
-  def test_convert_distance
-    assert_raises(RuntimeError) { @checker.convert_distance(10, 'invalid') }
-    assert_raises(RuntimeError) { @checker.convert_distance(-1, 'km') }
-    assert_raises(RuntimeError) { @checker.convert_distance(0, 'km') }
-    assert_equal 6.21, @checker.convert_distance(10, 'km')
-    assert_equal 16.09, @checker.convert_distance(10, 'mi')
-  end
 end

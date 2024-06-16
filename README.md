@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed to assist with calculations related to running a
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 0.2.0'
+gem 'calcpace', '~> 1.0.0'
 ```
 
 Then run bundle install.
@@ -20,12 +20,16 @@ gem install calcpace
 
 ### Usage
 
+ Before calculate or convert any value, you must create a new instance of Calcpace. When you call a method, it checks the digits of the time or distance to ensure that they are in the correct format. The gem always returns data using the same distance unit (kilometers or miles) that was used as input.
+
 ### Calculate Pace
 
 To calculate pace, provide the total time (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
 
 ```ruby
-Calcpace.new.pace('01:00:00', 12) # => "00:05:00"
+calculate = Calcpace.new
+calculate.pace('01:00:00', 12) # => "00:05:00"
+calculate.pace('string', 12) # It must be a time (RuntimeError)
 ```
 
 ### Calculate Total Time
@@ -33,7 +37,9 @@ Calcpace.new.pace('01:00:00', 12) # => "00:05:00"
 To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
 
 ```ruby
-Calcpace.new.total_time('00:05:00', 12) # => "01:00:00"
+calculate = Calcpace.new
+calculate.total_time('00:05:00', 12) # => "01:00:00"
+calculate.total_time('00:05:00', 'string') # It must be a XX:XX:XX time (RuntimeError)
 ```
 
 ### Calculate Distance
@@ -49,29 +55,48 @@ Calcpace.new.distance('01:30:00', '00:05:00') # => 18.0
 To convert distances, provide the distance and the unit of measurement (either 'km' for kilometers or 'mi' for miles).
 
 ```ruby
-Calcpace.new.convert_distance(10, 'km') # => 6.21
-Calcpace.new.convert_distance(10, 'mi') # => 16.09
+converter = Calcpace.new
+converter.convert(10, 'km') # => 6.21
+converter.convert_distance(10, 'mi') # => 16.09
+```
+
+If want to change the default round of the result (2), you can pass a second parameter to the method.
+
+```ruby
+converter = Calcpace.new
+converter.convert(10, 'km', 1) # => 6.2
+converter.convert(10, 'mi', 3) # => 16.093
+```
+
+### Obtain the seconds of a time OR convert seconds to a time
+
+To obtain the seconds of a time, provide the time in HH:MM:SS format.
+
+```ruby
+converter = Calcpace.new
+converter.to_seconds('01:00:00') # => 3600
+converter.to_seconds('string') # => It must be a time (RuntimeError)
+converter.to_clocktime(3600) # => '01:00:00'
+converter.to_clocktime('string') # => It must be a number (RuntimeError)
 ```
 
 ### Other Useful Methods
 
-Calcpace also provides other useful methods to convert values and check the validity of input.
+Calcpace also provides other useful methods to check the validity of input.
 
 ```ruby
 calcpace = Calcpace.new
-calcpace.convert_to_seconds('01:00:00') # => 3600
-calcpace.convert_to_clock_time(3600) # => "01:00:00"
-calcpace.check_digits_time('01:00:00') # => nil
-calcpace.check_digits_time('01-00-00') # => It must be a XX:XX:XX time (RuntimeError)
+calcpace.check_time('01:00:00') # => nil
+calcpace.check_time('01-00-00') # => It must be a XX:XX:XX time (RuntimeError)
+calcpace.check_distance(10) # => nil
+calcpace.check_distance('-10') # => It must be a positive number (RuntimeError)
+calcpace.check_unit('km') # => nil
+calcpace.check_unit('string') # => It must be a valid unit (RuntimeError)
 ```
-
-### Error Handling
-
-If the provided parameters do not meet the expected formats, Calcpace will raise an error detailing the issue. The gem always returns data using the same distance unit (kilometers or miles) that was used as input.
 
 ## Contributing
 
-We welcome contributions to Calcpace! To contribute, you can clone this repository and submit a pull request. Please ensure that your code adheres to our style guidelines and includes tests where appropriate.
+We welcome contributions to Calcpace! To contribute, you can clone this repository and submit a pull request. Please ensure that your code adheres to our style and includes tests where appropriate.
 
 ## License
 

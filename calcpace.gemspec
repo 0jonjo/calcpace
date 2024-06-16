@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '0.2.0'
+  s.version     = '1.0.0'
   s.summary     = 'Calcpace: calculate time and distances for activities such as running and cycling.'
   s.description = 'Calculate pace, total time, distance and easily convert distances (kilometers and miles) for activities like running and cycling. Get readable results in HH:MM:SS or X.X format for time and distance calculations.'
   s.authors     = ['Joao Gilberto Saraiva']
