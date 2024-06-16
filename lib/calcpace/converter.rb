@@ -23,7 +23,8 @@ module Converter
   end
 
   def convert_to_clocktime(seconds)
-    Time.at(seconds).utc.strftime('%H:%M:%S')
+    seconds >= 86_400 ? time = '%d %H:%M:%S' : time = '%H:%M:%S'
+    Time.at(seconds).utc.strftime(time)
   end
 
   def convert_the_distance(distance, unit)
