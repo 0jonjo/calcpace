@@ -7,14 +7,15 @@ module Converter
   end
 
   def to_clocktime(seconds)
-    check_second(seconds)
+    check_integer(seconds)
     convert_to_clocktime(seconds)
   end
 
-  def convert(distance, unit)
+  def convert(distance, unit, round_limit = 2)
     check_distance(distance)
     check_unit(unit)
-    convert_distance(distance, unit)
+    check_integer(round_limit)
+    convert_the_distance(distance, unit, round_limit)
   end
 
   def convert_to_seconds(time)
@@ -27,12 +28,12 @@ module Converter
     Time.at(seconds).utc.strftime(time)
   end
 
-  def convert_the_distance(distance, unit)
+  def convert_the_distance(distance, unit, round_limit = 2)
     case unit
     when 'km'
-      (distance * 0.621371).round(2)
+      (distance * 0.621371).round(round_limit)
     when 'mi'
-      (distance * 1.60934).round(2)
+      (distance * 1.60934).round(round_limit)
     end
   end
 end

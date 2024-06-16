@@ -9,7 +9,7 @@ module Checker
     raise 'It must be a XX:XX:XX time' unless time_string =~ /\d{0,2}(:)*?\d{1,2}(:)\d{1,2}/
   end
 
-  def check_second(second)
+  def check_integer(second)
     raise 'It must be a positive number' unless second.is_a?(Integer) && second.positive?
   end
 

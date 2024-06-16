@@ -18,4 +18,10 @@ class TestChecker < Minitest::Test
     assert_raises(RuntimeError) { @checker.check_time('') }
     assert_nil @checker.check_time('00:00:00')
   end
+
+  def test_check_integer
+    assert_raises(RuntimeError) { @checker.check_integer(-1) }
+    assert_raises(RuntimeError) { @checker.check_integer(0) }
+    assert_nil @checker.check_integer(1)
+  end
 end

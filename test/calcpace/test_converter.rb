@@ -31,14 +31,19 @@ class TestConverter < Minitest::Test
 
   def test_convert_the_distance
     assert_equal 6.21, @checker.convert_the_distance(10, 'km')
+    assert_equal 6.2, @checker.convert_the_distance(10, 'km', 1)
+    assert_equal 6.214, @checker.convert_the_distance(10, 'km', 3)
     assert_equal 16.09, @checker.convert_the_distance(10, 'mi')
-    assert_raises(RuntimeError) { @checker.convert_distance(10, 'invalid') }
   end
 
   def test_convert
     assert_equal 6.21, @checker.convert(10, 'km')
     assert_equal 16.09, @checker.convert(10, 'mi')
+    assert_equal 6.2, @checker.convert(10, 'km', 1)
     assert_raises(RuntimeError) { @checker.convert(10, 'invalid') }
     assert_raises(RuntimeError) { @checker.convert(-1, 'km') }
+    assert_raises(RuntimeError) { @checker.convert(10, 'km', -2) }
+    assert_raises(RuntimeError) { @checker.convert(10, 'km', 0) }
+    assert_raises(RuntimeError) { @checker.convert(10, 'km', 'invalid') }
   end
 end
