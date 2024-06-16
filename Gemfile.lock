@@ -3,8 +3,8 @@ GEM
   specs:
     ast (2.4.2)
     minitest (5.23.1)
-    parallel (1.24.0)
-    parser (3.3.1.0)
+    parallel (1.25.1)
+    parser (3.3.3.0)
       ast (~> 2.4.1)
       racc
     psych (5.1.2)
@@ -17,8 +17,8 @@ GEM
     rdoc (6.7.0)
       psych (>= 4.0.0)
     regexp_parser (2.9.2)
-    rexml (3.2.8)
-      strscan (>= 3.0.9)
+    rexml (3.3.0)
+      strscan
     rubocop (0.93.1)
       parallel (~> 1.10)
       parser (>= 2.7.1.5)
@@ -33,7 +33,7 @@ GEM
     rubocop-minitest (0.27.0)
       rubocop (>= 0.90, < 2.0)
     ruby-progressbar (1.13.0)
-    stringio (3.1.0)
+    stringio (3.1.1)
     strscan (3.1.0)
     unicode-display_width (1.8.0)
 
@@ -49,7 +49,7 @@ DEPENDENCIES
   rubocop-minitest (~> 0.11)
 
 RUBY VERSION
-   ruby 3.0.5p211
+   ruby 3.2.1p31
 
 BUNDLED WITH
    2.5.10
