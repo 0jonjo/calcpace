@@ -7,7 +7,7 @@ Calcpace is a Ruby gem that helps with calculations related to running/cycling a
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.1.0'
+gem 'calcpace', '~> 1.1.1'
 ```
 
 Then run bundle install.
