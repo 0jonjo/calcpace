@@ -2,9 +2,9 @@
 
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '1.0.0'
-  s.summary     = 'Calcpace: calculate time and distances for activities such as running and cycling.'
-  s.description = 'Calculate pace, total time, distance and easily convert distances (kilometers and miles) for activities like running and cycling. Get readable results in HH:MM:SS or X.X format for time and distance calculations.'
+  s.version     = '1.1.1'
+  s.summary     = 'Calcpace: calculate time, distance, pace, velocity and convert distances in an easy and precise way.'
+  s.description = 'Calcpace is a Ruby gem that helps with calculations related to running/cycling activities or general purposes involving distance and time. It can calculate pace, total time, and distance. It also converts distances between miles and kilometers and check formats of time and distance. The results are provided in a readable format, with times in HH:MM:SS or seconds and distances in X.X format. If you need, the gem supports BigDecimal to handle the calculations, '
   s.authors     = ['Joao Gilberto Saraiva']
   s.email       = 'joaogilberto@tuta.io'
   s.files       = ['lib/calcpace.rb', 'lib/calcpace/calculator.rb', 'lib/calcpace/checker.rb', 'lib/calcpace/converter.rb']
@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rubocop', '~> 0.79'
   s.add_development_dependency 'rubocop-minitest', '~> 0.11'
   s.required_ruby_version = '>= 2.7.0'
-  s.post_install_message = "It's time to grab your sneakers or hop on your bike and start exercising! Thank you for installing Calcpace!"
+  s.post_install_message = "It's time to calculate! Thank you for installing Calcpace."
   s.metadata    = { 'source_code_uri' => 'https://github.com/0jonjo/calcpace' }
   s.homepage    = 'https://github.com/0jonjo/calcpace'
   s.license     = 'MIT'

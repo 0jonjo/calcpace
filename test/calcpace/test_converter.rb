@@ -23,7 +23,7 @@ class TestConverter < Minitest::Test
 
   def test_to_clocktime
     assert_equal '01:00:00', @checker.to_clocktime(3600)
-    assert_equal '02 01:00:00', @checker.to_clocktime(90000)
+    assert_equal '02 01:00:00', @checker.to_clocktime(90_000)
     assert_raises(RuntimeError) { @checker.to_clocktime(-1) }
     assert_raises(RuntimeError) { @checker.to_clocktime(0) }
     assert_raises(RuntimeError) { @checker.to_clocktime('invalid') }
