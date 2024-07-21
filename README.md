@@ -1,13 +1,13 @@
 # Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
-Calcpace is a Ruby gem designed to assist with calculations related to running and cycling activities. It can calculate pace, total time, and distance, and also convert distances between miles and kilometers. Results are provided in a readable format, with times in HH:MM:SS and distances in X.X format.
+Calcpace is a Ruby gem that helps with calculations related to running/cycling activities or general purposes involving distance and time. It can calculate pace, total time, and distance, accepting time in seconds or HH:MM:SS format. It also converts distances between miles and kilometers. The results are provided in a readable format, with times in HH:MM:SS or seconds and distances in X.X format. To prevent precision problems, the gem supports BigDecimal to handle the calculations, if you need, and always returns data using the same distance unit (kilometers or miles) that was used as input.
 
 ## Installation
 
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.0.0'
+gem 'calcpace', '~> 1.1.0'
 ```
 
 Then run bundle install.
@@ -24,47 +24,49 @@ gem install calcpace
 
 ### Calculate Pace
 
-To calculate pace, provide the total time (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
+To calculate pace, provide the total time (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles). You can use the method `pace` or `pace_seconds`. If you want an extra precision in the calculations, you can pass true as parameter to the method `pace_seconds` and receive result in BigDecimal.
 
 ```ruby
 calculate = Calcpace.new
 calculate.pace('01:00:00', 12) # => "00:05:00"
 calculate.pace('string', 12) # It must be a time (RuntimeError)
+calculate.pace_seconds('01:00:00', 12) # => 300
+calculate.pace_seconds('01:37:21', 12.3, true) # => 0.474878048780487804878048780487804878049e3
+calculate.pace_seconds('01:37:21', 12.3) # => 474.8780487804878
 ```
 
 ### Calculate Total Time
 
-To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles).
+To calculate total time, provide the pace (in HH:MM:SS format) and distance (in X.X format, representing kilometers or miles). You can use the method `total_time` or `total_time_seconds`. If you want an extra precision in the calculations, you can pass true as parameter to the method `total_time_seconds` and receive result in BigDecimal.
 
 ```ruby
 calculate = Calcpace.new
 calculate.total_time('00:05:00', 12) # => "01:00:00"
 calculate.total_time('00:05:00', 'string') # It must be a XX:XX:XX time (RuntimeError)
+calculate.total_time_seconds('01:37:21', 12.3) # => 71844.3
+calculate.total_time_seconds('01:37:21', 12.3, true) # => 0.718443902439024390243902439024390243902e5
 ```
 
 ### Calculate Distance
 
-To calculate distance, provide the running time (in HH:MM:SS format) and pace (in HH:MM:SS format).
+To calculate distance, provide the running time (in HH:MM:SS format) and pace (in HH:MM:SS format). If you want an extra precision in the calculations, you can pass true as parameter to the method and receive result in BigDecimal.
 
 ```ruby
-Calcpace.new.distance('01:30:00', '00:05:00') # => 18.0
+calculate = Calcpace.new
+calculate.distance('01:37:21', '00:06:17') # => 15.0
+calculate.distance('01:37:21', '00:06:17', true) # => 0.15493368700265251989389920424403183024e2
+calculate.distance('01:37:21', 'string') # It must be a time (RuntimeError)
 ```
 
 ### Convert Distances
 
-To convert distances, provide the distance and the unit of measurement (either 'km' for kilometers or 'mi' for miles).
+To convert distances, provide the distance and the unit of measurement (either 'km' for kilometers or 'mi' for miles). If want to change the default round of the result (2), you can pass a second parameter to the method.
 
 ```ruby
 converter = Calcpace.new
 converter.convert(10, 'km') # => 6.21
-converter.convert_distance(10, 'mi') # => 16.09
-```
-
-If want to change the default round of the result (2), you can pass a second parameter to the method.
-
-```ruby
-converter = Calcpace.new
 converter.convert(10, 'km', 1) # => 6.2
+converter.convert_distance(10, 'mi') # => 16.09
 converter.convert(10, 'mi', 3) # => 16.093
 ```
 
