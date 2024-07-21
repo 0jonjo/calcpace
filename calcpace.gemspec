@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '1.1.0'
+  s.version     = '1.1.1'
   s.summary     = 'Calcpace: calculate time, distance, pace, velocity and convert distances in an easy and precise way.'
   s.description = 'Calcpace is a Ruby gem that helps with calculations related to running/cycling activities or general purposes involving distance and time. It can calculate pace, total time, and distance. It also converts distances between miles and kilometers and check formats of time and distance. The results are provided in a readable format, with times in HH:MM:SS or seconds and distances in X.X format. If you need, the gem supports BigDecimal to handle the calculations, '
   s.authors     = ['Joao Gilberto Saraiva']
