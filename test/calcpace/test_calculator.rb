@@ -44,11 +44,11 @@ class TestCalculator < Minitest::Test
 
   def test_total_time_seconds
     assert_raises(RuntimeError) { @checker.total_time_seconds('', 10) }
-      assert_raises(RuntimeError) { @checker.total_time_seconds('invalid', 10) }
+    assert_raises(RuntimeError) { @checker.total_time_seconds('invalid', 10) }
     assert_raises(RuntimeError) { @checker.total_time_seconds('00:00:00', 0) }
     assert_raises(RuntimeError) { @checker.total_time_seconds('00:00:00', -1) }
     assert_equal 3600, @checker.total_time_seconds('00:05:00', 12)
-    assert_equal 71844.3, @checker.total_time_seconds('01:37:21', 12.3)
+    assert_equal 71_844.3, @checker.total_time_seconds('01:37:21', 12.3)
   end
 
   def test_total_time_seconds_with_bigdecimal_precision

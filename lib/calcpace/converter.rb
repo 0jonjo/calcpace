@@ -3,8 +3,8 @@
 require 'bigdecimal'
 
 module Converter
-  KM_TO_MI = BigDecimal("0.621371")
-  MI_TO_KM = BigDecimal("1.60934")
+  KM_TO_MI = BigDecimal('0.621371')
+  MI_TO_KM = BigDecimal('1.60934')
 
   def to_seconds(time)
     check_time(time)
