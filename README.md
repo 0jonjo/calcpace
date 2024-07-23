@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.1.1&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem that helps with calculations related to running/cycling activities or general purposes involving distance and time. It can calculate pace, total time, and distance, accepting time in seconds or HH:MM:SS format. It also converts distances between miles and kilometers. The results are provided in a readable format, with times in HH:MM:SS or seconds and distances in X.X format. To prevent precision problems, the gem supports BigDecimal to handle the calculations, if you need, and always returns data using the same distance unit (kilometers or miles) that was used as input.
 
