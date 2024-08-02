@@ -17,7 +17,7 @@ GEM
     rdoc (6.7.0)
       psych (>= 4.0.0)
     regexp_parser (2.9.2)
-    rexml (3.3.0)
+    rexml (3.3.3)
       strscan
     rubocop (0.93.1)
       parallel (~> 1.10)
