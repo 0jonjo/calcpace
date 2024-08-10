@@ -3,8 +3,10 @@
 require 'bigdecimal'
 
 module Converter
-  KM_TO_MI = BigDecimal('0.621371')
-  MI_TO_KM = BigDecimal('1.60934')
+  KM_TO_MI_BIGDECIMAL = BigDecimal('0.621371')
+  KM_TO_MI = 0.621371
+  MI_TO_KM_BIGDECIMAL = BigDecimal('1.60934')
+  MI_TO_KM = 1.60934
 
   def to_seconds(time)
     check_time(time)
@@ -16,11 +18,11 @@ module Converter
     convert_to_clocktime(seconds)
   end
 
-  def convert(distance, unit, round_limit = 2)
+  def convert(distance, unit)
     check_distance(distance)
     check_unit(unit)
-    check_integer(round_limit)
-    convert_the_distance(BigDecimal(distance.to_s), unit, round_limit)
+    bigdecimal ? distance_to_convert = BigDecimal(distance.to_s) : distance_to_convert = distance
+    convert_the_distance(distance_to_convert, unit)
   end
 
   def convert_to_seconds(time)
@@ -33,12 +35,14 @@ module Converter
     Time.at(seconds.to_i).utc.strftime(format)
   end
 
-  def convert_the_distance(distance, unit, round_limit = 2)
+  def convert_the_distance(distance, unit)
     case unit
     when 'km'
-      (distance * KM_TO_MI).round(round_limit)
+      bigdecimal ? km_to_mi = KM_TO_MI_BIGDECIMAL : km_to_mi = KM_TO_MI
+      (distance * km_to_mi)
     when 'mi'
-      (distance * MI_TO_KM).round(round_limit)
+      bigdecimal ? mi_to_km = MI_TO_KM_BIGDECIMAL : mi_to_km = MI_TO_KM
+      (distance * mi_to_km)
     end
   end
 end
