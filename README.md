@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.1.1&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.2.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem that helps with calculations related to running/cycling activities or general purposes involving distance and time. It can calculate pace, total time, and distance, accepting time in seconds or HH:MM:SS format. It also converts distances between miles and kilometers. The results are provided in a readable format, with times in HH:MM:SS or seconds and distances in X.X format. To prevent precision problems, the gem supports BigDecimal to handle the calculations, if you need, and always returns data using the same distance unit (kilometers or miles) that was used as input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem that helps with calculations related to running/cycling a
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.1.1'
+gem 'calcpace', '~> 1.2.0'
 ```
 
 Then run bundle install.
@@ -20,7 +20,15 @@ gem install calcpace
 
 ### Usage
 
- Before calculate or convert any value, you must create a new instance of Calcpace. When you call a method, it checks the digits of the time or distance to ensure that they are in the correct format. The gem always returns data using the same distance unit (kilometers or miles) that was used as input.
+ Before calculate or convert any value, you must create a new instance of Calcpace. When you call a method, it checks the digits of the time or distance to ensure that they are in the correct format. The gem always returns data using the same distance unit (kilometers or miles) that was used as input. If you want to use BigDecimal to handle the calculations, you can pass true as a parameter when creating a new instance of Calcpace. Like this:
+
+```ruby
+require 'calcpace'
+
+calculate = Calcpace.new
+calculate_bigdecimal = Calcpace.new(true)
+another_way_to_use_bigdecimal = Calcpace.new(bigdecimal: true)
+```
 
 ### Calculate Pace
 
@@ -28,11 +36,13 @@ To calculate pace, provide the total time (in HH:MM:SS format) and distance (in 
 
 ```ruby
 calculate = Calcpace.new
-calculate.pace('01:00:00', 12) # => "00:05:00"
 calculate.pace('string', 12) # It must be a time (RuntimeError)
+calculate.pace('01:00:00', 12) # => "00:05:00"
 calculate.pace_seconds('01:00:00', 12) # => 300
-calculate.pace_seconds('01:37:21', 12.3, true) # => 0.474878048780487804878048780487804878049e3
 calculate.pace_seconds('01:37:21', 12.3) # => 474.8780487804878
+calculate_bigdecimal = Calcpace.new(true)
+calculate_bigdecimal.pace_seconds('01:37:21', 12.3) # => 0.474878048780487804878048780487804878049e3
+
 ```
 
 ### Calculate Total Time
@@ -41,10 +51,11 @@ To calculate total time, provide the pace (in HH:MM:SS format) and distance (in 
 
 ```ruby
 calculate = Calcpace.new
-calculate.total_time('00:05:00', 12) # => "01:00:00"
 calculate.total_time('00:05:00', 'string') # It must be a XX:XX:XX time (RuntimeError)
+calculate.total_time('00:05:00', 12) # => "01:00:00"
 calculate.total_time_seconds('01:37:21', 12.3) # => 71844.3
-calculate.total_time_seconds('01:37:21', 12.3, true) # => 0.718443902439024390243902439024390243902e5
+calculate_bigdecimal = Calcpace.new(true)
+calculate_bigdecimal.total_time_seconds('01:37:21', 12.3) # => 0.718443902439024390243902439024390243902e5
 ```
 
 ### Calculate Distance
@@ -53,21 +64,25 @@ To calculate distance, provide the running time (in HH:MM:SS format) and pace (i
 
 ```ruby
 calculate = Calcpace.new
-calculate.distance('01:37:21', '00:06:17') # => 15.0
-calculate.distance('01:37:21', '00:06:17', true) # => 0.15493368700265251989389920424403183024e2
 calculate.distance('01:37:21', 'string') # It must be a time (RuntimeError)
+calculate.distance('01:37:21', '00:06:17') # => 15.0
+calculate_bigdecimal = Calcpace.new(true)
+calculate_bigdecimal.distance('01:37:21', '00:06:17') # => 0.15493368700265251989389920424403183024e2
 ```
 
 ### Convert Distances
 
-To convert distances, provide the distance and the unit of measurement (either 'km' for kilometers or 'mi' for miles). If want to change the default round of the result (2), you can pass a second parameter to the method.
+To convert distances, use one of the two methods: `convert_to_km` or `convert_to_miles`. If want to change the round the result you can use the Ruby method `round` passing the number of decimal places you want. If you need to use BigDecimal to handle the calculations, you can pass true as parameter when creating a new instance of Calcpace.
 
 ```ruby
-converter = Calcpace.new
-converter.convert(10, 'km') # => 6.21
-converter.convert(10, 'km', 1) # => 6.2
-converter.convert_distance(10, 'mi') # => 16.09
-converter.convert(10, 'mi', 3) # => 16.093
+  converter = Calcpace.new
+  converter.convert_to_miles('string') # => It must be a X.X positive number (RuntimeError)
+  converter.convert_to_km(10) # => 16.0934
+  converter.convert_to_km(10).round(1) # => 16.1
+  converter.convert_to_miles(10) # => 6.21371
+  converter_bigdecimal = Calcpace.new(bigdecimal = true)
+  converter_bigdecimal.convert_to_miles(118.32) # => 0.7352061672e2
+  converter_bigdecimal.convert_to_km(118.32) # => 0.1904171088e3
 ```
 
 ### Obtain the seconds of a time OR convert seconds to a time
