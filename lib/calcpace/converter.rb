@@ -18,9 +18,16 @@ module Converter
     convert_to_clocktime(seconds)
   end
 
+  def convert_to_miles(distance)
+    convert(distance, 'mi')
+  end
+
+  def convert_to_km(distance)
+    convert(distance, 'km')
+  end
+
   def convert(distance, unit)
     check_distance(distance)
-    check_unit(unit)
     bigdecimal ? distance_to_convert = BigDecimal(distance.to_s) : distance_to_convert = distance
     convert_the_distance(distance_to_convert, unit)
   end
@@ -37,10 +44,10 @@ module Converter
 
   def convert_the_distance(distance, unit)
     case unit
-    when 'km'
+    when 'mi'
       bigdecimal ? km_to_mi = KM_TO_MI_BIGDECIMAL : km_to_mi = KM_TO_MI
       (distance * km_to_mi)
-    when 'mi'
+    when 'km'
       bigdecimal ? mi_to_km = MI_TO_KM_BIGDECIMAL : mi_to_km = MI_TO_KM
       (distance * mi_to_km)
     end
