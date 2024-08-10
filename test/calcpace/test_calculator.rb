@@ -7,6 +7,7 @@ require_relative '../../lib/calcpace'
 class TestCalculator < Minitest::Test
   def setup
     @checker = Calcpace.new
+    @checker_bigdecimal = Calcpace.new(bigdecimal = true)
   end
 
   def test_pace
@@ -18,8 +19,12 @@ class TestCalculator < Minitest::Test
     assert_equal '00:07:54', @checker.pace('01:37:21', 12.3)
   end
 
+  def test_pace_with_bigdecimal_precision
+    assert_equal '00:07:54', @checker_bigdecimal.pace('01:37:21', 12.3)
+  end
+
   def test_pace_without_bigdecimal_precision
-    assert_equal '00:07:54', @checker.pace('01:37:21', 12.3, false)
+    assert_equal '00:07:54', @checker.pace('01:37:21', 12.3)
   end
 
   def test_pace_seconds
@@ -27,11 +32,11 @@ class TestCalculator < Minitest::Test
     assert_raises(RuntimeError) { @checker.pace_seconds('invalid', 10) }
     assert_raises(RuntimeError) { @checker.pace_seconds('00:00:00', 0) }
     assert_raises(RuntimeError) { @checker.pace_seconds('00:00:00', -1) }
-    assert_equal BigDecimal('474.8780487804878'), @checker.pace_seconds('01:37:21', 12.3)
+    assert_equal 474.8780487804878, @checker.pace_seconds('01:37:21', 12.3)
   end
 
   def test_pace_seconds_with_bigdecimal_precision
-    assert_equal BigDecimal('0.474878048780487804878048780487804878049e3'), @checker.pace_seconds('01:37:21', 12.3, true)
+    assert_equal BigDecimal('0.474878048780487804878048780487804878049e3'), @checker_bigdecimal.pace_seconds('01:37:21', 12.3)
   end
 
   def test_total_time
@@ -52,7 +57,7 @@ class TestCalculator < Minitest::Test
   end
 
   def test_total_time_seconds_with_bigdecimal_precision
-    assert_equal BigDecimal('0.718443e5'), @checker.total_time_seconds('01:37:21', 12.3, true)
+    assert_equal BigDecimal('0.718443e5'), @checker_bigdecimal.total_time_seconds('01:37:21', 12.3)
   end
 
   def test_distance
@@ -63,6 +68,6 @@ class TestCalculator < Minitest::Test
   end
 
   def test_distance_with_bigdecimal_precision
-    assert_equal BigDecimal('0.15493368700265251989389920424403183024e2'), @checker.distance('01:37:21', '00:06:17', true)
+    assert_equal BigDecimal('0.15493368700265251989389920424403183024e2'), @checker_bigdecimal.distance('01:37:21', '00:06:17')
   end
 end
