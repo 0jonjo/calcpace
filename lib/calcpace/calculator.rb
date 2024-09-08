@@ -2,41 +2,51 @@
 
 require 'bigdecimal'
 
+# Module to calculate time, distance and velocity
 module Calculator
-  def pace(time, distance)
-    pace_in_seconds = pace_seconds(time, distance)
-    convert_to_clocktime(pace_in_seconds)
+  def velocity(time, distance)
+    time / distance
   end
 
-  def pace_seconds(time, distance)
+  def checked_velocity(time, distance)
     check_time(time)
-    check_distance(distance)
-    seconds = convert_to_seconds(time)
-    bigdecimal ? seconds / BigDecimal(distance.to_s) : seconds / distance
+    check_positive(distance)
+    distance_to_calc = convert_to_bigdecimal(distance)
+    seconds = convert_to_bigdecimal(convert_to_seconds(time))
+    velocity(seconds, distance_to_calc)
   end
 
-  def total_time(pace, distance)
-    total_time_in_seconds = total_time_seconds(pace, distance)
+  def clock_velocity(time, distance)
+    velocity_in_seconds = checked_velocity(time, distance)
+    convert_to_clocktime(velocity_in_seconds)
+  end
+
+  def time(velocity, distance)
+    velocity * distance
+  end
+
+  def checked_time(velocity, distance)
+    check_time(velocity)
+    check_positive(distance)
+    distance_to_calc = convert_to_bigdecimal(distance)
+    velocity_seconds = convert_to_bigdecimal(convert_to_seconds(velocity))
+    time(velocity_seconds, distance_to_calc)
+  end
+
+  def clock_time(velocity, distance)
+    total_time_in_seconds = checked_time(velocity, distance)
     convert_to_clocktime(total_time_in_seconds)
   end
 
-  def total_time_seconds(pace, distance)
-    check_time(pace)
-    check_distance(distance)
-    pace_seconds = convert_to_seconds(pace)
-    @bigdecimal ? pace_seconds * BigDecimal(distance.to_s) : pace_seconds * distance
+  def distance(time, velocity)
+    time / velocity
   end
 
-  def distance(time, pace)
+  def checked_distance(time, velocity)
     check_time(time)
-    check_time(pace)
-    if bigdecimal
-      time_seconds = BigDecimal(convert_to_seconds(time).to_s)
-      pace_seconds = BigDecimal(convert_to_seconds(pace).to_s)
-    else
-      time_seconds = convert_to_seconds(time)
-      pace_seconds = convert_to_seconds(pace)
-    end
-    time_seconds / pace_seconds
+    check_time(velocity)
+    time_seconds = convert_to_bigdecimal(convert_to_seconds(time))
+    velocity_seconds = convert_to_bigdecimal(convert_to_seconds(velocity))
+    distance(time_seconds, velocity_seconds)
   end
 end
