@@ -8,20 +8,14 @@ class TestChecker < Minitest::Test
     @checker = Calcpace.new
   end
 
-  def test_check_distance
-    assert_raises(RuntimeError) { @checker.check_distance(-1) }
-    assert_raises(RuntimeError) { @checker.check_distance(0) }
-    assert_nil @checker.check_distance(1)
+  def test_check_positive
+    assert_raises(RuntimeError) { @checker.check_positive(-1) }
+    assert_raises(RuntimeError) { @checker.check_positive(0) }
+    assert_nil @checker.check_positive(1)
   end
 
   def test_check_time
     assert_raises(RuntimeError) { @checker.check_time('') }
     assert_nil @checker.check_time('00:00:00')
-  end
-
-  def test_check_integer
-    assert_raises(RuntimeError) { @checker.check_integer(-1) }
-    assert_raises(RuntimeError) { @checker.check_integer(0) }
-    assert_nil @checker.check_integer(1)
   end
 end
