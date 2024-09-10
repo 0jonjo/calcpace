@@ -2,10 +2,12 @@
 
 require 'bigdecimal'
 
-# Module to calculate time, distance and velocity
+# Module to calculate time, distance, pace and velocity
+# Convert distance in float to obtain
 module Calculator
   def velocity(time, distance)
-    time / distance
+    distance_to_calc = bigdecimal ? distance : distance.to_f
+    distance_to_calc / time
   end
 
   def checked_velocity(time, distance)
@@ -21,8 +23,27 @@ module Calculator
     convert_to_clocktime(velocity_in_seconds)
   end
 
+  def pace(time, distance)
+    distance_to_calc = bigdecimal ? distance : distance.to_f
+    time / distance_to_calc
+  end
+
+  def checked_pace(time, distance)
+    check_time(time)
+    check_positive(distance)
+    distance_to_calc = convert_to_bigdecimal(distance)
+    seconds = convert_to_bigdecimal(convert_to_seconds(time))
+    pace(seconds, distance_to_calc)
+  end
+
+  def clock_pace(time, distance)
+    velocity_in_seconds = checked_pace(time, distance)
+    convert_to_clocktime(velocity_in_seconds)
+  end
+
   def time(velocity, distance)
-    velocity * distance
+    distance_to_calc = bigdecimal ? distance : distance.to_f
+    velocity * distance_to_calc
   end
 
   def checked_time(velocity, distance)
@@ -39,7 +60,8 @@ module Calculator
   end
 
   def distance(time, velocity)
-    time / velocity
+    time_to_calc = bigdecimal ? time : time.to_f
+    time_to_calc / velocity
   end
 
   def checked_distance(time, velocity)
