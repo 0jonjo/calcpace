@@ -16,7 +16,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'rdoc', '~> 6.2'
   s.add_development_dependency 'rubocop', '~> 1.66'
-
   s.required_ruby_version = '>= 2.7.0'
   s.post_install_message = "It's time to calculate! Thank you for installing Calcpace."
   s.metadata    = { 'source_code_uri' => 'https://github.com/0jonjo/calcpace' }

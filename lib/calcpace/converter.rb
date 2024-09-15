@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'bigdecimal'
-
 # Module to convert units
 module Converter
   KM_TO_MI = 0.621371

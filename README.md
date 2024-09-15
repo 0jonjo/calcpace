@@ -26,6 +26,8 @@ gem install calcpace
 
 ## Usage
 
+## Usage
+
 Before performing any calculations or conversions, create a new instance of Calcpace:
 
 ```ruby

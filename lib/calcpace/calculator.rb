@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'bigdecimal'
-
 # Module to calculate time, distance, pace and velocity
 module Calculator
   def velocity(time, distance)
