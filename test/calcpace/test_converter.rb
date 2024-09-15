@@ -6,7 +6,6 @@ require_relative '../../lib/calcpace'
 class TestConverter < Minitest::Test
   def setup
     @checker = Calcpace.new
-    @checker_bigdecimal = Calcpace.new(true)
   end
 
   def test_convert_to_seconds
@@ -45,13 +44,6 @@ class TestConverter < Minitest::Test
     assert_equal 1.60934, @checker.convert(1, 'MI_H_TO_KM_H')
     assert_equal 1.94384, @checker.convert(1, 'M_S_TO_KNOTS')
     assert_equal 0.514444, @checker.convert(1, 'KNOTS_TO_M_S')
-  end
-
-  def test_convert_to_bigdecimal_or_float
-    assert_equal 1.0, @checker.convert_to_bigdecimal_or_float(1)
-    assert_equal 1.0, @checker.convert_to_bigdecimal_or_float(1.0)
-    assert_equal BigDecimal('1.0'), @checker_bigdecimal.convert_to_bigdecimal_or_float(1)
-    assert_equal BigDecimal('1.0'), @checker_bigdecimal.convert_to_bigdecimal_or_float(1.0)
   end
 
   def test_constant

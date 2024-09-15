@@ -9,8 +9,4 @@ module Checker
   def check_time(time_string)
     raise 'It must be a XX:XX:XX time' unless time_string =~ /\d{0,2}(:)*?\d{1,2}(:)\d{1,2}/
   end
-
-  def check_bigdecimal(value)
-    true if value.is_a?(BigDecimal)
-  end
 end

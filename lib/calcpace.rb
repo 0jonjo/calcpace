@@ -12,7 +12,5 @@ class Calcpace
 
   attr_reader :bigdecimal
 
-  def initialize(bigdecimal = false)
-    @bigdecimal = bigdecimal
-  end
+  def initialize; end
 end

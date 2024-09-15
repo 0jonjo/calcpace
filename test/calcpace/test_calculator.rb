@@ -7,17 +7,12 @@ require_relative '../../lib/calcpace'
 class TestCalculator < Minitest::Test
   def setup
     @checker = Calcpace.new
-    @checker_bigdecimal = Calcpace.new(true)
   end
 
   def test_velocity
     assert_equal 3.333, @checker.velocity(3600, 12_000).round(3)
     assert_equal 12.3, @checker.velocity(5841, 71_844.3)
     assert_equal 3.6, @checker.velocity(10_000, 36_000.0)
-  end
-
-  def test_velocity_with_bigdecimal_precision
-    assert_equal BigDecimal('0.123e2'), @checker_bigdecimal.velocity(5841, 71_844.3)
   end
 
   def test_checked_velocity
@@ -28,10 +23,6 @@ class TestCalculator < Minitest::Test
     assert_equal 2.778, @checker.checked_velocity('01:00:00', 10_000).round(3)
     assert_equal 10, @checker.checked_velocity('00:00:01', 10)
     assert_equal 12.3, @checker.checked_velocity('01:37:21', 71_844.3)
-  end
-
-  def test_checked_velocity_with_bigdecimal_precision
-    assert_equal BigDecimal('0.123e2'), @checker_bigdecimal.checked_velocity('01:37:21', 71_844.3)
   end
 
   def test_clock_velocity
@@ -48,10 +39,6 @@ class TestCalculator < Minitest::Test
     assert_equal 122.81076923076924, @checker.pace(71_844.3, 585.0)
   end
 
-  def test_pace_with_bigdecimal_precision
-    assert_equal BigDecimal('0.1228108e3'), @checker_bigdecimal.pace(71_844.3, 585.0).round(4)
-  end
-
   def test_checked_pace
     assert_raises(RuntimeError) { @checker.checked_pace('', 10) }
     assert_raises(RuntimeError) { @checker.checked_pace('invalid', 10) }
@@ -59,11 +46,6 @@ class TestCalculator < Minitest::Test
     assert_raises(RuntimeError) { @checker.checked_pace('00:00:00', -1) }
     assert_equal 360, @checker.checked_pace('01:00:00', 10)
     assert_equal 474.8780487804878, @checker.checked_pace('01:37:21', 12.3)
-  end
-
-  def test_checked_pace_with_bigdecimal_precision
-    assert_equal BigDecimal('0.474878048780487804878048780487804878049e3'),
-                 @checker_bigdecimal.checked_pace('01:37:21', 12.3)
   end
 
   def test_clock_pace
@@ -89,10 +71,6 @@ class TestCalculator < Minitest::Test
     assert_equal 71_844.3, @checker.checked_time('01:37:21', 12.3)
   end
 
-  def test_checked_time_with_bigdecimal_precision
-    assert_equal BigDecimal('0.718443e5'), @checker_bigdecimal.checked_time('01:37:21', 12.3)
-  end
-
   def test_clock_time
     assert_raises(RuntimeError) { @checker.clock_time('', 10) }
     assert_raises(RuntimeError) { @checker.clock_time('invalid', 10) }
@@ -113,8 +91,19 @@ class TestCalculator < Minitest::Test
     assert_equal 15.493, @checker.checked_distance('01:37:21', '00:06:17').round(3)
   end
 
-  def test_checked_distance_with_bigdecimal_precision
-    assert_equal BigDecimal('0.15493368700265251989389920424403183024e2'),
-                 @checker_bigdecimal.checked_distance('01:37:21', '00:06:17')
+  def test_readme_examples_1
+    assert_equal 3.38697212, @checker.velocity(3623, 12_271).round(8)
+    assert_equal 305.0, @checker.pace(3660, 12)
+    assert_equal 43_920.0, @checker.time(3660, 12)
+    assert_equal 30.5, @checker.distance(3660, 120)
+  end
+
+  def test_readme_examples_2
+    assert_equal 0.5, @checker.checked_velocity('00:00:20', 10).round(3)
+    assert_equal '00:00:02', @checker.clock_velocity('01:00:00', 10_317)
+    assert_equal 489.2, @checker.checked_pace('01:21:32', 10)
+    assert_equal '00:08:09', @checker.clock_pace('01:21:32', 10)
+    assert_equal 4170.599999999999, @checker.checked_time('00:05:31', 12.6)
+    assert_equal '01:09:30', @checker.clock_time('00:05:31', 12.6)
   end
 end
