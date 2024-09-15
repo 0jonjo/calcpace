@@ -66,16 +66,16 @@ Calcpace also provides methods to calculate using clocktime (HH:MM:SS format str
 
 ```ruby
 # The return will be in the unit you input/seconds or seconds/unit you input
-calculate.checked_velocity('10:00:00', 10317) # => 2.8658333333333332
+calculate.checked_velocity('01:00:00', 12275) # => 3.4097222222222223
 calculate.checked_pace('01:21:32', 10) # => 489.2
 calculate.checked_time('00:05:31', 12.6) # => 4170.599999999999
 
 calculate.checked_distance('01:21:32', '00:06:27') # => 12.640826873385013
 
 # The return will be in clocktime
-calculate.clock_pace('01:21:32', 10) # => 00:08:09
-calculate.clock_velocity('01:00:00', 10317) # => 00:00:02
-calculate.clock_time('00:05:31', 12.6) # => 01:09:30
+calculate.clock_pace('01:21:32', 10) # => "00:08:09"
+calculate.clock_velocity('01:00:00', 10317) # => "00:00:02"
+calculate.clock_time('00:05:31', 12.6) # => "01:09:30"
 ```
 
 Note: Using the `clock` methods may be less precise than using other methods due to conversions.
@@ -97,7 +97,7 @@ Here are some examples:
 
 ```ruby
 converter.convert(10, :km_to_meters) # => 1000
-converter.convert(10, :miles_to_km) # => 16.0934
+converter.convert(10, :mi_to_km) # => 16.0934
 converter.convert(1, :nautical_mi_to_km) # => 1.852
 converter.convert(1, :km_h_to_m_s) # => 0.277778
 converter.convert(1, :m_s_to_mi_h) # => 2.23694
