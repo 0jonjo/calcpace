@@ -4,7 +4,7 @@ require_relative 'calcpace/calculator'
 require_relative 'calcpace/checker'
 require_relative 'calcpace/converter'
 
-# Main class to calculate velocity, time, distance and velocity
+# Main class to calculate velocity, pace, time, distance and velocity
 class Calcpace
   include Calculator
   include Checker
@@ -12,7 +12,5 @@ class Calcpace
 
   attr_reader :bigdecimal
 
-  def initialize(bigdecimal = false)
-    @bigdecimal = bigdecimal
-  end
+  def initialize; end
 end

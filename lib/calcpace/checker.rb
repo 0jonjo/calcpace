@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Module to check if the input is valid
+# Module to check if the input is valid or of the correct type
 module Checker
   def check_positive(number)
     raise 'It must be a X.X positive number' unless number.positive?

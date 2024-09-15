@@ -1,16 +1,22 @@
 # Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.3.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
-Calcpace is a Ruby gem that helps with calculations and conversions related to distance and time. It can calculate velocity, total time, and distance, accepting time in different formats, including HH:MM:SS. The gem supports BigDecimal to handle the calculations and it can convert to 26 different units, including kilometers, miles, meters, and feet. The gem also provides methods to check the validity of the input.
+# Calcpace
+
+Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 26 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
 ## Installation
 
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.3.0'
+gem 'calcpace', '~> 1.4.0'
 ```
 
-Then run `bundle install`.
+Then run:
+
+```bash
+bundle install
+```
 
 ### Install the gem manually
 
@@ -20,112 +26,117 @@ gem install calcpace
 
 ## Usage
 
-Before calculating or converting any value, you must create a new instance of Calcpace. If you want to use BigDecimal to handle the calculations, you can pass `true` as a parameter when creating a new instance of Calcpace. Here are a few examples:
+## Usage
+
+Before performing any calculations or conversions, create a new instance of Calcpace:
 
 ```ruby
 require 'calcpace'
 
 calculate = Calcpace.new
-calculate_bigdecimal = Calcpace.new(true)
-another_way_to_use_bigdecimal = Calcpace.new(bigdecimal: true)
 ```
 
-### Calculate Velocity
+### Calculate using Integers or Floats
 
-To calculate velocity, provide the total time and then the distance as inputs. Here are some examples:
+Calcpace provides methods to calculate velocity, pace, total time, and distance. The methods are unit-agnostic, and the return value is a float. Here are some examples:
 
 ```ruby
-calculate.velocity(3600, 12) # => 300
-calculate.checked_velocity('01:00:00', 12) # => 300
-calculate.checked_velocity('01:37:21', 12.3) # => 474.8780487804878
-calculate.clock_velocity('string', 12) # It must be a time (RuntimeError)
-calculate.clock_velocity('01:00:00', 12) # => "00:05:00"
-calculate_bigdecimal.checked_velocity('01:37:21', 12.3) # => 0.474878048780487804878048780487804878049e3
+calculate.velocity(3625, 12275) # => 3.386206896551724
+calculate.pace(3665, 12) # => 305.4166666666667
+calculate.time(210, 12) # => 2520.0
+calculate.distance(9660, 120) # => 80.5
 ```
 
-### Calculate Total Time
-
-To calculate the total time, provide the velocity and then the distance as inputs. Here are some examples:
+Tip: Use the `round` method to round a float. For example:
 
 ```ruby
-calculate.time(3600, 12) # => 43200
-calculate.checked_time('01:37:21', 12.3) # => 71844.3
-calculate.clock_time('00:05:00', 'string') # It must be a XX:XX:XX time (RuntimeError)
-calculate.clock_time('00:05:00', 12) # => "01:00:00"
-calculate_bigdecimal.checked_time('01:37:21', 12.3) # => 0.718443902439024390243902439024390243902e5
+calculate.velocity(3625, 12275).round(3) # => 3.386
 ```
 
-### Calculate Distance
+Remember:
 
-To calculate the distance, provide the total time and then the velocity as inputs. Here are some examples:
+- Velocity is the distance divided by the time (e.g., m/s or km/h).
+- Pace is the time divided by the distance (e.g., minutes/km or minutes/miles).
+- Total time is the distance divided by the velocity.
+- Distance is the velocity multiplied by the time.
+
+### Calculate using Clocktime
+
+Calcpace also provides methods to calculate using clocktime (HH:MM:SS format string). The return value will be in seconds or clocktime, depending on the method called, except for `checked_distance`. Here are some examples:
 
 ```ruby
-calculate.distance(3600, 120) # => 30
-calculate.checked_distance('01:37:21', 'string') # It must be a time (RuntimeError)
-calculate.checked_distance('01:37:21', '00:06:17') # => 15.0
-calculate_bigdecimal.checked_distance('01:37:21', '00:06:17') # => 0.15493368700265251989389920424403183024e2
+# The return will be in the unit you input/seconds or seconds/unit you input
+calculate.checked_velocity('01:00:00', 12275) # => 3.4097222222222223
+calculate.checked_pace('01:21:32', 10) # => 489.2
+calculate.checked_time('00:05:31', 12.6) # => 4170.599999999999
+
+calculate.checked_distance('01:21:32', '00:06:27') # => 12.640826873385013
+
+# The return will be in clocktime
+calculate.clock_pace('01:21:32', 10) # => "00:08:09"
+calculate.clock_velocity('01:00:00', 10317) # => "00:00:02"
+calculate.clock_time('00:05:31', 12.6) # => "01:09:30"
 ```
 
-### Understanding the Methods
+Note: Using the `clock` methods may be less precise than using other methods due to conversions.
 
-Calcpace provides three kinds of methods to calculate:
+You can also use BigDecimal for more precise calculations. For example:
 
-- Without checks (velocity, time, and distance):
-  - Receive inputs as integers or floats.
-  - Do not check the validity of the input.
-  - Return an error only if the input invalidates the calculation (e.g., a string in place of a number).
+```ruby
+require 'bigdecimal'
+calculate.checked_velocity('10:00:00', 10317).to_d # => #<BigDecimal:7f9f1b8b1d08,'0.2865833333 333333E1',27(36)>
+```
 
-- With checks (checked_velocity, checked_time, and checked_distance):
-  - Check the validity of the input and return an error if the input is invalid.
-  - Accept time in "HH:MM:SS" format and return the result in seconds or the inputted distance.
-
-- With clock (clock_velocity, clock_time):
-  - Same as the checked methods, but return the result in "HH:MM:SS" format.
+To learn more about BigDecimal, check the [documentation](https://ruby-doc.org/stdlib-2.7.1/libdoc/bigdecimal/rdoc/BigDecimal.html).
 
 ### Convert Distances and Velocities
 
-Use the `convert` method to convert a distance or a velocity. The first parameter is the value to be converted, and the second parameter is the unit to which the value will be converted. The unit must be a string with the abbreviation of the unit. The gem supports 26 different units, including kilometers, miles, meters, knots, and feet.
+Use the `convert` method to convert a distance or velocity. The first parameter is the value to be converted, and the second parameter is the unit to which the value will be converted. The unit must be a string with the abbreviation of the unit. The gem supports 26 different units, including kilometers, miles, meters, knots, and feet.
 
 Here are some examples:
 
 ```ruby
-converter.convert(10, 'KM_TO_METERS') # => 1000
-converter.convert(10, 'MILES_TO_KM') # => 16.0934
-converter.convert(1, 'NAUTICAL_MI_TO_KM') # => 1.852
-converter.convert(1, 'KM_H_TO_M_S') # => 0.277778
-converter.convert(1, 'M_S_TO_MI_H') # => 2.23694
+converter.convert(10, :km_to_meters) # => 1000
+converter.convert(10, :mi_to_km) # => 16.0934
+converter.convert(1, :nautical_mi_to_km) # => 1.852
+converter.convert(1, :km_h_to_m_s) # => 0.277778
+converter.convert(1, :m_s_to_mi_h) # => 2.23694
 ```
-
-List of supported distance and velocity units:
 
 | Conversion Unit      | Description                 |
 |----------------------|-----------------------------|
-| KM_TO_MI             | Kilometers to Miles         |
-| MI_TO_KM             | Miles to Kilometers         |
-| NAUTICAL_MI_TO_KM    | Nautical Miles to Kilometers |
-| KM_TO_NAUTICAL_MI    | Kilometers to Nautical Miles |
-| METERS_TO_KM         | Meters to Kilometers        |
-| KM_TO_METERS         | Kilometers to Meters        |
-| METERS_TO_MI         | Meters to Miles             |
-| MI_TO_METERS         | Miles to Meters             |
-| METERS_TO_FEET       | Meters to Feet              |
-| FEET_TO_METERS       | Feet to Meters              |
-| METERS_TO_YARDS      | Meters to Yards             |
-| YARDS_TO_METERS      | Yards to Meters             |
-| METERS_TO_INCHES     | Meters to Inches            |
-| INCHES_TO_METERS     | Inches to Meters            |
-| M_S_TO_KM_H          | Meters per Second to Kilometers per Hour    |
-| KM_H_TO_M_S          | Kilometers per Hour to Meters per Second    |
-| M_S_TO_MI_H          | Meters per Second to Miles per Hour    |
-| MI_H_TO_M_S          | Miles per Hour to Meters per Second    |
-| M_S_TO_NAUTICAL_MI_H | Meters per Second to Nautical Miles per Hour    |
-| NAUTICAL_MI_H_TO_M_S | Nautical Miles per Hour to Meters per Second    |
-| M_S_TO_FEET_S        | Meters per Second to Feet per Second    |
-| FEET_S_TO_M_S        | Feet per Second to Meters per Second    |
-| M_S_TO_KNOTS         | Meters per Second to Knots    |
-| KNOTS_TO_M_S         | Knots to Meters per Second    |
-| KM_H_TO_MI_H         | Kilometers per Hour to Miles per Hour    |
-| MI_H_TO_KM_H         | Miles per Hour to Kilometers per Hour    |
+| :km_to_mi            | Kilometers to Miles         |
+| :mi_to_km            | Miles to Kilometers         |
+| :nautical_mi_to_km   | Nautical Miles to Kilometers |
+| :km_to_nautical_mi   | Kilometers to Nautical Miles |
+| :meters_to_km        | Meters to Kilometers        |
+| :km_to_meters        | Kilometers to Meters        |
+| :meters_to_mi        | Meters to Miles             |
+| :mi_to_meters        | Miles to Meters             |
+| :meters_to_feet      | Meters to Feet              |
+| :feet_to_meters      | Feet to Meters              |
+| :meters_to_yards     | Meters to Yards             |
+| :yards_to_meters     | Yards to Meters             |
+| :meters_to_inches    | Meters to Inches            |
+| :inches_to_meters    | Inches to Meters            |
+| :m_s_to_km_h         | Meters per Second to Kilometers per Hour    |
+| :km_h_to_m_s         | Kilometers per Hour to Meters per Second    |
+| :m_s_to_mi_h         | Meters per Second to Miles per Hour    |
+| :mi_h_to_m_s         | Miles per Hour to Meters per Second    |
+| :m_s_to_nautical_mi_h| Meters per Second to Nautical Miles per Hour    |
+| :nautical_mi_h_to_m_s| Nautical Miles per Hour to Meters per Second    |
+| :m_s_to_feet_s       | Meters per Second to Feet per Second    |
+| :feet_s_to_m_s       | Feet per Second to Meters per Second    |
+| :m_s_to_knots        | Meters per Second to Knots    |
+| :knots_to_m_s        | Knots to Meters per Second    |
+| :km_h_to_mi_h        | Kilometers per Hour to Miles per Hour    |
+| :mi_h_to_km_h        | Miles per Hour to Kilometers per Hour    |
+
+You can list all the available units using the `list_units` method:
+
+```ruby
+converter.list_units
+```
 
 ### Other Useful Methods
 
@@ -136,13 +147,24 @@ converter = Calcpace.new
 converter.convert_to_seconds('01:00:00') # => 3600
 converter.convert_to_clocktime(3600) # => '01:00:00'
 converter.check_time('01:00:00') # => nil
+```
+
+### Errors
+
+If you input an invalid value, the gem will raise a `RuntimeError` with a message explaining the error. For example:
+
+```ruby
+calculate.pace(945, -1) # => It must be a X.X positive number (RuntimeError)
+calculate.checked_time('string', 10) # => It must be a XX:XX:XX time (RuntimeError)
 converter.check_time('01-00-00') # => It must be a XX:XX:XX time (RuntimeError)
 ```
 
 ## Contributing
 
-We welcome contributions to Calcpace! To contribute, you can clone this repository and submit a pull request. Please ensure that your code adheres to our style and includes tests where appropriate.
+We welcome contributions to Calcpace! To contribute, clone this repository and submit a pull request. Please ensure that your code adheres to our style and includes tests where appropriate.
 
 ## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
