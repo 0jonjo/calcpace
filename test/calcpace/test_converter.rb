@@ -16,40 +16,49 @@ class TestConverter < Minitest::Test
     assert_equal '01:11:02', @checker.convert_to_clocktime(4262)
   end
 
-  def test_convert_distance
-    assert_equal 0.621371, @checker.convert(1, 'KM_TO_MI')
-    assert_equal 1.60934, @checker.convert(1, 'MI_TO_KM')
-    assert_equal 1.852, @checker.convert(1, 'NAUTICAL_MI_TO_KM')
-    assert_equal 0.539957, @checker.convert(1, 'KM_TO_NAUTICAL_MI')
-    assert_equal 0.001, @checker.convert(1, 'METERS_TO_KM')
-    assert_equal 1000, @checker.convert(1, 'KM_TO_METERS')
-    assert_equal 0.000621371, @checker.convert(1, 'METERS_TO_MI')
-    assert_equal 1609.34, @checker.convert(1, 'MI_TO_METERS')
-    assert_equal 3.28084, @checker.convert(1, 'METERS_TO_FEET')
-    assert_equal 0.3048, @checker.convert(1, 'FEET_TO_METERS')
-    assert_equal 1.09361, @checker.convert(1, 'METERS_TO_YARDS')
-    assert_equal 0.9144, @checker.convert(1, 'YARDS_TO_METERS')
-    assert_equal 39.3701, @checker.convert(1, 'METERS_TO_INCHES')
-    assert_equal 0.0254, @checker.convert(1, 'INCHES_TO_METERS')
+  def test_convert_distance_one
+    assert_equal 0.621371, @checker.convert(1, :km_to_mi)
+    assert_equal 1.60934, @checker.convert(1, :mi_to_km)
+    assert_equal 1.852, @checker.convert(1, :nautical_mi_to_km)
+    assert_equal 0.539957, @checker.convert(1, :km_to_nautical_mi)
+    assert_equal 0.001, @checker.convert(1, :meters_to_km)
+    assert_equal 1000, @checker.convert(1, :km_to_meters)
   end
 
-  def test_convert_velocity
-    assert_equal 3.60, @checker.convert(1, 'M_S_TO_KM_H')
-    assert_equal 0.277778, @checker.convert(1, 'KM_H_TO_M_S')
-    assert_equal 2.23694, @checker.convert(1, 'M_S_TO_MI_H')
-    assert_equal 0.44704, @checker.convert(1, 'MI_H_TO_M_S')
-    assert_equal 1.94384, @checker.convert(1, 'M_S_TO_NAUTICAL_MI_H')
-    assert_equal 0.514444, @checker.convert(1, 'NAUTICAL_MI_H_TO_M_S')
-    assert_equal 0.621371, @checker.convert(1, 'KM_H_TO_MI_H')
-    assert_equal 1.60934, @checker.convert(1, 'MI_H_TO_KM_H')
-    assert_equal 1.94384, @checker.convert(1, 'M_S_TO_KNOTS')
-    assert_equal 0.514444, @checker.convert(1, 'KNOTS_TO_M_S')
+  def test_convert_distance_two
+    assert_equal 0.000621371, @checker.convert(1, :meters_to_mi)
+    assert_equal 1609.34, @checker.convert(1, :mi_to_meters)
+    assert_equal 3.28084, @checker.convert(1, :meters_to_feet)
+    assert_equal 0.3048, @checker.convert(1, :feet_to_meters)
+    assert_equal 1.09361, @checker.convert(1, :meters_to_yards)
+  end
+
+  def test_convert_distance_three
+    assert_equal 0.9144, @checker.convert(1, :yards_to_meters)
+    assert_equal 39.3701, @checker.convert(1, :meters_to_inches)
+    assert_equal 0.0254, @checker.convert(1, :inches_to_meters)
+  end
+
+  def test_convert_velocity_one
+    assert_equal 3.60, @checker.convert(1, :m_s_to_km_h)
+    assert_equal 0.277778, @checker.convert(1, :km_h_to_m_s)
+    assert_equal 2.23694, @checker.convert(1, :m_s_to_mi_h)
+    assert_equal 0.44704, @checker.convert(1, :mi_h_to_m_s)
+    assert_equal 1.94384, @checker.convert(1, :m_s_to_nautical_mi_h)
+  end
+
+  def test_convert_velocity_two
+    assert_equal 0.514444, @checker.convert(1, :nautical_mi_h_to_m_s)
+    assert_equal 0.621371, @checker.convert(1, :km_h_to_mi_h)
+    assert_equal 1.60934, @checker.convert(1, :mi_h_to_km_h)
+    assert_equal 1.94384, @checker.convert(1, :m_s_to_knots)
+    assert_equal 0.514444, @checker.convert(1, :knots_to_m_s)
   end
 
   def test_constant
-    assert_equal 0.621371, @checker.constant('KM_TO_MI')
-    assert_equal 1.60934, @checker.constant('MI_TO_KM')
-    assert_equal 1.852, @checker.constant('NAUTICAL_MI_TO_KM')
+    assert_equal 0.621371, @checker.constant(:km_to_mi)
+    assert_equal 1.60934, @checker.constant(:mi_to_km)
+    assert_equal 1.852, @checker.constant(:nautical_mi_to_km)
   end
 
   def test_list_constants

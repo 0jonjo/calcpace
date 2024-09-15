@@ -35,9 +35,7 @@ module Converter
   def convert(value, unit)
     check_positive(value)
     unit_constant = constant(unit)
-    value_to_convert = convert_to_bigdecimal_or_float(value)
-    unit_to_convert = convert_to_bigdecimal_or_float(unit_constant)
-    value_to_convert * unit_to_convert
+    value * unit_constant
   end
 
   def convert_to_seconds(time)
@@ -50,15 +48,11 @@ module Converter
     Time.at(seconds.to_i).utc.strftime(format)
   end
 
-  def convert_to_bigdecimal_or_float(value)
-    bigdecimal ? BigDecimal(value.to_s) : value.to_f
-  end
-
-  def constant(string)
-    Converter.const_get(string.upcase.gsub(' ', '_'))
+  def constant(symbol)
+    Converter.const_get(symbol.to_s.upcase)
   end
 
   def list_constants
-    Converter.constants
+    Converter.constants.map { |c| c.downcase.to_sym }
   end
 end
