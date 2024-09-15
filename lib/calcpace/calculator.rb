@@ -5,16 +5,16 @@ require 'bigdecimal'
 # Module to calculate time, distance, pace and velocity
 module Calculator
   def velocity(time, distance)
-    distance_to_calc = change_to_f_unless_bd(distance)
-    distance_to_calc / time
+    distance_to_calc = convert_to_bigdecimal_or_float(distance)
+    time_to_calc = convert_to_bigdecimal_or_float(time)
+    distance_to_calc / time_to_calc
   end
 
   def checked_velocity(time, distance)
     check_time(time)
     check_positive(distance)
-    distance_to_calc = convert_to_bigdecimal(distance)
-    seconds = convert_to_bigdecimal(convert_to_seconds(time))
-    velocity(seconds, distance_to_calc)
+    seconds = convert_to_seconds(time)
+    velocity(seconds, distance)
   end
 
   def clock_velocity(time, distance)
@@ -23,16 +23,17 @@ module Calculator
   end
 
   def pace(time, distance)
-    distance_to_calc = change_to_f_unless_bd(distance)
-    time / distance_to_calc
+    # Resolver a dupla checagem se é bigdecimal
+    distance_to_calc = convert_to_bigdecimal_or_float(distance)
+    time_to_calc = convert_to_bigdecimal_or_float(time)
+    time_to_calc / distance_to_calc
   end
 
   def checked_pace(time, distance)
     check_time(time)
     check_positive(distance)
-    distance_to_calc = convert_to_bigdecimal(distance)
-    seconds = convert_to_bigdecimal(convert_to_seconds(time))
-    pace(seconds, distance_to_calc)
+    seconds = convert_to_seconds(time)
+    pace(seconds, distance)
   end
 
   def clock_pace(time, distance)
@@ -48,8 +49,8 @@ module Calculator
   def checked_time(velocity, distance)
     check_time(velocity)
     check_positive(distance)
-    distance_to_calc = convert_to_bigdecimal(distance)
-    velocity_seconds = convert_to_bigdecimal(convert_to_seconds(velocity))
+    distance_to_calc = convert_to_bigdecimal_or_float(distance)
+    velocity_seconds = convert_to_bigdecimal_or_float(convert_to_seconds(velocity))
     time(velocity_seconds, distance_to_calc)
   end
 
@@ -66,8 +67,8 @@ module Calculator
   def checked_distance(time, velocity)
     check_time(time)
     check_time(velocity)
-    time_seconds = convert_to_bigdecimal(convert_to_seconds(time))
-    velocity_seconds = convert_to_bigdecimal(convert_to_seconds(velocity))
+    time_seconds = convert_to_bigdecimal_or_float(convert_to_seconds(time))
+    velocity_seconds = convert_to_bigdecimal_or_float(convert_to_seconds(velocity))
     distance(time_seconds, velocity_seconds)
   end
 

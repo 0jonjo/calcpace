@@ -16,6 +16,10 @@ class TestCalculator < Minitest::Test
     assert_equal 3.6, @checker.velocity(10_000, 36_000.0)
   end
 
+  def test_velocity_with_bigdecimal_precision
+    assert_equal BigDecimal('0.123e2'), @checker_bigdecimal.velocity(5841, 71_844.3)
+  end
+
   def test_checked_velocity
     assert_raises(RuntimeError) { @checker.checked_velocity('', 10) }
     assert_raises(RuntimeError) { @checker.checked_velocity('invalid', 10) }
@@ -42,6 +46,10 @@ class TestCalculator < Minitest::Test
   def test_pace
     assert_equal 300, @checker.pace(3600, 12)
     assert_equal 122.81076923076924, @checker.pace(71_844.3, 585.0)
+  end
+
+  def test_pace_with_bigdecimal_precision
+    assert_equal BigDecimal('0.1228108e3'), @checker_bigdecimal.pace(71_844.3, 585.0).round(4)
   end
 
   def test_checked_pace

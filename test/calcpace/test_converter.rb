@@ -47,6 +47,13 @@ class TestConverter < Minitest::Test
     assert_equal 0.514444, @checker.convert(1, 'KNOTS_TO_M_S')
   end
 
+  def test_convert_to_bigdecimal_or_float
+    assert_equal 1.0, @checker.convert_to_bigdecimal_or_float(1)
+    assert_equal 1.0, @checker.convert_to_bigdecimal_or_float(1.0)
+    assert_equal BigDecimal('1.0'), @checker_bigdecimal.convert_to_bigdecimal_or_float(1)
+    assert_equal BigDecimal('1.0'), @checker_bigdecimal.convert_to_bigdecimal_or_float(1.0)
+  end
+
   def test_constant
     assert_equal 0.621371, @checker.constant('KM_TO_MI')
     assert_equal 1.60934, @checker.constant('MI_TO_KM')
