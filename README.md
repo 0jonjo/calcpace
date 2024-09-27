@@ -1,7 +1,5 @@
 # Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.4.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
-# Calcpace
-
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 26 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
 ## Installation
@@ -23,8 +21,6 @@ bundle install
 ```bash
 gem install calcpace
 ```
-
-## Usage
 
 ## Usage
 
