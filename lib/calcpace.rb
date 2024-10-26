@@ -10,7 +10,5 @@ class Calcpace
   include Checker
   include Converter
 
-  attr_reader :bigdecimal
-
   def initialize; end
 end

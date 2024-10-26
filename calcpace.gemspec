@@ -2,9 +2,9 @@
 
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '1.4.0'
-  s.summary     = 'Calcpace: calculate total, distance, velocity and convert distances in an easy way.'
-  s.description = 'Calcpace is designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance and it supports conversion to 26 different units, including kilometers, miles, meters, and feet.'
+  s.version     = '1.5.0'
+  s.summary     = 'Calcpace: calculate total, distance, speed, and convert distances and velocity in an easy way.'
+  s.description = 'It is designed for calculations related to distance, speed and time. The gem also supports conversion to 42 different units of distance and velocity, including metric, nautical and imperial units.'
   s.authors     = ['Joao Gilberto Saraiva']
   s.email       = 'joaogilberto@tuta.io'
   s.files       = ['lib/calcpace.rb', 'lib/calcpace/calculator.rb', 'lib/calcpace/checker.rb',
