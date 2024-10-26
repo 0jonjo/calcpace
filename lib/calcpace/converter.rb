@@ -2,33 +2,37 @@
 
 # Module to convert units
 module Converter
-  KM_TO_MI = 0.621371
-  MI_TO_KM = 1.60934
-  NAUTICAL_MI_TO_KM = 1.852
-  KM_TO_NAUTICAL_MI = 0.539957
-  METERS_TO_KM = 0.001
-  KM_TO_METERS = 1000
-  METERS_TO_MI = 0.000621371
-  MI_TO_METERS = 1609.34
-  METERS_TO_FEET = 3.28084
-  FEET_TO_METERS = 0.3048
-  METERS_TO_YARDS = 1.09361
-  YARDS_TO_METERS = 0.9144
-  METERS_TO_INCHES = 39.3701
-  INCHES_TO_METERS = 0.0254
+  module Distance
+    KM_TO_MI = 0.621371
+    MI_TO_KM = 1.60934
+    NAUTICAL_MI_TO_KM = 1.852
+    KM_TO_NAUTICAL_MI = 0.539957
+    METERS_TO_KM = 0.001
+    KM_TO_METERS = 1000
+    METERS_TO_MI = 0.000621371
+    MI_TO_METERS = 1609.34
+    METERS_TO_FEET = 3.28084
+    FEET_TO_METERS = 0.3048
+    METERS_TO_YARDS = 1.09361
+    YARDS_TO_METERS = 0.9144
+    METERS_TO_INCHES = 39.3701
+    INCHES_TO_METERS = 0.0254
+  end
 
-  M_S_TO_KM_H = 3.6
-  KM_H_TO_M_S = 0.277778
-  M_S_TO_MI_H = 2.23694
-  MI_H_TO_M_S = 0.44704
-  M_S_TO_NAUTICAL_MI_H = 1.94384
-  NAUTICAL_MI_H_TO_M_S = 0.514444
-  M_S_TO_FEET_S = 3.28084
-  FEET_S_TO_M_S = 0.3048
-  M_S_TO_KNOTS = 1.94384
-  KNOTS_TO_M_S = 0.514444
-  KM_H_TO_MI_H = 0.621371
-  MI_H_TO_KM_H = 1.60934
+  module Speed
+    M_S_TO_KM_H = 3.6
+    KM_H_TO_M_S = 0.277778
+    M_S_TO_MI_H = 2.23694
+    MI_H_TO_M_S = 0.44704
+    M_S_TO_NAUTICAL_MI_H = 1.94384
+    NAUTICAL_MI_H_TO_M_S = 0.514444
+    M_S_TO_FEET_S = 3.28084
+    FEET_S_TO_M_S = 0.3048
+    M_S_TO_KNOTS = 1.94384
+    KNOTS_TO_M_S = 0.514444
+    KM_H_TO_MI_H = 0.621371
+    MI_H_TO_KM_H = 1.60934
+  end
 
   def convert(value, unit)
     check_positive(value)
@@ -47,10 +51,20 @@ module Converter
   end
 
   def constant(symbol)
-    Converter.const_get(symbol.to_s.upcase)
+    Distance.const_get(symbol.to_s.upcase)
+  rescue NameError
+    Speed.const_get(symbol.to_s.upcase)
   end
 
-  def list_constants
-    Converter.constants.map { |c| c.downcase.to_sym }
+  def list_all
+    (Distance.constants + Speed.constants).map { |c| c.downcase.to_sym }
+  end
+
+  def list_speed
+    Speed.constants.map { |c| c.downcase.to_sym }
+  end
+
+  def list_distance
+    Distance.constants.map { |c| c.downcase.to_sym }
   end
 end

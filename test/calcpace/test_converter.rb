@@ -61,7 +61,15 @@ class TestConverter < Minitest::Test
     assert_equal 1.852, @checker.constant(:nautical_mi_to_km)
   end
 
-  def test_list_constants
-    assert_equal 26, @checker.list_constants.size
+  def test_list_all
+    assert_equal 26, @checker.list_all.size
+  end
+
+  def test_list_speed
+    assert_equal 12, @checker.list_speed.size
+  end
+
+  def test_list_distance_constants
+    assert_equal 14, @checker.list_distance.size
   end
 end
