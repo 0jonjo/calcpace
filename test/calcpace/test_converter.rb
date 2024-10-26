@@ -62,14 +62,14 @@ class TestConverter < Minitest::Test
   end
 
   def test_list_all
-    assert_equal 26, @checker.list_all.size
+    assert_equal 42, @checker.list_all.size
   end
 
   def test_list_speed
-    assert_equal 12, @checker.list_speed.size
+    assert_equal 16, @checker.list_speed.size
   end
 
   def test_list_distance_constants
-    assert_equal 14, @checker.list_distance.size
+    assert_equal 26, @checker.list_distance.size
   end
 end
