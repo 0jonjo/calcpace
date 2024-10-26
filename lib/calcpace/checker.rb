@@ -7,6 +7,6 @@ module Checker
   end
 
   def check_time(time_string)
-    raise ArgumentError, 'It must be a valid time in the format XX:XX:XX' unless time_string =~ /^\d{1,2}:\d{2}:\d{2}$/
+    raise ArgumentError, 'It must be a valid time in the format XX:XX:XX' unless time_string =~ /\A\d{1,2}:\d{2}:\d{2}\z/
   end
 end
