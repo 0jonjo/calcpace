@@ -1,6 +1,6 @@
 # Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.5.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
-Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 26 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
+Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
 ## Installation
 
@@ -109,29 +109,21 @@ converter.convert(1, :m_s_to_mi_h) # => 2.23694
 | :km_to_meters        | Kilometers to Meters        |
 | :meters_to_mi        | Meters to Miles             |
 | :mi_to_meters        | Miles to Meters             |
-| :meters_to_feet      | Meters to Feet              |
-| :feet_to_meters      | Feet to Meters              |
-| :meters_to_yards     | Meters to Yards             |
-| :yards_to_meters     | Yards to Meters             |
-| :meters_to_inches    | Meters to Inches            |
-| :inches_to_meters    | Inches to Meters            |
 | :m_s_to_km_h         | Meters per Second to Kilometers per Hour    |
 | :km_h_to_m_s         | Kilometers per Hour to Meters per Second    |
 | :m_s_to_mi_h         | Meters per Second to Miles per Hour    |
 | :mi_h_to_m_s         | Miles per Hour to Meters per Second    |
-| :m_s_to_nautical_mi_h| Meters per Second to Nautical Miles per Hour    |
-| :nautical_mi_h_to_m_s| Nautical Miles per Hour to Meters per Second    |
 | :m_s_to_feet_s       | Meters per Second to Feet per Second    |
 | :feet_s_to_m_s       | Feet per Second to Meters per Second    |
-| :m_s_to_knots        | Meters per Second to Knots    |
-| :knots_to_m_s        | Knots to Meters per Second    |
 | :km_h_to_mi_h        | Kilometers per Hour to Miles per Hour    |
 | :mi_h_to_km_h        | Miles per Hour to Kilometers per Hour    |
 
-You can list all the available units using the `list_units` method:
+You can list all the available units using `list` methods:
 
 ```ruby
-converter.list_units
+converter.list_all
+converter.list_distance
+converter.list_speed
 ```
 
 ### Other Useful Methods
