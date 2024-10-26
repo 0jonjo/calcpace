@@ -118,7 +118,7 @@ converter.convert(1, :m_s_to_mi_h) # => 2.23694
 | :km_h_to_mi_h        | Kilometers per Hour to Miles per Hour    |
 | :mi_h_to_km_h        | Miles per Hour to Kilometers per Hour    |
 
-You can list all the available units using `list` methods:
+You can list all the available units [here](/lib/calcpace/converter.rb), or using `list` methods:
 
 ```ruby
 converter.list_all
@@ -139,12 +139,12 @@ converter.check_time('01:00:00') # => nil
 
 ### Errors
 
-If you input an invalid value, the gem will raise a `RuntimeError` with a message explaining the error. For example:
+If you input an invalid value, the gem will raise a `ArgumentError` with a message explaining the error. For example:
 
 ```ruby
-calculate.pace(945, -1) # => It must be a X.X positive number (RuntimeError)
-calculate.checked_time('string', 10) # => It must be a XX:XX:XX time (RuntimeError)
-converter.check_time('01-00-00') # => It must be a XX:XX:XX time (RuntimeError)
+calculate.pace(945, -1) # => It must be a X.X positive number (ArgumentError)
+calculate.checked_time('string', 10) # => It must be a XX:XX:XX time (ArgumentError)
+converter.check_time('01-00-00') # => It must be a XX:XX:XX time (ArgumentError)
 ```
 
 ## Contributing
