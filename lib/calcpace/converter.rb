@@ -63,7 +63,7 @@ module Converter
 
   def convert_to_clocktime(seconds)
     days = seconds / 86_400
-    format = days.to_i > 0 ? "#{days} %H:%M:%S" : '%H:%M:%S'
+    format = days.to_i.positive? ? "#{days} %H:%M:%S" : '%H:%M:%S'
     Time.at(seconds).utc.strftime(format)
   end
 
