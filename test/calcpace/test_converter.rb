@@ -16,6 +16,10 @@ class TestConverter < Minitest::Test
     assert_equal '01:11:02', @checker.convert_to_clocktime(4262)
   end
 
+  def test_convert_to_clocktime_more_than_24_hours
+    assert_equal '1 03:46:40', @checker.convert_to_clocktime(100_000)
+  end
+
   def test_convert_distance_one
     assert_equal 0.621371, @checker.convert(1, :km_to_mi)
     assert_equal 1.60934, @checker.convert(1, :mi_to_km)

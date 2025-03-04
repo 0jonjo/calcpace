@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
-require 'bigdecimal'
 require_relative '../../lib/calcpace'
 
 class TestCalculator < Minitest::Test
