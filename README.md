@@ -148,6 +148,16 @@ calculate.checked_time('string', 10) # => It must be a XX:XX:XX time (ArgumentEr
 converter.check_time('01-00-00') # => It must be a XX:XX:XX time (ArgumentError)
 ```
 
+### Testing
+
+To run the tests, clone the repository and run:
+
+```bash
+bundle exec rake
+```
+
+In the Tests Workflow in `.github/workflows/test.yml`, the tests are run using from Ruby 2.7.8 to 3.4.2.
+
 ## Contributing
 
 We welcome contributions to Calcpace! To contribute, clone this repository and submit a pull request. Please ensure that your code adheres to our style and includes tests where appropriate.
