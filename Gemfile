@@ -2,8 +2,6 @@
 
 source 'https://rubygems.org'
 
-ruby '3.4.2'
-
 gem 'minitest', '~> 5.25'
 gem 'rake', '~> 13.2'
 gem 'rake-compiler', '~> 1.0'
