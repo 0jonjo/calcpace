@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'calcpace'
-  s.version     = '1.5.2'
+  s.version     = '1.5.3'
   s.summary     = 'Calcpace: calculate total, distance, speed, and convert distances and velocity in an easy way.'
   s.description = 'It is designed for calculations related to distance, speed and time. The gem also supports conversion to 42 different units of distance and velocity, including metric, nautical and imperial units.'
   s.authors     = ['Joao Gilberto Saraiva']
