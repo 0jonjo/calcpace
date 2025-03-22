@@ -51,8 +51,5 @@ DEPENDENCIES
   rdoc (~> 6.2)
   rubocop (~> 1.69)
 
-RUBY VERSION
-   ruby 3.4.2p28
-
 BUNDLED WITH
-   2.5.10
+   2.4.22
