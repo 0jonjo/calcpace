@@ -156,7 +156,9 @@ To run the tests, clone the repository and run:
 bundle exec rake
 ```
 
-In the Tests Workflow in `.github/workflows/test.yml`, the tests are run using from Ruby 2.7.8 to 3.4.2.
+### Supported Ruby Versions
+
+The tests are run using Ruby versions from 2.7.8 to 3.4.2, as specified in the `.github/workflows/test.yml` file.
 
 ## Contributing
 
