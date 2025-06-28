@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.5.3&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.5.4&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed for calculations and conversions related to dist
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.5.3'
+gem 'calcpace', '~> 1.5.4'
 ```
 
 Then run:
@@ -58,7 +58,7 @@ Remember:
 
 ### Calculate using Clocktime
 
-Calcpace also provides methods to calculate using clocktime (HH:MM:SS format string). The return value will be in seconds or clocktime, depending on the method called, except for `checked_distance`. Here are some examples:
+Calcpace also provides methods to calculate using clocktime (HH:MM:SS or MM:SS format string). The return value will be in seconds or clocktime, depending on the method called, except for `checked_distance`. Here are some examples:
 
 ```ruby
 # The return will be in the unit you input/seconds or seconds/unit you input
@@ -140,12 +140,25 @@ converter.check_time('01:00:00') # => nil
 
 ### Errors
 
-If you input an invalid value, the gem will raise a `ArgumentError` with a message explaining the error. For example:
+The gem now raises specific custom error classes for invalid inputs, allowing for more precise error handling. These errors inherit from `Calcpace::Error`.
+
+- `Calcpace::NonPositiveInputError`: Raised when a numeric input is not positive.
+- `Calcpace::InvalidTimeFormatError`: Raised when a time string is not in the expected `HH:MM:SS` or `MM:SS` format.
+
+For example:
 
 ```ruby
-calculate.pace(945, -1) # => It must be a X.X positive number (ArgumentError)
-calculate.checked_time('string', 10) # => It must be a XX:XX:XX time (ArgumentError)
-converter.check_time('01-00-00') # => It must be a XX:XX:XX time (ArgumentError)
+begin
+  calculate.pace(945, -1)
+rescue Calcpace::NonPositiveInputError => e
+  puts e.message # => "Input must be a positive number"
+end
+
+begin
+  calculate.checked_time('string', 10)
+rescue Calcpace::InvalidTimeFormatError => e
+  puts e.message # => "It must be a valid time in the XX:XX:XX or XX:XX format"
+end
 ```
 
 ### Testing

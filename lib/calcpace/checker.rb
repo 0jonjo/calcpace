@@ -1,15 +1,20 @@
 # frozen_string_literal: true
 
+require_relative 'errors'
+
 # Module to check if the input is valid or of the correct type
 module Checker
   def check_positive(number)
-    raise ArgumentError, 'It must be a positive number' unless number.is_a?(Numeric) && number.positive?
+    return if number.is_a?(Numeric) && number.positive?
+
+    raise Calcpace::NonPositiveInputError,
+          'It must be a positive number'
   end
 
   def check_time(time_string)
-    return if time_string =~ /\A\d{1,2}:\d{2}:\d{2}\z/
+    return if time_string =~ /\A\d{1,2}:\d{2}:\d{2}\z/ ||
+              time_string =~ /\A\d{1,2}:\d{2}\z/
 
-    raise ArgumentError,
-          'It must be a valid time in the format XX:XX:XX'
+    raise Calcpace::InvalidTimeFormatError, 'It must be a valid time in the XX:XX:XX or XX:XX format'
   end
 end
