@@ -20,8 +20,6 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
-    - name: Install Bundler
-      run: gem install bundler
     - name: Build Gem
       run: gem build calcpace.gemspec
     - name: Run tests
