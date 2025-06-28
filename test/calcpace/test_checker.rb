@@ -17,5 +17,6 @@ class TestChecker < Minitest::Test
   def test_check_time
     assert_raises(ArgumentError) { @checker.check_time('') }
     assert_nil @checker.check_time('00:00:00')
+    assert_nil @checker.check_time('00:00')
   end
 end

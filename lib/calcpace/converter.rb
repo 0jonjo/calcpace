@@ -57,8 +57,14 @@ module Converter
   end
 
   def convert_to_seconds(time)
-    hour, minute, seconds = time.split(':').map(&:to_i)
-    (hour * 3600) + (minute * 60) + seconds
+    parts = time.split(':').map(&:to_i)
+    if parts.length == 2
+      minute, seconds = parts
+      (minute * 60) + seconds
+    else
+      hour, minute, seconds = parts
+      (hour * 3600) + (minute * 60) + seconds
+    end
   end
 
   def convert_to_clocktime(seconds)

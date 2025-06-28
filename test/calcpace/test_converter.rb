@@ -10,6 +10,7 @@ class TestConverter < Minitest::Test
 
   def test_convert_to_seconds
     assert_equal 4262, @checker.convert_to_seconds('01:11:02')
+    assert_equal 120, @checker.convert_to_seconds('02:00')
   end
 
   def test_convert_to_clocktime
