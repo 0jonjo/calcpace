@@ -9,14 +9,14 @@ class TestChecker < Minitest::Test
   end
 
   def test_check_positive
-    assert_raises(ArgumentError) { @checker.check_positive(-1) }
-    assert_raises(ArgumentError) { @checker.check_positive(0) }
+    assert_raises(Calcpace::NonPositiveInputError) { @checker.check_positive(-1) }
+    assert_raises(Calcpace::NonPositiveInputError) { @checker.check_positive(0) }
     assert_nil @checker.check_positive(1)
   end
 
   def test_check_time
-    assert_raises(ArgumentError) { @checker.check_time('') }
+    assert_raises(Calcpace::InvalidTimeFormatError) { @checker.check_time('') }
+    assert_raises(Calcpace::InvalidTimeFormatError) { @checker.check_time('1-2-3') }
     assert_nil @checker.check_time('00:00:00')
-    assert_nil @checker.check_time('00:00')
   end
 end
