@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'A Ruby gem for pace, distance, and time calculations.'
   spec.description   = 'Calcpace provides methods to calculate and convert values related to pace, distance, time, and speed. It supports various time formats and unit conversions.'
-  spec.homepage      = 'https://github.com/jonjo/calcpace'
+  spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 2.7.0'
