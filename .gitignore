@@ -1,2 +1,2 @@
-calcpace-*
-calcpace.*
+calcpace-*.gem
+!calcpace.gemspec
