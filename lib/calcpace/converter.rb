@@ -51,7 +51,7 @@ module Converter
   end
 
   def convert(value, unit)
-    check_positive(value)
+    check_positive(value, 'Value')
     unit_constant = constant(unit)
     value * unit_constant
   end
@@ -73,21 +73,32 @@ module Converter
     Time.at(seconds).utc.strftime(format)
   end
 
-  def constant(symbol)
-    Distance.const_get(symbol.to_s.upcase)
+  def constant(unit)
+    unit = format_unit(unit) if unit.is_a?(String)
+    Distance.const_get(unit.to_s.upcase)
   rescue NameError
-    Speed.const_get(symbol.to_s.upcase)
+    Speed.const_get(unit.to_s.upcase)
   end
 
   def list_all
-    (Distance.constants + Speed.constants).map { |c| c.downcase.to_sym }
+    format_list(Distance.constants + Speed.constants)
   end
 
   def list_speed
-    Speed.constants.map { |c| c.downcase.to_sym }
+    format_list(Speed.constants)
   end
 
   def list_distance
-    Distance.constants.map { |c| c.downcase.to_sym }
+    format_list(Distance.constants)
+  end
+
+  private
+
+  def format_unit(unit)
+    unit.downcase.gsub(' ', '_').to_sym
+  end
+
+  def format_list(constants)
+    constants.to_h { |c| [c.downcase.to_sym, c.to_s.gsub('_', ' ').gsub(' TO ', ' to ')] }
   end
 end

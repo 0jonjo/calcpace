@@ -3,7 +3,7 @@
 # Module to calculate time, distance, pace and velocity
 module Calculator
   def velocity(time, distance)
-    validate_positive(time, distance)
+    validate_positive({ time: time, distance: distance })
     distance.to_f / time
   end
 
@@ -17,7 +17,7 @@ module Calculator
   end
 
   def pace(time, distance)
-    validate_positive(time, distance)
+    validate_positive({ time: time, distance: distance })
     time.to_f / distance
   end
 
@@ -31,7 +31,7 @@ module Calculator
   end
 
   def time(velocity, distance)
-    validate_positive(velocity, distance)
+    validate_positive({ velocity: velocity, distance: distance })
     velocity * distance
   end
 
@@ -45,7 +45,7 @@ module Calculator
   end
 
   def distance(time, velocity)
-    validate_positive(time, velocity)
+    validate_positive({ time: time, velocity: velocity })
     time.to_f / velocity
   end
 
@@ -57,8 +57,8 @@ module Calculator
 
   private
 
-  def validate_positive(*values)
-    values.each { |value| check_positive(value) }
+  def validate_positive(values)
+    values.each { |name, value| check_positive(value, name.capitalize) }
   end
 
   def validate_time(time)

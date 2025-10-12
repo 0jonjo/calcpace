@@ -60,21 +60,32 @@ class TestConverter < Minitest::Test
     assert_equal 0.514444, @checker.convert(1, :knots_to_m_s)
   end
 
+  def test_convert_with_string
+    assert_equal 0.621371, @checker.convert(1, 'km to mi')
+  end
+
   def test_constant
     assert_equal 0.621371, @checker.constant(:km_to_mi)
-    assert_equal 1.60934, @checker.constant(:mi_to_km)
-    assert_equal 1.852, @checker.constant(:nautical_mi_to_km)
+    assert_equal 1.60934, @checker.constant('mi to km')
+    assert_equal 1.852, @checker.constant('nautical mi to km')
   end
 
   def test_list_all
+    assert_kind_of Hash, @checker.list_all
     assert_equal 42, @checker.list_all.size
   end
 
   def test_list_speed
+    assert_kind_of Hash, @checker.list_speed
     assert_equal 16, @checker.list_speed.size
   end
 
   def test_list_distance_constants
+    assert_kind_of Hash, @checker.list_distance
     assert_equal 26, @checker.list_distance.size
+  end
+
+  def test_list_content
+    assert_equal 'KM to MI', @checker.list_all[:km_to_mi]
   end
 end

@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.5.5&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.6.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed for calculations and conversions related to dist
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.5.5'
+gem 'calcpace', '~> 1.6.0'
 ```
 
 Then run:
@@ -87,15 +87,15 @@ To learn more about BigDecimal, check the [documentation](https://ruby-doc.org/s
 
 ### Convert Distances and Velocities
 
-Use the `convert` method to convert a distance or velocity. The first parameter is the value to be converted, and the second parameter is the unit to which the value will be converted. The unit must be a string with the abbreviation of the unit. The gem supports 26 different units, including kilometers, miles, meters, knots, and feet.
+Use the `convert` method to convert a distance or velocity. The first parameter is the value to be converted, and the second parameter is the unit to which the value will be converted. The unit can be a string (e.g. 'km to meters') or a symbol (e.g. :km_to_meters). The gem supports 42 different units, including kilometers, miles, meters, knots, and feet.
 
 Here are some examples:
 
 ```ruby
 converter.convert(10, :km_to_meters) # => 1000
-converter.convert(10, :mi_to_km) # => 16.0934
+converter.convert(10, 'mi to km') # => 16.0934
 converter.convert(1, :nautical_mi_to_km) # => 1.852
-converter.convert(1, :km_h_to_m_s) # => 0.277778
+converter.convert(1, 'km h to m s') # => 0.277778
 converter.convert(1, :m_s_to_mi_h) # => 2.23694
 ```
 
@@ -118,12 +118,17 @@ converter.convert(1, :m_s_to_mi_h) # => 2.23694
 | :km_h_to_mi_h        | Kilometers per Hour to Miles per Hour    |
 | :mi_h_to_km_h        | Miles per Hour to Kilometers per Hour    |
 
-You can list all the available units [here](/lib/calcpace/converter.rb), or using `list` methods:
+You can list all the available units [here](/lib/calcpace/converter.rb), or using `list` methods. The return will be a hash with the unit and a description of the unit.
 
 ```ruby
 converter.list_all
+# => {:km_to_mi=>"KM to MI", :mi_to_km=>"MI to KM", ...}
+
 converter.list_distance
+# => {:km_to_mi=>"KM to MI", :mi_to_km=>"MI to KM", ...}
+
 converter.list_speed
+# => {:m_s_to_km_h=>"M S to KM H", :km_h_to_m_s=>"KM H to M S", ...}
 ```
 
 ### Other Useful Methods
@@ -151,7 +156,7 @@ For example:
 begin
   calculate.pace(945, -1)
 rescue Calcpace::NonPositiveInputError => e
-  puts e.message # => "Input must be a positive number"
+  puts e.message # => "Distance must be a positive number"
 end
 
 begin
