@@ -131,6 +131,26 @@ converter.list_speed
 # => {:m_s_to_km_h=>"M S to KM H", :km_h_to_m_s=>"KM H to M S", ...}
 ```
 
+### Chain Conversions
+
+Perform multiple conversions in sequence with the converter chain feature:
+
+```ruby
+calc = Calcpace.new
+
+# Convert kilometers to miles to feet in one call
+calc.convert_chain(1, [:km_to_mi, :mi_to_feet])
+# => 3280.84 (1 km = 0.621 mi = 3280.84 feet)
+
+# Convert with description for debugging
+calc.convert_chain_with_description(100, [:meters_to_km, :km_to_mi])
+# => { result: 0.0621371, description: "100 → meters_to_km → km_to_mi → 0.0621" }
+
+# Speed conversions
+calc.convert_chain(10, [:m_s_to_km_h, :km_h_to_mi_h])
+# => 22.3694 (10 m/s = 36 km/h = 22.37 mi/h)
+```
+
 ### Race Pace Calculator
 
 Calcpace includes a race pace calculator for standard race distances (5K, 10K, half-marathon, and marathon):
