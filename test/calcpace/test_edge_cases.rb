@@ -74,7 +74,7 @@ class TestEdgeCases < Minitest::Test
     distance_units = @calc.list_distance
     assert distance_units.size > 20, 'Expected at least 20 distance conversions'
     distance_units.each_key do |unit|
-      assert @calc.constant(unit) > 0, "Constant for #{unit} should be positive"
+      assert @calc.constant(unit).positive?, "Constant for #{unit} should be positive"
     end
   end
 
@@ -82,7 +82,7 @@ class TestEdgeCases < Minitest::Test
     speed_units = @calc.list_speed
     assert speed_units.size > 10, 'Expected at least 10 speed conversions'
     speed_units.each_key do |unit|
-      assert @calc.constant(unit) > 0, "Constant for #{unit} should be positive"
+      assert @calc.constant(unit).positive?, "Constant for #{unit} should be positive"
     end
   end
 

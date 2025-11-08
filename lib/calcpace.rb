@@ -38,5 +38,4 @@ class Calcpace
   # Creates a new Calcpace instance
   #
   # @return [Calcpace] a new instance ready to perform calculations
-  def initialize; end
 end

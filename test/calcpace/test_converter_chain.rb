@@ -11,13 +11,13 @@ class TestConverterChain < Minitest::Test
 
   def test_convert_chain_simple
     # 1 km to miles to feet
-    result = @calc.convert_chain(1, [:km_to_mi, :mi_to_feet])
+    result = @calc.convert_chain(1, %i[km_to_mi mi_to_feet])
     assert_in_delta 3280.84, result, 0.01
   end
 
   def test_convert_chain_multiple_steps
     # 100 meters to km to miles to feet
-    result = @calc.convert_chain(100, [:meters_to_km, :km_to_mi, :mi_to_feet])
+    result = @calc.convert_chain(100, %i[meters_to_km km_to_mi mi_to_feet])
     assert_in_delta 328.084, result, 0.01
   end
 
@@ -29,7 +29,7 @@ class TestConverterChain < Minitest::Test
 
   def test_convert_chain_speed_units
     # 10 m/s to km/h to mi/h
-    result = @calc.convert_chain(10, [:m_s_to_km_h, :km_h_to_mi_h])
+    result = @calc.convert_chain(10, %i[m_s_to_km_h km_h_to_mi_h])
     assert_in_delta 22.3694, result, 0.01
   end
 
@@ -59,12 +59,12 @@ class TestConverterChain < Minitest::Test
 
   def test_convert_chain_invalid_unit_raises_error
     assert_raises(Calcpace::UnsupportedUnitError) do
-      @calc.convert_chain(1, [:km_to_mi, :invalid_unit])
+      @calc.convert_chain(1, %i[km_to_mi invalid_unit])
     end
   end
 
   def test_convert_chain_with_description
-    result = @calc.convert_chain_with_description(1, [:km_to_mi, :mi_to_feet])
+    result = @calc.convert_chain_with_description(1, %i[km_to_mi mi_to_feet])
     assert_kind_of Hash, result
     assert result.key?(:result)
     assert result.key?(:description)
@@ -75,7 +75,7 @@ class TestConverterChain < Minitest::Test
   end
 
   def test_convert_chain_with_description_multiple_steps
-    result = @calc.convert_chain_with_description(100, [:meters_to_km, :km_to_mi])
+    result = @calc.convert_chain_with_description(100, %i[meters_to_km km_to_mi])
     assert_includes result[:description], '100'
     assert_includes result[:description], 'meters_to_km'
     assert_includes result[:description], 'km_to_mi'
@@ -88,13 +88,13 @@ class TestConverterChain < Minitest::Test
     km_to_mi = @calc.convert_chain(42.195, [:km_to_mi])
     assert_in_delta 26.219, km_to_mi, 0.01
 
-    km_to_feet = @calc.convert_chain(42.195, [:km_to_meters, :meters_to_feet])
+    km_to_feet = @calc.convert_chain(42.195, %i[km_to_meters meters_to_feet])
     assert_in_delta 138_435, km_to_feet, 1
   end
 
   def test_practical_speed_conversions
     # Running speed: 3.5 m/s to various units
-    result = @calc.convert_chain_with_description(3.5, [:m_s_to_km_h, :km_h_to_mi_h])
+    result = @calc.convert_chain_with_description(3.5, %i[m_s_to_km_h km_h_to_mi_h])
     # 3.5 m/s = 12.6 km/h = 7.83 mi/h
     assert_in_delta 7.83, result[:result], 0.01
   end

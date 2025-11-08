@@ -11,8 +11,8 @@ class CalcpaceTest < Minitest::Test
   end
 
   # Helper method to assert that a block raises a specific error with message
-  def assert_error_with_message(error_class, expected_message = nil)
-    error = assert_raises(error_class) { yield }
+  def assert_error_with_message(error_class, expected_message = nil, &block)
+    error = assert_raises(error_class, &block)
     assert_includes error.message, expected_message if expected_message
     error
   end
