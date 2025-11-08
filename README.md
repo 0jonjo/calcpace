@@ -131,6 +131,32 @@ converter.list_speed
 # => {:m_s_to_km_h=>"M S to KM H", :km_h_to_m_s=>"KM H to M S", ...}
 ```
 
+### Race Pace Calculator
+
+Calcpace includes a race pace calculator for standard race distances (5K, 10K, half-marathon, and marathon):
+
+```ruby
+calc = Calcpace.new
+
+# Calculate finish time for a race given a pace
+calc.race_time(300, '5k')              # => 1500.0 (5:00/km pace for 5K = 25:00)
+calc.race_time_clock('05:00', 'marathon') # => '03:30:58' (5:00/km pace for marathon)
+
+# Calculate required pace for a target finish time
+calc.race_pace('00:30:00', '5k')       # => 360.0 (need 6:00/km to finish 5K in 30:00)
+calc.race_pace_clock('04:00:00', 'marathon') # => '00:05:41' (need 5:41/km for 4-hour marathon)
+
+# List available race distances
+calc.list_races
+# => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, 'marathon' => 42.195 }
+```
+
+Supported race distances:
+- `5k` - 5 kilometers
+- `10k` - 10 kilometers
+- `half_marathon` - 21.0975 kilometers
+- `marathon` - 42.195 kilometers
+
 ### Other Useful Methods
 
 Calcpace also provides other useful methods:
@@ -139,7 +165,7 @@ Calcpace also provides other useful methods:
 converter = Calcpace.new
 converter.convert_to_seconds('01:00:00') # => 3600
 converter.convert_to_clocktime(3600) # => '01:00:00'
-converter.converto_to_clocktime(100000) # => '1 03:46:40'
+converter.convert_to_clocktime(100000) # => '1 03:46:40'
 converter.check_time('01:00:00') # => nil
 ```
 
