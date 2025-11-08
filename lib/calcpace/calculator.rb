@@ -1,7 +1,21 @@
 # frozen_string_literal: true
 
 # Module to calculate time, distance, pace and velocity
+#
+# This module provides methods to perform calculations related to running and pace.
+# All methods that accept numeric inputs validate that values are positive.
+# Methods prefixed with 'checked_' accept time strings in HH:MM:SS or MM:SS format.
+# Methods prefixed with 'clock_' return results in time format (HH:MM:SS).
 module Calculator
+  # Calculates velocity (distance per unit time)
+  #
+  # @param time [Numeric] time in any unit (e.g., seconds, hours)
+  # @param distance [Numeric] distance in any unit (e.g., meters, kilometers)
+  # @return [Float] velocity (distance/time)
+  # @raise [Calcpace::NonPositiveInputError] if time or distance is not positive
+  #
+  # @example
+  #   velocity(3600, 12000) #=> 3.333... (12000 meters / 3600 seconds = 3.33 m/s)
   def velocity(time, distance)
     validate_positive({ time: time, distance: distance })
     distance.to_f / time
@@ -16,6 +30,15 @@ module Calculator
     convert_to_clocktime(checked_velocity(time, distance))
   end
 
+  # Calculates pace (time per unit distance)
+  #
+  # @param time [Numeric] time in any unit (e.g., seconds, minutes)
+  # @param distance [Numeric] distance in any unit (e.g., kilometers, miles)
+  # @return [Float] pace (time/distance)
+  # @raise [Calcpace::NonPositiveInputError] if time or distance is not positive
+  #
+  # @example
+  #   pace(3600, 12) #=> 300.0 (3600 seconds / 12 km = 300 seconds/km = 5:00/km)
   def pace(time, distance)
     validate_positive({ time: time, distance: distance })
     time.to_f / distance
