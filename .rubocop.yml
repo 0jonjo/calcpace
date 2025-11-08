@@ -1,0 +1,67 @@
+# frozen_string_literal: true
+
+# RuboCop configuration for Calcpace gem
+# Following Ruby best practices and style guidelines
+
+AllCops:
+  TargetRubyVersion: 2.7
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'node_modules/**/*'
+
+# Prefer double quotes for consistency
+Style/StringLiterals:
+  Enabled: false
+
+# Allow longer lines in tests
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'test/**/*'
+
+# Prefer modern hash syntax
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+
+# Documentation is important for public APIs
+Style/Documentation:
+  Enabled: true
+  Exclude:
+    - 'test/**/*'
+
+# Prefer explicit return in some cases for clarity
+Style/RedundantReturn:
+  Enabled: false
+
+# Allow compact module/class definitions
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+# Metrics
+Metrics/MethodLength:
+  Max: 20
+  Exclude:
+    - 'test/**/*'
+
+Metrics/AbcSize:
+  Max: 20
+  Exclude:
+    - 'test/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'test/**/*'
+    - '*.gemspec'
+
+# Allow both single and double quotes for strings
+Style/StringLiteralsInInterpolation:
+  Enabled: false
+
+# Naming
+Naming/MethodParameterName:
+  MinNameLength: 1
+  AllowedNames:
+    - _
+    - e

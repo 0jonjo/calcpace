@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.6.0&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.7.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed for calculations and conversions related to dist
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.6.0'
+gem 'calcpace', '~> 1.7.0'
 ```
 
 Then run:
@@ -131,6 +131,52 @@ converter.list_speed
 # => {:m_s_to_km_h=>"M S to KM H", :km_h_to_m_s=>"KM H to M S", ...}
 ```
 
+### Chain Conversions
+
+Perform multiple conversions in sequence with the converter chain feature:
+
+```ruby
+calc = Calcpace.new
+
+# Convert kilometers to miles to feet in one call
+calc.convert_chain(1, [:km_to_mi, :mi_to_feet])
+# => 3280.84 (1 km = 0.621 mi = 3280.84 feet)
+
+# Convert with description for debugging
+calc.convert_chain_with_description(100, [:meters_to_km, :km_to_mi])
+# => { result: 0.0621371, description: "100 → meters_to_km → km_to_mi → 0.0621" }
+
+# Speed conversions
+calc.convert_chain(10, [:m_s_to_km_h, :km_h_to_mi_h])
+# => 22.3694 (10 m/s = 36 km/h = 22.37 mi/h)
+```
+
+### Race Pace Calculator
+
+Calcpace includes a race pace calculator for standard race distances (5K, 10K, half-marathon, and marathon):
+
+```ruby
+calc = Calcpace.new
+
+# Calculate finish time for a race given a pace
+calc.race_time(300, '5k')              # => 1500.0 (5:00/km pace for 5K = 25:00)
+calc.race_time_clock('05:00', 'marathon') # => '03:30:58' (5:00/km pace for marathon)
+
+# Calculate required pace for a target finish time
+calc.race_pace('00:30:00', '5k')       # => 360.0 (need 6:00/km to finish 5K in 30:00)
+calc.race_pace_clock('04:00:00', 'marathon') # => '00:05:41' (need 5:41/km for 4-hour marathon)
+
+# List available race distances
+calc.list_races
+# => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, 'marathon' => 42.195 }
+```
+
+Supported race distances:
+- `5k` - 5 kilometers
+- `10k` - 10 kilometers
+- `half_marathon` - 21.0975 kilometers
+- `marathon` - 42.195 kilometers
+
 ### Other Useful Methods
 
 Calcpace also provides other useful methods:
@@ -139,7 +185,7 @@ Calcpace also provides other useful methods:
 converter = Calcpace.new
 converter.convert_to_seconds('01:00:00') # => 3600
 converter.convert_to_clocktime(3600) # => '01:00:00'
-converter.converto_to_clocktime(100000) # => '1 03:46:40'
+converter.convert_to_clocktime(100000) # => '1 03:46:40'
 converter.check_time('01:00:00') # => nil
 ```
 
