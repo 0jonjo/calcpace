@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.7.0&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.8.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed for calculations and conversions related to dist
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.7.0'
+gem 'calcpace', '~> 1.8.0'
 ```
 
 Then run:
@@ -176,6 +176,74 @@ Supported race distances:
 - `10k` - 10 kilometers
 - `half_marathon` - 21.0975 kilometers
 - `marathon` - 42.195 kilometers
+- `1mile` - 1.60934 kilometers
+- `5mile` - 8.04672 kilometers
+- `10mile` - 16.0934 kilometers
+
+### Pace Conversions
+
+Convert running pace between kilometers and miles:
+
+```ruby
+calc = Calcpace.new
+
+# Convert pace from km to miles
+calc.pace_km_to_mi('05:00')           # => '00:08:02' (5:00/km = 8:02/mi)
+calc.convert_pace('05:00', :km_to_mi) # => '00:08:02' (same as above)
+
+# Convert pace from miles to km
+calc.pace_mi_to_km('08:00')           # => '00:04:58' (8:00/mi ≈ 4:58/km)
+calc.convert_pace('08:00', :mi_to_km) # => '00:04:58' (same as above)
+
+# Works with numeric input (seconds) as well
+calc.pace_km_to_mi(300)               # => '00:08:02' (300 seconds/km)
+calc.pace_mi_to_km(480)               # => '00:04:58' (480 seconds/mi)
+
+# String format also supported
+calc.convert_pace('05:00', 'km to mi') # => '00:08:02'
+```
+
+The pace conversions are particularly useful when:
+- Planning races in different countries (metric vs imperial)
+- Comparing training paces with international runners
+- Converting workout plans between pace formats
+
+### Race Splits
+
+Calculate split times for races to help pace your race strategy:
+
+```ruby
+calc = Calcpace.new
+
+# Even pace splits for half marathon (every 5k)
+calc.race_splits('half_marathon', target_time: '01:30:00', split_distance: '5k')
+# => ["00:21:20", "00:42:40", "01:03:59", "01:25:19", "01:30:00"]
+
+# Kilometer splits for 10K
+calc.race_splits('10k', target_time: '00:40:00', split_distance: '1k')
+# => ["00:04:00", "00:08:00", "00:12:00", ..., "00:40:00"]
+
+# Mile splits for marathon
+calc.race_splits('marathon', target_time: '03:30:00', split_distance: '1mile')
+# => ["00:08:02", "00:16:04", ..., "03:30:00"]
+
+# Negative splits strategy (second half faster)
+calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
+# => ["00:20:48", "00:40:00"] # First 5k slower, second 5k faster
+
+# Positive splits strategy (first half faster)
+calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :positive)
+# => ["00:19:12", "00:40:00"] # First 5k faster, second 5k slower
+```
+
+Supported strategies:
+- `:even` - Constant pace throughout (default)
+- `:negative` - Second half ~4% faster (progressive race)
+- `:positive` - First half ~4% faster (conservative start)
+
+Split distances can be:
+- Standard race distances: `'5k'`, `'10k'`, `'1mile'`, etc.
+- Custom distances: `2.5` (in kilometers), `'3k'`, etc.
 
 ### Other Useful Methods
 

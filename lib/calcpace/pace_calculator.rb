@@ -10,7 +10,10 @@ module PaceCalculator
     '5k' => 5.0,
     '10k' => 10.0,
     'half_marathon' => 21.0975,
-    'marathon' => 42.195
+    'marathon' => 42.195,
+    '1mile' => 1.60934,
+    '5mile' => 8.04672,
+    '10mile' => 16.0934
   }.freeze
 
   # Calculates the finish time for a race given a pace per kilometer
