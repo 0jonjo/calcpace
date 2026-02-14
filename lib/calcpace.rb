@@ -6,6 +6,9 @@ require_relative 'calcpace/converter'
 require_relative 'calcpace/converter_chain'
 require_relative 'calcpace/errors'
 require_relative 'calcpace/pace_calculator'
+require_relative 'calcpace/pace_converter'
+require_relative 'calcpace/race_predictor'
+require_relative 'calcpace/race_splits'
 
 # Calcpace - A Ruby gem for pace, distance, and time calculations
 #
@@ -34,6 +37,9 @@ class Calcpace
   include Converter
   include ConverterChain
   include PaceCalculator
+  include PaceConverter
+  include RacePredictor
+  include RaceSplits
 
   # Creates a new Calcpace instance
   #
