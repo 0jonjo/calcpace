@@ -245,6 +245,69 @@ Split distances can be:
 - Standard race distances: `'5k'`, `'10k'`, `'1mile'`, etc.
 - Custom distances: `2.5` (in kilometers), `'3k'`, etc.
 
+### Race Time Predictions
+
+Predict your race times at different distances based on a recent performance using the **Riegel formula**:
+
+```ruby
+calc = Calcpace.new
+
+# Predict marathon time from a 5K result
+calc.predict_time_clock('5k', '00:20:00', 'marathon')
+# => "03:11:49" (predicts 3:11:49 marathon from 20:00 5K)
+
+# Predict 10K time from half marathon
+calc.predict_time_clock('half_marathon', '01:30:00', '10k')
+# => "00:40:47"
+
+# Get predicted pace for target race
+calc.predict_pace_clock('5k', '00:20:00', 'marathon')
+# => "00:04:32" (4:32/km pace for predicted marathon)
+
+# Get complete equivalent performance info
+calc.equivalent_performance('10k', '00:42:00', '5k')
+# => {
+#      time: 1209.0,
+#      time_clock: "00:20:09",
+#      pace: 241.8,
+#      pace_clock: "00:04:02"
+#    }
+```
+
+#### How the Riegel Formula Works
+
+The Riegel formula is a mathematical model that predicts race performance across different distances:
+
+**Formula:** `T2 = T1 × (D2/D1)^1.06`
+
+Where:
+- **T1** = your known time at distance D1
+- **T2** = predicted time at distance D2  
+- **D1** = known race distance (in km)
+- **D2** = target race distance (in km)
+- **1.06** = fatigue/endurance factor
+
+**The 1.06 exponent** represents how pace slows as distance increases. If endurance was perfect (1.0), doubling distance would simply double time. But in reality, you slow down slightly - the 1.06 factor accounts for this accumulated fatigue.
+
+**Example:** From a 5K in 20:00, predict marathon time:
+- T1 = 1200 seconds (20:00)
+- D1 = 5 km
+- D2 = 42.195 km (marathon)
+- T2 = 1200 × (42.195/5)^1.06
+- T2 = 1200 × 9.591 = 11,509 seconds
+- T2 = **3:11:49**
+
+The formula works best for:
+- Distances from 5K to marathon
+- Recent race results (within 6-8 weeks)
+- Similar terrain and weather conditions
+- Well-trained runners with consistent pacing
+
+**Important notes:**
+- Predictions assume equal training and effort across distances
+- Results are estimates - actual performance varies by individual fitness, training focus, and race conditions
+- The formula is most accurate when predicting between similar distance ranges (e.g., 10K to half marathon)
+
 ### Other Useful Methods
 
 Calcpace also provides other useful methods:

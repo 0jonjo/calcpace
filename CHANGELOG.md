@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for even pace, negative splits (progressive), and positive splits (conservative) strategies
   - Flexible split distances: standard race distances ('5k', '1mile') or custom distances (numeric km)
   - Works with all standard race distances including marathon, half marathon, 10K, 5K, and mile races
+- Race time predictor using Riegel formula
+  - `predict_time` and `predict_time_clock` methods to predict race times at different distances
+  - `predict_pace` and `predict_pace_clock` methods to calculate predicted pace for target races
+  - `equivalent_performance` method to compare performances across different race distances
+  - Based on proven Riegel formula: T2 = T1 × (D2/D1)^1.06
+  - Detailed explanation of the formula and its applications in README
 - Additional race distances for international races
   - `1mile` - 1.60934 kilometers
   - `5mile` - 8.04672 kilometers
@@ -25,11 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suites
   - 30+ test cases for pace conversions
   - 30+ test cases for race splits covering all strategies and edge cases
+  - 35+ test cases for race predictions covering various scenarios
 
 ### Changed
 - Expanded `RACE_DISTANCES` to include popular US/UK race distances
-- Updated README with pace conversion and race splits examples
-- Improved documentation with practical examples and use cases
+- Updated README with pace conversion, race splits, and race prediction examples
+- Improved documentation with practical examples, use cases, and formula explanations
 
 ## [1.7.0] - Released
 
