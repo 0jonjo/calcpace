@@ -39,7 +39,7 @@ module ConverterChain
   def convert_chain_with_description(value, conversions)
     initial_value = value
     result = convert_chain(value, conversions)
-    conversion_names = conversions.map(&:to_s).join(' → ')
+    conversion_names = conversions.join(' → ')
     description = "#{initial_value} → #{conversion_names} → #{result.round(4)}"
 
     { result: result, description: description }

@@ -4,7 +4,7 @@
 # Following Ruby best practices and style guidelines
 
 AllCops:
-  TargetRubyVersion: 2.7
+  TargetRubyVersion: 3.2
   NewCops: enable
   Exclude:
     - 'vendor/**/*'
@@ -54,6 +54,14 @@ Metrics/BlockLength:
   Exclude:
     - 'test/**/*'
     - '*.gemspec'
+
+Metrics/ClassLength:
+  Exclude:
+    - 'test/**/*'
+
+Metrics/ModuleLength:
+  Exclude:
+    - 'lib/calcpace/race_splits.rb'
 
 # Allow both single and double quotes for strings
 Style/StringLiteralsInInterpolation:
