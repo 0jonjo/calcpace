@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-03-06
+
+### Added
+- SimpleCov integration for code coverage measurement
+- RuboCop lint job to CI pipeline
+- YARD documentation for all previously undocumented public methods in `Calculator` (`checked_velocity`, `clock_velocity`, `checked_pace`, `clock_pace`, `time`, `checked_time`, `clock_time`, `distance`, `checked_distance`)
+
+### Changed
+- Minimum required Ruby version bumped from 2.7 to 3.2
+- CI matrix updated: removed EOL Ruby versions (2.7, 3.0, 3.1), added Ruby 4.0
+- CI lint job uses `.ruby-version` file instead of a hardcoded version
+- Bundler updated to 4.0.6
+- `Rakefile.rb` renamed to `Rakefile` (standard convention)
+- `PaceConverter` constants `MI_TO_KM` and `KM_TO_MI` consolidated into `Converter::Distance`
+- Negative and positive split calculations refactored to share common logic
+- Test files refactored to inherit from shared `CalcpaceTest` base class
+
 ## [1.8.0] - 2026-02-14
 
 ### Added
