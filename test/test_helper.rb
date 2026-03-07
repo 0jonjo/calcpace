@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
+require 'simplecov'
+SimpleCov.start
+
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative '../lib/calcpace'
 
 # Base test class with common setup
 class CalcpaceTest < Minitest::Test
+
   def setup
     @calc = Calcpace.new
   end
