@@ -5,10 +5,6 @@
 # This module provides methods to convert running pace between kilometers
 # and miles, maintaining the time per distance unit format.
 module PaceConverter
-  # Conversion factor: 1 mile = 1.60934 kilometers
-  MI_TO_KM = 1.60934
-  KM_TO_MI = 0.621371
-
   # Converts pace from one unit to another
   #
   # @param pace [Numeric, String] pace in seconds per unit or time string (MM:SS)
@@ -87,10 +83,10 @@ module PaceConverter
     case conversion_type
     when :km_to_mi
       # If running at X seconds per km, pace per mile = X * (miles to km ratio)
-      pace_seconds * MI_TO_KM
+      pace_seconds * Converter::Distance::MI_TO_KM
     when :mi_to_km
       # If running at X seconds per mile, pace per km = X / (miles to km ratio)
-      pace_seconds * KM_TO_MI
+      pace_seconds * Converter::Distance::KM_TO_MI
     end
   end
 end

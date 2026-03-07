@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'simplecov'
+SimpleCov.start
+
 require 'minitest/autorun'
 require 'minitest/pride'
 require_relative '../lib/calcpace'
@@ -11,8 +14,8 @@ class CalcpaceTest < Minitest::Test
   end
 
   # Helper method to assert that a block raises a specific error with message
-  def assert_error_with_message(error_class, expected_message = nil, &block)
-    error = assert_raises(error_class, &block)
+  def assert_error_with_message(error_class, expected_message = nil, &)
+    error = assert_raises(error_class, &)
     assert_includes error.message, expected_message if expected_message
     error
   end

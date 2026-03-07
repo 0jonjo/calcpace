@@ -9,11 +9,11 @@ Gem::Specification.new do |spec|
   spec.email         = ['joaogilberto@tuta.io']
 
   spec.summary       = 'A Ruby gem for pace, distance, and time calculations.'
-  spec.description   = 'Calcpace provides methods to calculate and convert values related to pace, distance, time, and speed. It supports various time formats and unit conversions.'
+  spec.description   = 'Ruby gem for pace, distance, time, and speed calculations. Supports multiple units and formats.'
   spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage
   spec.license = 'MIT'
-  spec.required_ruby_version = '>= 2.7.0'
+  spec.required_ruby_version = '>= 3.2.0'
 
   spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata['rubygems_mfa_required'] = 'true'

@@ -136,35 +136,7 @@ module RaceSplits
   # @param split_km [Float] split distance in kilometers
   # @return [Array<String>] array of cumulative split times
   def calculate_negative_splits(total_distance, target_seconds, split_km)
-    half_distance = total_distance / 2.0
-    avg_pace = target_seconds / total_distance
-
-    # First half: 4% slower, second half: 4% faster
-    first_half_pace = avg_pace * 1.04
-    second_half_pace = avg_pace * 0.96
-
-    splits = []
-    distance_covered = 0.0
-    cumulative_time = 0.0
-
-    while distance_covered < total_distance - 0.001
-      distance_covered += split_km
-      distance_covered = total_distance if distance_covered > total_distance
-
-      if distance_covered <= half_distance
-        # First half
-        cumulative_time = distance_covered * first_half_pace
-      else
-        # Second half
-        time_at_halfway = half_distance * first_half_pace
-        distance_in_second_half = distance_covered - half_distance
-        cumulative_time = time_at_halfway + (distance_in_second_half * second_half_pace)
-      end
-
-      splits << convert_to_clocktime(cumulative_time.round)
-    end
-
-    splits
+    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 1.04, second_factor: 0.96)
   end
 
   # Calculates positive splits (first half faster than second half)
@@ -175,12 +147,22 @@ module RaceSplits
   # @param split_km [Float] split distance in kilometers
   # @return [Array<String>] array of cumulative split times
   def calculate_positive_splits(total_distance, target_seconds, split_km)
+    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 0.96, second_factor: 1.04)
+  end
+
+  # Shared logic for variable pace split strategies
+  #
+  # @param total_distance [Float] total race distance in kilometers
+  # @param target_seconds [Float] target finish time in seconds
+  # @param split_km [Float] split distance in kilometers
+  # @param first_factor [Float] pace multiplier for the first half
+  # @param second_factor [Float] pace multiplier for the second half
+  # @return [Array<String>] array of cumulative split times
+  def calculate_variable_splits(total_distance, target_seconds, split_km, first_factor:, second_factor:)
     half_distance = total_distance / 2.0
     avg_pace = target_seconds / total_distance
-
-    # First half: 4% faster, second half: 4% slower
-    first_half_pace = avg_pace * 0.96
-    second_half_pace = avg_pace * 1.04
+    first_half_pace = avg_pace * first_factor
+    second_half_pace = avg_pace * second_factor
 
     splits = []
     distance_covered = 0.0
@@ -191,10 +173,8 @@ module RaceSplits
       distance_covered = total_distance if distance_covered > total_distance
 
       if distance_covered <= half_distance
-        # First half
         cumulative_time = distance_covered * first_half_pace
       else
-        # Second half
         time_at_halfway = half_distance * first_half_pace
         distance_in_second_half = distance_covered - half_distance
         cumulative_time = time_at_halfway + (distance_in_second_half * second_half_pace)

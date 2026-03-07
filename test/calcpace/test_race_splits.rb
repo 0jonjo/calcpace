@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test race splits functionality
-class TestRaceSplits < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestRaceSplits < CalcpaceTest
   # Test even pace splits
   def test_race_splits_half_marathon_5k
     # Half marathon (21.0975 km) in 1:30:00 with 5k splits

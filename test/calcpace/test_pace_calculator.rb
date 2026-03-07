@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test race pace calculator functionality
-class TestPaceCalculator < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestPaceCalculator < CalcpaceTest
   def test_list_races
     races = @calc.list_races
     assert_kind_of Hash, races

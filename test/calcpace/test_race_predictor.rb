@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test race predictor functionality using Riegel formula
-class TestRacePredictor < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestRacePredictor < CalcpaceTest
   # Test basic predictions
   def test_predict_time_5k_to_10k
     # 5K in 20:00 should predict roughly 41:30-42:00 for 10K
