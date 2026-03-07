@@ -1,13 +1,8 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
-class TestChecker < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestChecker < CalcpaceTest
   def test_check_positive
     assert_raises(Calcpace::NonPositiveInputError) { @calc.check_positive(-1) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.check_positive(0) }

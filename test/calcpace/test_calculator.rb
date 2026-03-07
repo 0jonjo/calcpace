@@ -1,13 +1,8 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
-class TestCalculator < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestCalculator < CalcpaceTest
   def test_velocity
     assert_equal 3.333, @calc.velocity(3600, 12_000).round(3)
     assert_equal 12.3, @calc.velocity(5841, 71_844.3)

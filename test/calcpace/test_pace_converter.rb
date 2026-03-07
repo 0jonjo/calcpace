@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test pace converter functionality
-class TestPaceConverter < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestPaceConverter < CalcpaceTest
   # Test convert_pace method with km to mi
   def test_convert_pace_km_to_mi_with_string
     # 5:00/km should be approximately 8:02/mi

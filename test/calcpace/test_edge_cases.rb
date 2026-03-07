@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test edge cases and boundary conditions
-class TestEdgeCases < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestEdgeCases < CalcpaceTest
   # Test very small values
   def test_velocity_with_small_values
     result = @calc.velocity(0.001, 0.001)

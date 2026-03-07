@@ -1,13 +1,8 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
-class TestConverter < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestConverter < CalcpaceTest
   def test_convert_to_seconds
     assert_equal 4262, @calc.convert_to_seconds('01:11:02')
     assert_equal 120, @calc.convert_to_seconds('02:00')

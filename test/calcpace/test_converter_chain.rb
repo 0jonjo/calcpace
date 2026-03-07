@@ -1,14 +1,9 @@
 # frozen_string_literal: true
 
-require 'minitest/autorun'
-require_relative '../../lib/calcpace'
+require_relative '../test_helper'
 
 # Test converter chain functionality
-class TestConverterChain < Minitest::Test
-  def setup
-    @calc = Calcpace.new
-  end
-
+class TestConverterChain < CalcpaceTest
   def test_convert_chain_simple
     # 1 km to miles to feet
     result = @calc.convert_chain(1, %i[km_to_mi mi_to_feet])
