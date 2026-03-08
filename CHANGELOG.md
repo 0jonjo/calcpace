@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.1] - 2026-03-06
+## [1.8.2] - 2026-03-07
 
 ### Added
+- GitHub Actions workflow for automated gem publishing to RubyGems.org on push to `main` when `lib/calcpace/version.rb` changes
+- Trusted publishing via OIDC (no API key required) using `rubygems/release-gem` action
+- Automatic GitHub Release creation with generated notes on each publish
+- `bundler/gem_tasks` added to `Rakefile` to support `rake release` and related tasks
 - SimpleCov integration for code coverage measurement
 - RuboCop lint job to CI pipeline
 - YARD documentation for all previously undocumented public methods in `Calculator` (`checked_velocity`, `clock_velocity`, `checked_pace`, `clock_pace`, `time`, `checked_time`, `clock_time`, `distance`, `checked_distance`)
