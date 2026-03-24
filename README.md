@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.8.2&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
 Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
 
@@ -7,7 +7,7 @@ Calcpace is a Ruby gem designed for calculations and conversions related to dist
 ### Add to your Gemfile
 
 ```ruby
-gem 'calcpace', '~> 1.8.2'
+gem 'calcpace', '~> 1.9'
 ```
 
 Then run:
@@ -307,6 +307,46 @@ The formula works best for:
 - Predictions assume equal training and effort across distances
 - Results are estimates - actual performance varies by individual fitness, training focus, and race conditions
 - The formula is most accurate when predicting between similar distance ranges (e.g., 10K to half marathon)
+
+### Race Time Predictions — Cameron Formula
+
+An alternative predictor using the **Cameron formula**, which applies an exponential correction based on the known distance. Unlike Riegel's fixed power-law exponent, Cameron's correction is larger when predicting from shorter races (where anaerobic capacity plays a bigger role) and diminishes as the known distance increases.
+
+```ruby
+calc = Calcpace.new
+
+# Predict marathon time from 10K
+calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')
+# => "02:57:46"
+
+# Predict 10K from 5K
+calc.predict_time_cameron_clock('5k', '00:20:00', '10k')
+# => "00:42:24"
+
+# Get predicted pace per km
+calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')
+# => "00:04:13"
+
+# Raw seconds (useful for further calculations)
+calc.predict_time_cameron('5k', '00:20:00', 'half_marathon')
+# => 5382.7 (approximately 1:29:42)
+```
+
+#### How the Cameron Formula Works
+
+**Formula:** `T2 = T1 × (D2/D1) × [(a + b × e^(-D1/c)) / (a + b × e^(-D2/c))]`
+
+Where:
+- **T1** = known time, **D1** = known distance (km)
+- **T2** = predicted time, **D2** = target distance (km)
+- **a = 0.000495**, **b = 0.000985**, **c = 1.4485** (empirical constants)
+
+The exponential correction factor `f(d) = a + b × e^(-d/c)` decreases as distance grows. When predicting from a short race to a long one, `f(D1) > f(D2)`, making `T2` grow slightly faster than a pure linear extrapolation — accounting for the greater fatigue at longer distances.
+
+**Compared to Riegel:**
+- Predicting from short distances (5K): Cameron tends to be more conservative (slower prediction) — acknowledges that 5K speed has a larger anaerobic component
+- Predicting from moderate distances (10K): Cameron tends to be slightly more optimistic — 10K is already a strong predictor of marathon aerobic capacity
+- Both formulas are estimates; real performance depends on training specificity, conditions, and individual physiology
 
 ### Other Useful Methods
 
