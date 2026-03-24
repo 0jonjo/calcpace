@@ -80,11 +80,10 @@ class TestCameronPredictor < CalcpaceTest
   # ── predict_pace_cameron ──────────────────────────────────────────────────
 
   def test_predict_pace_marathon_is_slower_than_5k
-    pace_5k      = @calc.predict_pace_cameron('5k', '00:20:00', '5k') rescue (1200.0 / 5)
     pace_marathon = @calc.predict_pace_cameron('5k', '00:20:00', 'marathon')
 
-    # Marathon pace should be slower (more seconds per km) than 5K pace
-    actual_5k_pace = 1200.0 / 5  # 4:00/km
+    # Marathon pace should be slower (more seconds per km) than 5K pace (4:00/km = 240s/km)
+    actual_5k_pace = 1200.0 / 5
     assert pace_marathon > actual_5k_pace, 'Marathon pace should be slower than 5K pace'
   end
 
