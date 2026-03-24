@@ -5,7 +5,7 @@
 # An alternative to the Riegel formula (RacePredictor module) that uses an
 # exponential correction to better account for physiological differences across
 # distances. The correction is larger when predicting from shorter races, where
-# aerobic capacity is more dominant, and diminishes as the known distance approaches
+# anaerobic contribution is greater, and diminishes as the known distance approaches
 # the target distance.
 #
 # Formula: T2 = T1 × (D2/D1) × [(a + b × e^(-D1/c)) / (a + b × e^(-D2/c))]
@@ -77,7 +77,7 @@ module CameronPredictor
   #
   # @example
   #   predict_pace_cameron('5k', '00:20:00', 'marathon')
-  #   #=> ~152.5 (approximately 2:32/km)
+  #   #=> ~255.1 (approximately 4:15/km)
   def predict_pace_cameron(from_race, from_time, to_race)
     predict_time_cameron(from_race, from_time, to_race) / race_distance(to_race)
   end

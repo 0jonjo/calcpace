@@ -329,7 +329,7 @@ calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')
 
 # Raw seconds (useful for further calculations)
 calc.predict_time_cameron('5k', '00:20:00', 'half_marathon')
-# => 3821.4 (approximately 1:03:41)
+# => 5382.7 (approximately 1:29:42)
 ```
 
 #### How the Cameron Formula Works
