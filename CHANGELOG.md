@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-03-24
+
+### Added
+- Cameron race predictor (`CameronPredictor` module) — alternative to Riegel for predicting race times
+  - `predict_time_cameron` — predicts race time in seconds using the Cameron formula
+  - `predict_time_cameron_clock` — same, returned as `HH:MM:SS` string
+  - `predict_pace_cameron` — predicted pace in seconds per kilometer
+  - `predict_pace_cameron_clock` — same, returned as `HH:MM:SS` string
+  - Formula: `T2 = T1 × (D2/D1) × [f(D1) / f(D2)]` where `f(d) = a + b × e^(-d/c)`, constants calibrated for km
+  - The exponential correction is larger when predicting from shorter distances, reflecting the greater anaerobic contribution at shorter race distances
+  - Accepts the same input formats as `RacePredictor`: string (`HH:MM:SS`, `MM:SS`) or numeric seconds
+  - 18 test cases covering standard predictions, round-trip consistency, clock format outputs, and error handling
+
 ## [1.8.2] - 2026-03-07
 
 ### Added

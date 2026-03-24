@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'calcpace/calculator'
+require_relative 'calcpace/cameron_predictor'
 require_relative 'calcpace/checker'
 require_relative 'calcpace/converter'
 require_relative 'calcpace/converter_chain'
@@ -33,6 +34,7 @@ require_relative 'calcpace/race_splits'
 # @see https://github.com/0jonjo/calcpace
 class Calcpace
   include Calculator
+  include CameronPredictor
   include Checker
   include Converter
   include ConverterChain
