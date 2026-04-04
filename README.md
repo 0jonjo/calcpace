@@ -1,6 +1,6 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.0&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.3&x2=0)](https://badge.fury.io/rb/calcpace)
 
-Calcpace is a Ruby gem designed for calculations and conversions related to distance and time. It can calculate velocity, pace, total time, and distance, accepting time in various formats, including HH:MM:SS. The gem supports conversion to 42 different units, including kilometers, miles, meters, and feet. It also provides methods to validate input.
+Calcpace is a Ruby gem for running and cycling calculations. It computes velocity, pace, total time, distance, and unit conversions (42 units). It also includes GPS track analysis (distance, elevation gain, per-km splits via the Haversine formula) and VO2max estimation from race results (Daniels & Gilbert formula).
 
 ## Installation
 
@@ -347,6 +347,98 @@ The exponential correction factor `f(d) = a + b × e^(-d/c)` decreases as distan
 - Predicting from short distances (5K): Cameron tends to be more conservative (slower prediction) — acknowledges that 5K speed has a larger anaerobic component
 - Predicting from moderate distances (10K): Cameron tends to be slightly more optimistic — 10K is already a strong predictor of marathon aerobic capacity
 - Both formulas are estimates; real performance depends on training specificity, conditions, and individual physiology
+
+### GPS Track Analysis
+
+Analyse a GPS track from an array of points (hashes with `:lat`, `:lon`, and optionally `:ele` in metres and `:time` as a `Time` object):
+
+```ruby
+calc = Calcpace.new
+
+points = [
+  { lat: -23.5505, lon: -46.6333, ele: 760.0, time: Time.parse('2024-01-01 07:00:00') },
+  { lat: -23.5510, lon: -46.6400, ele: 765.0, time: Time.parse('2024-01-01 07:05:00') },
+  { lat: -23.5520, lon: -46.6480, ele: 758.0, time: Time.parse('2024-01-01 07:10:00') },
+]
+
+# Distance between two coordinates (Haversine formula, returns km)
+calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)
+# => 0.089
+
+# Total track distance in km
+calc.track_distance(points)
+# => 0.87
+
+# Elevation gain and loss in metres
+calc.elevation_gain(points)
+# => { gain: 5.0, loss: 7.0 }
+
+# Per-km splits (requires :time in each point)
+calc.track_splits(points, 1.0)
+# => [{ km: 1, elapsed: 312, pace: "05:12" }, ...]
+```
+
+#### How the Haversine Formula Works
+
+The Haversine formula calculates the great-circle distance between two points on a sphere using their latitude and longitude. It assumes the Earth is a perfect sphere with a radius of 6,371 km.
+
+**Formula:**
+```
+a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlon/2)
+c = 2 × atan2(√a, √(1−a))
+d = R × c
+```
+
+**Accuracy:** within ~0.3% of the WGS84 ellipsoid model used by GPS devices — sufficient for running and cycling distances. For geodetic surveying, use a library with ellipsoid support.
+
+---
+
+### VO2max Estimation
+
+Estimate aerobic fitness from a race result using the **Daniels & Gilbert formula** (1979):
+
+```ruby
+calc = Calcpace.new
+
+# Estimate VO2max from distance (km) and finish time
+calc.estimate_vo2max(10.0, '00:40:00')  # => 51.9
+calc.estimate_vo2max(42.195, '03:30:00') # => 44.8
+calc.estimate_vo2max(5.0, '20:00')       # => 49.8
+
+# Time can also be provided as total seconds
+calc.estimate_vo2max(10.0, 2400)         # => 51.9
+
+# Get a descriptive label for a VO2max value
+calc.vo2max_label(51.9)  # => "Very Good"
+calc.vo2max_label(65.0)  # => "Excellent"
+calc.vo2max_label(25.0)  # => "Beginner"
+```
+
+#### VO2max Levels
+
+| VO2max (ml/kg/min) | Level     |
+|--------------------|-----------|
+| ≥ 70               | Elite     |
+| 60–69              | Excellent |
+| 50–59              | Very Good |
+| 40–49              | Good      |
+| 30–39              | Fair      |
+| < 30               | Beginner  |
+
+#### How the Daniels & Gilbert Formula Works
+
+The formula relates running velocity and exercise duration to the oxygen demand as a percentage of VO2max:
+
+```
+velocity (m/min)  = distance_m / time_min
+VO2               = −4.60 + 0.182258·v + 0.000104·v²
+%VO2max           = 0.8 + 0.1894393·e^(−0.012778·t) + 0.2989558·e^(−0.1932605·t)
+VO2max            = VO2 / %VO2max
+```
+
+**Accuracy:** ±3–5 ml/kg/min vs. laboratory testing. Best results with efforts between **5 and 60 minutes** at a near-maximal (race) pace. Accuracy decreases for very short (< 5 min) or very long (> 4 h) efforts.
+
+---
 
 ### Other Useful Methods
 
