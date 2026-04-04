@@ -62,6 +62,7 @@ Metrics/ClassLength:
 Metrics/ModuleLength:
   Exclude:
     - 'lib/calcpace/race_splits.rb'
+    - 'lib/calcpace/track_calculator.rb'
 
 # Allow both single and double quotes for strings
 Style/StringLiteralsInInterpolation:
