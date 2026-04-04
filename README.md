@@ -1,395 +1,126 @@
 # Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.3&x2=0)](https://badge.fury.io/rb/calcpace)
 
-Calcpace is a Ruby gem for running and cycling calculations. It computes velocity, pace, total time, distance, and unit conversions (42 units). It also includes GPS track analysis (distance, elevation gain, per-km splits via the Haversine formula) and VO2max estimation from race results (Daniels & Gilbert formula).
+A Ruby gem for running and cycling calculations: pace, time, distance, unit conversions, race predictions, GPS track analysis, and VO2max estimation.
 
 ## Installation
-
-### Add to your Gemfile
 
 ```ruby
 gem 'calcpace', '~> 1.9'
 ```
 
-Then run:
-
-```bash
-bundle install
-```
-
-### Install the gem manually
-
-```bash
-gem install calcpace
-```
-
 ## Usage
-
-Before performing any calculations or conversions, create a new instance of Calcpace:
 
 ```ruby
 require 'calcpace'
-
-calculate = Calcpace.new
-```
-
-### Calculate using Integers or Floats
-
-Calcpace provides methods to calculate velocity, pace, total time, and distance. The methods are unit-agnostic, and the return value is a float. Here are some examples:
-
-```ruby
-calculate.velocity(3625, 12275) # => 3.386206896551724
-calculate.pace(3665, 12) # => 305.4166666666667
-calculate.time(210, 12) # => 2520.0
-calculate.distance(9660, 120) # => 80.5
-```
-
-Tip: Use the `round` method to round a float. For example:
-
-```ruby
-calculate.velocity(3625, 12275).round(3) # => 3.386
-```
-
-Remember:
-
-- Velocity is the distance divided by the time (e.g., m/s or km/h).
-- Pace is the time divided by the distance (e.g., minutes/km or minutes/miles).
-- Total time is the distance divided by the velocity.
-- Distance is the velocity multiplied by the time.
-
-### Calculate using Clocktime
-
-Calcpace also provides methods to calculate using clocktime (HH:MM:SS or MM:SS format string). The return value will be in seconds or clocktime, depending on the method called, except for `checked_distance`. Here are some examples:
-
-```ruby
-# The return will be in the unit you input/seconds or seconds/unit you input
-calculate.checked_velocity('01:00:00', 12275) # => 3.4097222222222223
-calculate.checked_pace('01:21:32', 10) # => 489.2
-calculate.checked_time('00:05:31', 12.6) # => 4170.599999999999
-
-calculate.checked_distance('01:21:32', '00:06:27') # => 12.640826873385013
-
-# The return will be in clocktime
-calculate.clock_pace('01:21:32', 10) # => "00:08:09"
-calculate.clock_velocity('01:00:00', 10317) # => "00:00:02"
-calculate.clock_time('00:05:31', 12.6) # => "01:09:30"
-```
-
-Note: Using the `clock` methods may be less precise than using other methods due to conversions.
-
-You can also use BigDecimal for more precise calculations. For example:
-
-```ruby
-require 'bigdecimal'
-calculate.checked_velocity('10:00:00', 10317).to_d # => #<BigDecimal:7f9f1b8b1d08,'0.2865833333 333333E1',27(36)>
-```
-
-To learn more about BigDecimal, check the [documentation](https://ruby-doc.org/stdlib-2.7.1/libdoc/bigdecimal/rdoc/BigDecimal.html).
-
-### Convert Distances and Velocities
-
-Use the `convert` method to convert a distance or velocity. The first parameter is the value to be converted, and the second parameter is the unit to which the value will be converted. The unit can be a string (e.g. 'km to meters') or a symbol (e.g. :km_to_meters). The gem supports 42 different units, including kilometers, miles, meters, knots, and feet.
-
-Here are some examples:
-
-```ruby
-converter.convert(10, :km_to_meters) # => 1000
-converter.convert(10, 'mi to km') # => 16.0934
-converter.convert(1, :nautical_mi_to_km) # => 1.852
-converter.convert(1, 'km h to m s') # => 0.277778
-converter.convert(1, :m_s_to_mi_h) # => 2.23694
-```
-
-| Conversion Unit      | Description                 |
-|----------------------|-----------------------------|
-| :km_to_mi            | Kilometers to Miles         |
-| :mi_to_km            | Miles to Kilometers         |
-| :nautical_mi_to_km   | Nautical Miles to Kilometers |
-| :km_to_nautical_mi   | Kilometers to Nautical Miles |
-| :meters_to_km        | Meters to Kilometers        |
-| :km_to_meters        | Kilometers to Meters        |
-| :meters_to_mi        | Meters to Miles             |
-| :mi_to_meters        | Miles to Meters             |
-| :m_s_to_km_h         | Meters per Second to Kilometers per Hour    |
-| :km_h_to_m_s         | Kilometers per Hour to Meters per Second    |
-| :m_s_to_mi_h         | Meters per Second to Miles per Hour    |
-| :mi_h_to_m_s         | Miles per Hour to Meters per Second    |
-| :m_s_to_feet_s       | Meters per Second to Feet per Second    |
-| :feet_s_to_m_s       | Feet per Second to Meters per Second    |
-| :km_h_to_mi_h        | Kilometers per Hour to Miles per Hour    |
-| :mi_h_to_km_h        | Miles per Hour to Kilometers per Hour    |
-
-You can list all the available units [here](/lib/calcpace/converter.rb), or using `list` methods. The return will be a hash with the unit and a description of the unit.
-
-```ruby
-converter.list_all
-# => {:km_to_mi=>"KM to MI", :mi_to_km=>"MI to KM", ...}
-
-converter.list_distance
-# => {:km_to_mi=>"KM to MI", :mi_to_km=>"MI to KM", ...}
-
-converter.list_speed
-# => {:m_s_to_km_h=>"M S to KM H", :km_h_to_m_s=>"KM H to M S", ...}
-```
-
-### Chain Conversions
-
-Perform multiple conversions in sequence with the converter chain feature:
-
-```ruby
 calc = Calcpace.new
-
-# Convert kilometers to miles to feet in one call
-calc.convert_chain(1, [:km_to_mi, :mi_to_feet])
-# => 3280.84 (1 km = 0.621 mi = 3280.84 feet)
-
-# Convert with description for debugging
-calc.convert_chain_with_description(100, [:meters_to_km, :km_to_mi])
-# => { result: 0.0621371, description: "100 → meters_to_km → km_to_mi → 0.0621" }
-
-# Speed conversions
-calc.convert_chain(10, [:m_s_to_km_h, :km_h_to_mi_h])
-# => 22.3694 (10 m/s = 36 km/h = 22.37 mi/h)
 ```
 
-### Race Pace Calculator
+---
 
-Calcpace includes a race pace calculator for standard race distances (5K, 10K, half-marathon, and marathon):
+### Basic Calculations
 
 ```ruby
-calc = Calcpace.new
+calc.velocity(3625, 12275)          # => 3.386  (distance / time)
+calc.pace(3665, 12)                 # => 305.4  (time / distance)
+calc.time(210, 12)                  # => 2520.0 (pace × distance)
+calc.distance(9660, 120)            # => 80.5   (velocity × time)
 
-# Calculate finish time for a race given a pace
-calc.race_time(300, '5k')              # => 1500.0 (5:00/km pace for 5K = 25:00)
-calc.race_time_clock('05:00', 'marathon') # => '03:30:58' (5:00/km pace for marathon)
-
-# Calculate required pace for a target finish time
-calc.race_pace('00:30:00', '5k')       # => 360.0 (need 6:00/km to finish 5K in 30:00)
-calc.race_pace_clock('04:00:00', 'marathon') # => '00:05:41' (need 5:41/km for 4-hour marathon)
-
-# List available race distances
-calc.list_races
-# => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, 'marathon' => 42.195 }
+# Clocktime input/output (HH:MM:SS or MM:SS)
+calc.clock_pace('01:00:00', 10)     # => "00:06:00"
+calc.clock_time('00:05:31', 12.6)   # => "01:09:30"
+calc.checked_distance('01:21:32', '00:06:27') # => 12.64
 ```
 
-Supported race distances:
-- `5k` - 5 kilometers
-- `10k` - 10 kilometers
-- `half_marathon` - 21.0975 kilometers
-- `marathon` - 42.195 kilometers
-- `1mile` - 1.60934 kilometers
-- `5mile` - 8.04672 kilometers
-- `10mile` - 16.0934 kilometers
+---
+
+### Unit Conversions
+
+30+ units supported. String or symbol format:
+
+```ruby
+calc.convert(10, :km_to_mi)         # => 6.21371
+calc.convert(10, 'mi to km')        # => 16.0934
+calc.convert(1, :m_s_to_km_h)       # => 3.6
+
+# Chain conversions
+calc.convert_chain(1, [:km_to_mi, :mi_to_feet])  # => 3280.84
+```
+
+See all units: `calc.list_all`, `calc.list_distance`, `calc.list_speed`.
+
+---
 
 ### Pace Conversions
 
-Convert running pace between kilometers and miles:
-
 ```ruby
-calc = Calcpace.new
-
-# Convert pace from km to miles
-calc.pace_km_to_mi('05:00')           # => '00:08:02' (5:00/km = 8:02/mi)
-calc.convert_pace('05:00', :km_to_mi) # => '00:08:02' (same as above)
-
-# Convert pace from miles to km
-calc.pace_mi_to_km('08:00')           # => '00:04:58' (8:00/mi ≈ 4:58/km)
-calc.convert_pace('08:00', :mi_to_km) # => '00:04:58' (same as above)
-
-# Works with numeric input (seconds) as well
-calc.pace_km_to_mi(300)               # => '00:08:02' (300 seconds/km)
-calc.pace_mi_to_km(480)               # => '00:04:58' (480 seconds/mi)
-
-# String format also supported
-calc.convert_pace('05:00', 'km to mi') # => '00:08:02'
+calc.pace_km_to_mi('05:00')   # => "00:08:02"
+calc.pace_mi_to_km('08:00')   # => "00:04:58"
 ```
 
-The pace conversions are particularly useful when:
-- Planning races in different countries (metric vs imperial)
-- Comparing training paces with international runners
-- Converting workout plans between pace formats
+---
+
+### Race Pace & Time
+
+```ruby
+calc.race_time_clock('05:00', 'marathon')          # => "03:30:58"
+calc.race_pace_clock('04:00:00', 'marathon')       # => "00:05:41"
+calc.list_races  # => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, ... }
+```
+
+---
 
 ### Race Splits
 
-Calculate split times for races to help pace your race strategy:
-
 ```ruby
-calc = Calcpace.new
-
-# Even pace splits for half marathon (every 5k)
+# Even pace — default
 calc.race_splits('half_marathon', target_time: '01:30:00', split_distance: '5k')
 # => ["00:21:20", "00:42:40", "01:03:59", "01:25:19", "01:30:00"]
 
-# Kilometer splits for 10K
-calc.race_splits('10k', target_time: '00:40:00', split_distance: '1k')
-# => ["00:04:00", "00:08:00", "00:12:00", ..., "00:40:00"]
-
-# Mile splits for marathon
-calc.race_splits('marathon', target_time: '03:30:00', split_distance: '1mile')
-# => ["00:08:02", "00:16:04", ..., "03:30:00"]
-
-# Negative splits strategy (second half faster)
+# Strategies: :even (default), :negative (second half faster), :positive (first half faster)
 calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
-# => ["00:20:48", "00:40:00"] # First 5k slower, second 5k faster
-
-# Positive splits strategy (first half faster)
-calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :positive)
-# => ["00:19:12", "00:40:00"] # First 5k faster, second 5k slower
+# => ["00:20:48", "00:40:00"]
 ```
 
-Supported strategies:
-- `:even` - Constant pace throughout (default)
-- `:negative` - Second half ~4% faster (progressive race)
-- `:positive` - First half ~4% faster (conservative start)
-
-Split distances can be:
-- Standard race distances: `'5k'`, `'10k'`, `'1mile'`, etc.
-- Custom distances: `2.5` (in kilometers), `'3k'`, etc.
+---
 
 ### Race Time Predictions
 
-Predict your race times at different distances based on a recent performance using the **Riegel formula**:
+**Riegel formula** (`T2 = T1 × (D2/D1)^1.06`):
 
 ```ruby
-calc = Calcpace.new
-
-# Predict marathon time from a 5K result
-calc.predict_time_clock('5k', '00:20:00', 'marathon')
-# => "03:11:49" (predicts 3:11:49 marathon from 20:00 5K)
-
-# Predict 10K time from half marathon
-calc.predict_time_clock('half_marathon', '01:30:00', '10k')
-# => "00:40:47"
-
-# Get predicted pace for target race
-calc.predict_pace_clock('5k', '00:20:00', 'marathon')
-# => "00:04:32" (4:32/km pace for predicted marathon)
-
-# Get complete equivalent performance info
+calc.predict_time_clock('5k', '00:20:00', 'marathon')   # => "03:11:49"
+calc.predict_pace_clock('5k', '00:20:00', 'marathon')   # => "00:04:32"
 calc.equivalent_performance('10k', '00:42:00', '5k')
-# => {
-#      time: 1209.0,
-#      time_clock: "00:20:09",
-#      pace: 241.8,
-#      pace_clock: "00:04:02"
-#    }
+# => { time: 1209.0, time_clock: "00:20:09", pace: 241.8, pace_clock: "00:04:02" }
 ```
 
-#### How the Riegel Formula Works
-
-The Riegel formula is a mathematical model that predicts race performance across different distances:
-
-**Formula:** `T2 = T1 × (D2/D1)^1.06`
-
-Where:
-- **T1** = your known time at distance D1
-- **T2** = predicted time at distance D2
-- **D1** = known race distance (in km)
-- **D2** = target race distance (in km)
-- **1.06** = fatigue/endurance factor
-
-**The 1.06 exponent** represents how pace slows as distance increases. If endurance was perfect (1.0), doubling distance would simply double time. But in reality, you slow down slightly - the 1.06 factor accounts for this accumulated fatigue.
-
-**Example:** From a 5K in 20:00, predict marathon time:
-- T1 = 1200 seconds (20:00)
-- D1 = 5 km
-- D2 = 42.195 km (marathon)
-- T2 = 1200 × (42.195/5)^1.06
-- T2 = 1200 × 9.591 = 11,509 seconds
-- T2 = **3:11:49**
-
-The formula works best for:
-- Distances from 5K to marathon
-- Recent race results (within 6-8 weeks)
-- Similar terrain and weather conditions
-- Well-trained runners with consistent pacing
-
-**Important notes:**
-- Predictions assume equal training and effort across distances
-- Results are estimates - actual performance varies by individual fitness, training focus, and race conditions
-- The formula is most accurate when predicting between similar distance ranges (e.g., 10K to half marathon)
-
-### Race Time Predictions — Cameron Formula
-
-An alternative predictor using the **Cameron formula**, which applies an exponential correction based on the known distance. Unlike Riegel's fixed power-law exponent, Cameron's correction is larger when predicting from shorter races (where anaerobic capacity plays a bigger role) and diminishes as the known distance increases.
+**Cameron formula** (exponential correction — tends to be more conservative from short distances):
 
 ```ruby
-calc = Calcpace.new
-
-# Predict marathon time from 10K
-calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')
-# => "02:57:46"
-
-# Predict 10K from 5K
-calc.predict_time_cameron_clock('5k', '00:20:00', '10k')
-# => "00:42:24"
-
-# Get predicted pace per km
-calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')
-# => "00:04:13"
-
-# Raw seconds (useful for further calculations)
-calc.predict_time_cameron('5k', '00:20:00', 'half_marathon')
-# => 5382.7 (approximately 1:29:42)
+calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "02:57:46"
+calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')  # => "00:04:13"
 ```
 
-#### How the Cameron Formula Works
-
-**Formula:** `T2 = T1 × (D2/D1) × [(a + b × e^(-D1/c)) / (a + b × e^(-D2/c))]`
-
-Where:
-- **T1** = known time, **D1** = known distance (km)
-- **T2** = predicted time, **D2** = target distance (km)
-- **a = 0.000495**, **b = 0.000985**, **c = 1.4485** (empirical constants)
-
-The exponential correction factor `f(d) = a + b × e^(-d/c)` decreases as distance grows. When predicting from a short race to a long one, `f(D1) > f(D2)`, making `T2` grow slightly faster than a pure linear extrapolation — accounting for the greater fatigue at longer distances.
-
-**Compared to Riegel:**
-- Predicting from short distances (5K): Cameron tends to be more conservative (slower prediction) — acknowledges that 5K speed has a larger anaerobic component
-- Predicting from moderate distances (10K): Cameron tends to be slightly more optimistic — 10K is already a strong predictor of marathon aerobic capacity
-- Both formulas are estimates; real performance depends on training specificity, conditions, and individual physiology
+---
 
 ### GPS Track Analysis
 
-Analyse a GPS track from an array of points (hashes with `:lat`, `:lon`, and optionally `:ele` in metres and `:time` as a `Time` object):
+Accepts an array of hashes with `:lat`, `:lon`, and optionally `:ele` (metres) and `:time` (`Time`):
 
 ```ruby
-calc = Calcpace.new
-
 points = [
   { lat: -23.5505, lon: -46.6333, ele: 760.0, time: Time.parse('2024-01-01 07:00:00') },
   { lat: -23.5510, lon: -46.6400, ele: 765.0, time: Time.parse('2024-01-01 07:05:00') },
   { lat: -23.5520, lon: -46.6480, ele: 758.0, time: Time.parse('2024-01-01 07:10:00') },
 ]
 
-# Distance between two coordinates (Haversine formula, returns km)
-calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)
-# => 0.089
-
-# Total track distance in km
-calc.track_distance(points)
-# => 0.87
-
-# Elevation gain and loss in metres
-calc.elevation_gain(points)
-# => { gain: 5.0, loss: 7.0 }
-
-# Per-km splits (requires :time in each point)
-calc.track_splits(points, 1.0)
-# => [{ km: 1, elapsed: 312, pace: "05:12" }, ...]
+calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)  # => 0.089 km
+calc.track_distance(points)    # => 0.87 km
+calc.elevation_gain(points)    # => { gain: 5.0, loss: 7.0 }
+calc.track_splits(points, 1.0) # => [{ km: 1, elapsed: 312, pace: "05:12" }, ...]
 ```
 
-#### How the Haversine Formula Works
-
-The Haversine formula calculates the great-circle distance between two points on a sphere using their latitude and longitude. It assumes the Earth is a perfect sphere with a radius of 6,371 km.
-
-**Formula:**
-```
-a = sin²(Δlat/2) + cos(lat1) × cos(lat2) × sin²(Δlon/2)
-c = 2 × atan2(√a, √(1−a))
-d = R × c
-```
-
-**Accuracy:** within ~0.3% of the WGS84 ellipsoid model used by GPS devices — sufficient for running and cycling distances. For geodetic surveying, use a library with ellipsoid support.
+**Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
 
 ---
 
@@ -398,23 +129,12 @@ d = R × c
 Estimate aerobic fitness from a race result using the **Daniels & Gilbert formula** (1979):
 
 ```ruby
-calc = Calcpace.new
-
-# Estimate VO2max from distance (km) and finish time
-calc.estimate_vo2max(10.0, '00:40:00')  # => 51.9
+calc.estimate_vo2max(10.0, '00:40:00')   # => 51.9 ml/kg/min
 calc.estimate_vo2max(42.195, '03:30:00') # => 44.8
-calc.estimate_vo2max(5.0, '20:00')       # => 49.8
+calc.estimate_vo2max(5.0, 2400)          # also accepts total seconds
 
-# Time can also be provided as total seconds
-calc.estimate_vo2max(10.0, 2400)         # => 51.9
-
-# Get a descriptive label for a VO2max value
 calc.vo2max_label(51.9)  # => "Very Good"
-calc.vo2max_label(65.0)  # => "Excellent"
-calc.vo2max_label(25.0)  # => "Beginner"
 ```
-
-#### VO2max Levels
 
 | VO2max (ml/kg/min) | Level     |
 |--------------------|-----------|
@@ -425,72 +145,49 @@ calc.vo2max_label(25.0)  # => "Beginner"
 | 30–39              | Fair      |
 | < 30               | Beginner  |
 
-#### How the Daniels & Gilbert Formula Works
-
-The formula relates running velocity and exercise duration to the oxygen demand as a percentage of VO2max:
-
+**Formula:**
 ```
-velocity (m/min)  = distance_m / time_min
-VO2               = −4.60 + 0.182258·v + 0.000104·v²
-%VO2max           = 0.8 + 0.1894393·e^(−0.012778·t) + 0.2989558·e^(−0.1932605·t)
-VO2max            = VO2 / %VO2max
+velocity (m/min) = distance_m / time_min
+VO2              = −4.60 + 0.182258·v + 0.000104·v²
+%VO2max          = 0.8 + 0.1894393·e^(−0.012778·t) + 0.2989558·e^(−0.1932605·t)
+VO2max           = VO2 / %VO2max
 ```
 
-**Accuracy:** ±3–5 ml/kg/min vs. laboratory testing. Best results with efforts between **5 and 60 minutes** at a near-maximal (race) pace. Accuracy decreases for very short (< 5 min) or very long (> 4 h) efforts.
+Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
 
 ---
 
-### Other Useful Methods
-
-Calcpace also provides other useful methods:
+### Other Utilities
 
 ```ruby
-converter = Calcpace.new
-converter.convert_to_seconds('01:00:00') # => 3600
-converter.convert_to_clocktime(3600) # => '01:00:00'
-converter.convert_to_clocktime(100000) # => '1 03:46:40'
-converter.check_time('01:00:00') # => nil
+calc.convert_to_seconds('01:00:00')  # => 3600
+calc.convert_to_clocktime(3600)      # => "01:00:00"
+calc.check_time('01:00:00')          # => nil (valid)
 ```
+
+---
 
 ### Errors
 
-The gem now raises specific custom error classes for invalid inputs, allowing for more precise error handling. These errors inherit from `Calcpace::Error`.
+All errors inherit from `Calcpace::Error`:
 
-- `Calcpace::NonPositiveInputError`: Raised when a numeric input is not positive.
-- `Calcpace::InvalidTimeFormatError`: Raised when a time string is not in the expected `HH:MM:SS` or `MM:SS` format.
+- `Calcpace::NonPositiveInputError` — numeric input is zero or negative
+- `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format
 
-For example:
-
-```ruby
-begin
-  calculate.pace(945, -1)
-rescue Calcpace::NonPositiveInputError => e
-  puts e.message # => "Distance must be a positive number"
-end
-
-begin
-  calculate.checked_time('string', 10)
-rescue Calcpace::InvalidTimeFormatError => e
-  puts e.message # => "It must be a valid time in the XX:XX:XX or XX:XX format"
-end
-```
+---
 
 ### Testing
-
-To run the tests, clone the repository and run:
 
 ```bash
 bundle exec rake
 ```
 
-### Supported Ruby Versions
-
-The tests are run using Ruby versions from 2.7.8 to 3.4.2, as specified in the `.github/workflows/test.yml` file.
+Requires Ruby >= 3.2.0.
 
 ## Contributing
 
-We welcome contributions to Calcpace! To contribute, clone this repository and submit a pull request. Please ensure that your code adheres to our style and includes tests where appropriate.
+Clone the repo and submit a pull request. Please include tests.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+[MIT License](https://opensource.org/licenses/MIT)
