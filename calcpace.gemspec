@@ -8,8 +8,11 @@ Gem::Specification.new do |spec|
   spec.authors       = ['João Gilberto Saraiva']
   spec.email         = ['joaogilberto@tuta.io']
 
-  spec.summary       = 'A Ruby gem for pace, distance, and time calculations.'
-  spec.description   = 'Ruby gem for pace, distance, time, and speed calculations. Supports multiple units and formats.'
+  spec.summary       = 'Pace, distance, GPS track analysis, and VO2max calculations for runners and cyclists.'
+  spec.description   = 'Ruby gem for running and cycling calculations: pace, time, distance, ' \
+                       'unit conversions (30+ units), race predictions (Riegel & Cameron), ' \
+                       'GPS track analysis (Haversine, elevation gain, per-km splits), ' \
+                       'and VO2max estimation (Daniels & Gilbert).'
   spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage
   spec.license = 'MIT'
