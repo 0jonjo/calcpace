@@ -28,7 +28,8 @@ module Vo2maxEstimator
   # @param distance_km [Numeric] race distance in kilometres (must be > 0)
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS", or total seconds (must be > 0)
   # @return [Float] estimated VO2max in ml/kg/min, rounded to one decimal place
-  # @raise [ArgumentError] if distance or time are not positive
+  # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
+  # @raise [Calcpace::InvalidTimeFormatError] if time string is not in HH:MM:SS or MM:SS format
   #
   # @example 10 km in 40:00 → ~51.9 ml/kg/min
   #   calc = Calcpace.new
@@ -76,15 +77,7 @@ module Vo2maxEstimator
   def parse_time_minutes(time)
     return time.to_f / 60.0 if time.is_a?(Numeric)
 
-    parts = time.to_s.split(':').map(&:to_f)
-    parse_parts(parts, time)
-  end
-
-  def parse_parts(parts, original)
-    case parts.size
-    when 3 then ((parts[0] * 3600) + (parts[1] * 60) + parts[2]) / 60.0
-    when 2 then ((parts[0] * 60) + parts[1]) / 60.0
-    else raise ArgumentError, "Invalid time format: #{original}. Use HH:MM:SS or MM:SS."
-    end
+    check_time(time.to_s)
+    convert_to_seconds(time.to_s) / 60.0
   end
 end

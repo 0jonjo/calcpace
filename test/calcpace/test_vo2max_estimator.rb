@@ -48,7 +48,11 @@ class TestVo2maxEstimator < CalcpaceTest
   end
 
   def test_raises_for_invalid_time_format
-    assert_raises(ArgumentError) { @calc.estimate_vo2max(10.0, 'fast') }
+    assert_raises(Calcpace::InvalidTimeFormatError) { @calc.estimate_vo2max(10.0, 'fast') }
+  end
+
+  def test_raises_for_non_numeric_time_segments
+    assert_raises(Calcpace::InvalidTimeFormatError) { @calc.estimate_vo2max(10.0, '00:aa:00') }
   end
 
   # --- vo2max_label ---
