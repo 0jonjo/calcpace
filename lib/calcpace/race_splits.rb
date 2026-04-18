@@ -7,7 +7,7 @@
 module RaceSplits
   # Calculates split times for a race
   #
-  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', etc.)
+  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
   # @param target_time [String] target finish time in HH:MM:SS or MM:SS format
   # @param split_distance [String, Numeric] distance for each split ('5k', '1k', '1mile', or numeric in km)
   # @param strategy [Symbol] pacing strategy - :even (default), :negative, or :positive
@@ -42,7 +42,7 @@ module RaceSplits
     if split_distance.is_a?(Numeric)
       split_distance.to_f
     elsif split_distance.is_a?(String)
-      # Try to get from RACE_DISTANCES first (includes standard distances like '5k', '1mile', etc.)
+      # Try to get from RACE_DISTANCES first (includes standard distances like '5k', '100k', '1mile', etc.)
       distance_key = split_distance.to_s.downcase
 
       # Check if it's a standard race distance

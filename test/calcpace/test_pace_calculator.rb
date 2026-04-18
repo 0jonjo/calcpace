@@ -7,11 +7,12 @@ class TestPaceCalculator < CalcpaceTest
   def test_list_races
     races = @calc.list_races
     assert_kind_of Hash, races
-    assert_equal 7, races.size
+    assert_equal 8, races.size
     assert_equal 5.0, races['5k']
     assert_equal 10.0, races['10k']
     assert_equal 21.0975, races['half_marathon']
     assert_equal 42.195, races['marathon']
+    assert_equal 100.0, races['100k']
     assert_equal 1.60934, races['1mile']
     assert_equal 8.04672, races['5mile']
     assert_equal 16.0934, races['10mile']
@@ -39,6 +40,12 @@ class TestPaceCalculator < CalcpaceTest
     # 5:00/km pace for half marathon (21.0975 km) should be ~1:45:17
     result = @calc.race_time(300, 'half_marathon')
     assert_in_delta 6329.25, result, 0.5
+  end
+
+  def test_race_time_100k
+    # 6:00/km pace for 100k (360s/km) should be 10 hours (36000 seconds)
+    result = @calc.race_time(360, '100k')
+    assert_equal 36_000.0, result
   end
 
   def test_race_time_clock_format
@@ -69,6 +76,12 @@ class TestPaceCalculator < CalcpaceTest
     # To run marathon in 3:30:00 (12600 seconds), need ~4:57/km
     result = @calc.race_pace('03:30:00', 'marathon')
     assert_in_delta 298.61, result, 1.0
+  end
+
+  def test_race_pace_100k
+    # To run 100k in 10:00:00 (36000 seconds), need 6:00/km (360s/km)
+    result = @calc.race_pace('10:00:00', '100k')
+    assert_equal 360.0, result
   end
 
   def test_race_pace_clock_format

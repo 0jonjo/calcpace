@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2026-04-18
+
+### Added
+- Standard race distance support for **100K** (100.0 km)
+  - Supported in `PaceCalculator`, `RacePredictor`, `CameronPredictor`, and `RaceSplits`
+  - Updated `list_races` to include 100K
+  - Added integration tests for 100K race distance across all modules
+
+## [1.9.3] - 2026-04-05
+
+### Added
+- VO2max Estimator module (`Vo2maxEstimator`)
+  - Daniels & Gilbert (1979) formula for VO2max estimation from race results
+  - Performance level labels (Elite, Excellent, etc.)
+- Improved time validation using strict `check_time` and `convert_to_seconds`
+- Updated YARD documentation for all calculation methods
+
+### Fixed
+- Gemspec formatting and line length constraints
+- README structure and documentation examples
+
+## [1.9.2] - 2026-03-31
+
+### Added
+- Track Calculator module (`TrackCalculator`)
+  - Haversine distance calculation for GPS coordinates
+  - Elevation gain and loss analysis
+  - Automated track splits based on GPS points
+
 ## [1.9.1] - 2026-03-30
 
 ### Changed
