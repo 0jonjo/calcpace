@@ -64,7 +64,7 @@ calc.pace_mi_to_km('08:00')   # => "00:04:58"
 ```ruby
 calc.race_time_clock('05:00', 'marathon')          # => "03:30:58"
 calc.race_pace_clock('04:00:00', 'marathon')       # => "00:05:41"
-calc.list_races  # => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, ... }
+calc.list_races  # => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, 'marathon' => 42.195, '100k' => 100.0, ... }
 ```
 
 ---

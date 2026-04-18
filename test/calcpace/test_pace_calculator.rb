@@ -7,11 +7,12 @@ class TestPaceCalculator < CalcpaceTest
   def test_list_races
     races = @calc.list_races
     assert_kind_of Hash, races
-    assert_equal 7, races.size
+    assert_equal 8, races.size
     assert_equal 5.0, races['5k']
     assert_equal 10.0, races['10k']
     assert_equal 21.0975, races['half_marathon']
     assert_equal 42.195, races['marathon']
+    assert_equal 100.0, races['100k']
     assert_equal 1.60934, races['1mile']
     assert_equal 8.04672, races['5mile']
     assert_equal 16.0934, races['10mile']

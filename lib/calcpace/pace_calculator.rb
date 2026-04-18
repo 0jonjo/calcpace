@@ -3,7 +3,7 @@
 # Module for calculating race times and paces for standard distances
 #
 # This module provides convenience methods for calculating finish times
-# and paces for common race distances like 5K, 10K, half-marathon, and marathon.
+# and paces for common race distances like 5K, 10K, half-marathon, marathon, and 100K.
 module PaceCalculator
   # Standard race distances in kilometers
   RACE_DISTANCES = {
@@ -11,6 +11,7 @@ module PaceCalculator
     '10k' => 10.0,
     'half_marathon' => 21.0975,
     'marathon' => 42.195,
+    '100k' => 100.0,
     '1mile' => 1.60934,
     '5mile' => 8.04672,
     '10mile' => 16.0934
@@ -19,7 +20,7 @@ module PaceCalculator
   # Calculates the finish time for a race given a pace per kilometer
   #
   # @param pace_per_km [Numeric, String] pace in seconds per km or time string (MM:SS)
-  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon')
+  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', '100k')
   # @return [Float] total time in seconds
   # @raise [ArgumentError] if race distance is not recognized
   #
@@ -36,7 +37,7 @@ module PaceCalculator
   # Calculates the finish time for a race and returns it as a clock time string
   #
   # @param pace_per_km [Numeric, String] pace in seconds per km or time string (MM:SS)
-  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon')
+  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', '100k')
   # @return [String] finish time in HH:MM:SS format
   #
   # @example
@@ -49,7 +50,7 @@ module PaceCalculator
   # Calculates the required pace per kilometer to finish a race in a target time
   #
   # @param target_time [Numeric, String] target finish time in seconds or time string (HH:MM:SS)
-  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon')
+  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', '100k')
   # @return [Float] required pace in seconds per kilometer
   #
   # @example
@@ -65,7 +66,7 @@ module PaceCalculator
   # Calculates the required pace and returns it as a clock time string
   #
   # @param target_time [Numeric, String] target finish time in seconds or time string (HH:MM:SS)
-  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon')
+  # @param race [String, Symbol] race distance ('5k', '10k', 'half_marathon', 'marathon', '100k')
   # @return [String] required pace in MM:SS format
   #
   # @example

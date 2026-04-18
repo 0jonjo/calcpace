@@ -19,7 +19,7 @@ module RacePredictor
   # - D2 = target distance
   # - 1.06 = endurance/fatigue factor (longer races require proportionally more time)
   #
-  # @param from_race [String, Symbol] known race distance ('5k', '10k', 'half_marathon', 'marathon', etc.)
+  # @param from_race [String, Symbol] known race distance ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
   # @param to_race [String, Symbol] target race distance to predict
   # @return [Float] predicted time in seconds
