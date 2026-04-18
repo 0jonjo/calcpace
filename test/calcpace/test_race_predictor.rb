@@ -220,6 +220,6 @@ class TestRacePredictor < CalcpaceTest
     # Marathon in 3:00:00 (10800s) should predict roughly 7:30 for 100K
     # 10800 * (100/42.195)^1.06 ≈ 27021s
     result = @calc.predict_time('marathon', '03:00:00', '100k')
-    assert_in_delta 27021, result, 100
+    assert_in_delta 27_021, result, 100
   end
 end
