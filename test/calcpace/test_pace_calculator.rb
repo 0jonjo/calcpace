@@ -42,6 +42,12 @@ class TestPaceCalculator < CalcpaceTest
     assert_in_delta 6329.25, result, 0.5
   end
 
+  def test_race_time_100k
+    # 6:00/km pace for 100k (360s/km) should be 10 hours (36000 seconds)
+    result = @calc.race_time(360, '100k')
+    assert_equal 36_000.0, result
+  end
+
   def test_race_time_clock_format
     # 5:00/km pace for 5K should return "00:25:00"
     result = @calc.race_time_clock(300, '5k')
@@ -70,6 +76,12 @@ class TestPaceCalculator < CalcpaceTest
     # To run marathon in 3:30:00 (12600 seconds), need ~4:57/km
     result = @calc.race_pace('03:30:00', 'marathon')
     assert_in_delta 298.61, result, 1.0
+  end
+
+  def test_race_pace_100k
+    # To run 100k in 10:00:00 (36000 seconds), need 6:00/km (360s/km)
+    result = @calc.race_pace('10:00:00', '100k')
+    assert_equal 360.0, result
   end
 
   def test_race_pace_clock_format

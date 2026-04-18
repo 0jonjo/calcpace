@@ -205,4 +205,13 @@ class TestRaceSplits < CalcpaceTest
       assert_equal target, result[-1], "Final split should match target for #{strategy} strategy"
     end
   end
+
+  def test_race_splits_100k_10k
+    # 100K in 10:00:00 with 10k splits
+    result = @calc.race_splits('100k', target_time: '10:00:00', split_distance: '10k')
+
+    assert_equal 10, result.length
+    assert_equal '01:00:00', result[0] # First 10k should be 1 hour
+    assert_equal '10:00:00', result[9] # Finish
+  end
 end
