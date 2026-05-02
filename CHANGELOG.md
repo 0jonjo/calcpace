@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.9.5] - 2026-05-02
+
+### Added
+- Age-grading module (`AgeGrading`) with:
+  - `age_grade(distance_km, time, age:, sex:)`
+  - `age_grade_percent(distance_km, time, age:, sex:)`
+  - `age_grade_label(percent)`
+- Versioned data file loader using YAML + `YAML.safe_load` from
+  `lib/calcpace/data/wma_2023_road.yml`
+- Interpolation support for in-between ages (e.g., 57 between 55 and 60)
+- Initial road-race support: 5K, 10K, half marathon, marathon
+- WMA 2023 one-year age factors integrated for `M`/`F` road distances in meters
+  - Source: World Masters Athletics (WMA) competition rules documents
+    https://world-masters-athletics.org/documents/competition-rules/
+- Race-style age-factored time rounding up to the next hundredth
+- Test suite for validation, interpolation, and error handling
+
 ## [1.9.4] - 2026-04-18
 
 ### Added
@@ -145,5 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.9.5...HEAD
+[1.9.5]: https://github.com/0jonjo/calcpace/compare/v1.9.4...v1.9.5
 [1.6.0]: https://github.com/0jonjo/calcpace/releases/tag/v1.6.0

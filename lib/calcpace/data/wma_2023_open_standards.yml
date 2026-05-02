@@ -1,0 +1,30 @@
+meta:
+  source: "WMA/Masters Rankings age grading tables (2023)"
+  url: "https://howardgrubb.co.uk/athletics/wmatnf23.html"
+  table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
+
+age_grade_classifications:
+  - min: 100.0
+    label: "Approximate World Record Level"
+  - min: 90.0
+    label: "World Class"
+  - min: 80.0
+    label: "National Class"
+  - min: 70.0
+    label: "Regional Class"
+  - min: 60.0
+    label: "Local Class"
+  - min: 0.0
+    label: "Developing"
+
+open_standards_seconds:
+  M:
+    "5000": 755.0
+    "10000": 1571.0
+    "21097": 3451.0
+    "42195": 7269.0
+  F:
+    "5000": 846.0
+    "10000": 1741.0
+    "21097": 3772.0
+    "42195": 8044.0

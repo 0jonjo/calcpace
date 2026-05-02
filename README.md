@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.3&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.5&x2=0)](https://badge.fury.io/rb/calcpace)
 
 A Ruby gem for running and cycling calculations: pace, time, distance, unit conversions, race predictions, GPS track analysis, and VO2max estimation.
 
@@ -121,6 +121,44 @@ calc.track_splits(points, 1.0) # => [{ km: 1, elapsed: 312, pace: "05:12" }, ...
 ```
 
 **Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
+
+---
+
+### Age Grading (Road Races)
+
+Age grading compares race results across different ages and sexes by using
+age factors and open standards.
+
+```ruby
+result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
+# => {
+#      age_grade_percent: 64.6,
+#      category: "Local Class",
+#      age_graded_time_seconds: 2376.0,
+#      age_graded_time_clock: "00:39:36",
+#      open_standard_seconds: 1571.0,
+#      open_standard_clock: "00:26:11",
+#      factor: 0.88,
+#      table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
+#    }
+
+calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 74.1
+calc.age_grade_label(74.1)                                      # => "Regional Class"
+```
+
+Supported distances: 5K, 10K, half marathon, marathon.
+
+Age factors are based on WMA 2023 one-year age grading tables:
+https://world-masters-athletics.org/documents/competition-rules/
+
+Open standards used in `open_standard_seconds` / `open_standard_clock` are loaded
+from the bundled WMA 2023 open standards dataset
+(`lib/calcpace/data/wma_2023_open_standards.yml`).
+
+Field meanings:
+- `age_graded_time_clock`: your result after applying the WMA age factor (normalized performance time).
+- `open_standard_clock`: the open standard reference time used to compute the percentage for that distance/sex.
+- `age_grade_percent`: `(open_standard_seconds / age_graded_time_seconds) * 100`.
 
 ---
 

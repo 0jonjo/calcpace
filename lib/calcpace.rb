@@ -2,6 +2,7 @@
 
 require_relative 'calcpace/calculator'
 require_relative 'calcpace/cameron_predictor'
+require_relative 'calcpace/age_grading'
 require_relative 'calcpace/checker'
 require_relative 'calcpace/converter'
 require_relative 'calcpace/converter_chain'
@@ -35,6 +36,7 @@ require_relative 'calcpace/vo2max_estimator'
 #
 # @see https://github.com/0jonjo/calcpace
 class Calcpace
+  include AgeGrading
   include Calculator
   include CameronPredictor
   include Checker
