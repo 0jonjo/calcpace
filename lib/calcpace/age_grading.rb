@@ -27,13 +27,9 @@ module AgeGrading
                                                                       aliases: false).freeze
   TABLE_VERSION = OPEN_STANDARDS_DATA.fetch('meta').fetch('table_version').freeze
 
-  AGE_GRADE_LABELS = [
-    { min: 90.0, label: 'World Class' },
-    { min: 80.0, label: 'National Class' },
-    { min: 70.0, label: 'Regional Class' },
-    { min: 60.0, label: 'Local Class' },
-    { min: 0.0,  label: 'Developing' }
-  ].freeze
+  AGE_GRADE_LABELS = OPEN_STANDARDS_DATA.fetch('age_grade_classifications').map do |entry|
+    { min: entry.fetch('min').to_f, label: entry.fetch('label') }
+  end.freeze
 
   DISTANCE_TO_METERS = {
     5.0 => '5000',

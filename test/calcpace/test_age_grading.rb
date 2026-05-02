@@ -66,6 +66,7 @@ class TestAgeGrading < CalcpaceTest
   end
 
   def test_label_classification
+    assert_equal 'Approximate World Record Level', @calc.age_grade_label(100.0)
     assert_equal 'World Class', @calc.age_grade_label(90.0)
     assert_equal 'National Class', @calc.age_grade_label(80.0)
     assert_equal 'Regional Class', @calc.age_grade_label(70.0)
