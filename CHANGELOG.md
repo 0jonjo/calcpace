@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.9.5] - Released
+## [1.9.5] - 2026-05-02
 
 ### Added
 - Age-grading module (`AgeGrading`) with:

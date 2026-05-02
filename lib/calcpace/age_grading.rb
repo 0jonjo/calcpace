@@ -18,6 +18,7 @@ require 'yaml'
 # - age-graded time
 # - open standard time for the selected distance/sex
 # - performance category
+# rubocop:disable Metrics/ModuleLength
 module AgeGrading
   DATA_PATH = File.expand_path('data/wma_2023_road.yml', __dir__).freeze
   OPEN_STANDARDS_DATA_PATH = File.expand_path('data/wma_2023_open_standards.yml', __dir__).freeze
@@ -66,10 +67,11 @@ module AgeGrading
     age_graded_time = round_up_hundredth(seconds * factor)
     open_standard = open_standard_seconds(sex_value, distance_m)
     grade_percent = (open_standard / age_graded_time) * 100.0
+    rounded_percent = grade_percent.round(1)
 
     {
-      age_grade_percent: grade_percent.round(1),
-      category: age_grade_label(grade_percent),
+      age_grade_percent: rounded_percent,
+      category: age_grade_label(rounded_percent),
       age_graded_time_seconds: age_graded_time,
       age_graded_time_clock: convert_to_clocktime(age_graded_time),
       open_standard_seconds: open_standard,
@@ -95,8 +97,15 @@ module AgeGrading
   # @param percent [Numeric] age-grade percentage
   # @return [String] category label
   def age_grade_label(percent)
-    check_positive(percent.to_f, 'Age-grade percent')
-    AGE_GRADE_LABELS.find { |entry| percent.to_f >= entry[:min] }[:label]
+    percent_value = begin
+      Float(percent)
+    rescue ArgumentError, TypeError
+      raise ArgumentError, 'Age-grade percent must be a numeric value greater than or equal to 0'
+    end
+
+    raise ArgumentError, 'Age-grade percent must be greater than or equal to 0' if percent_value.negative?
+
+    AGE_GRADE_LABELS.find { |entry| percent_value >= entry[:min] }[:label]
   end
 
   private
@@ -129,11 +138,12 @@ module AgeGrading
 
   def normalize_age(age)
     age_value = Integer(age)
+  rescue ArgumentError, TypeError
+    raise ArgumentError, 'Age must be an integer greater than or equal to 18'
+  else
     raise ArgumentError, 'Age must be at least 18' if age_value < 18
 
     age_value
-  rescue ArgumentError
-    raise ArgumentError, 'Age must be an integer greater than or equal to 18'
   end
 
   def normalize_sex(sex)
@@ -150,15 +160,10 @@ module AgeGrading
     return table.fetch(ages.first).to_f if age <= ages.first
     return table.fetch(ages.last).to_f if age >= ages.last
 
-    lower_age = ages.select { |value| value <= age }.max
-    upper_age = ages.select { |value| value >= age }.min
+    lower_age, upper_age = neighboring_ages(ages, age)
     return table.fetch(lower_age).to_f if lower_age == upper_age
 
-    lower_factor = table.fetch(lower_age).to_f
-    upper_factor = table.fetch(upper_age).to_f
-    ratio = (age - lower_age).to_f / (upper_age - lower_age)
-
-    lower_factor + ((upper_factor - lower_factor) * ratio)
+    interpolated_value(table, lower_age, upper_age, age)
   end
 
   def factor_table(sex, distance_m)
@@ -176,4 +181,18 @@ module AgeGrading
   def round_up_hundredth(value)
     (value * 100.0).ceil / 100.0
   end
+
+  def neighboring_ages(ages, age)
+    lower_age = ages.select { |value| value <= age }.max
+    upper_age = ages.select { |value| value >= age }.min
+    [lower_age, upper_age]
+  end
+
+  def interpolated_value(table, lower_age, upper_age, age)
+    lower_factor = table.fetch(lower_age).to_f
+    upper_factor = table.fetch(upper_age).to_f
+    ratio = (age - lower_age).to_f / (upper_age - lower_age)
+    lower_factor + ((upper_factor - lower_factor) * ratio)
+  end
 end
+# rubocop:enable Metrics/ModuleLength

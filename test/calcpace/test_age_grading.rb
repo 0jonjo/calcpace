@@ -57,12 +57,12 @@ class TestAgeGrading < CalcpaceTest
   end
 
   def test_interpolates_factor_for_in_between_age
-    result_55 = @calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
-    result_57 = @calc.age_grade(10.0, '00:45:00', age: 57, sex: :male)
-    result_60 = @calc.age_grade(10.0, '00:45:00', age: 60, sex: :male)
+    result_fifty_five = @calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
+    result_fifty_seven = @calc.age_grade(10.0, '00:45:00', age: 57, sex: :male)
+    result_sixty = @calc.age_grade(10.0, '00:45:00', age: 60, sex: :male)
 
-    assert result_57[:factor] < result_55[:factor]
-    assert result_57[:factor] > result_60[:factor]
+    assert result_fifty_seven[:factor] < result_fifty_five[:factor]
+    assert result_fifty_seven[:factor] > result_sixty[:factor]
   end
 
   def test_label_classification
@@ -72,6 +72,7 @@ class TestAgeGrading < CalcpaceTest
     assert_equal 'Regional Class', @calc.age_grade_label(70.0)
     assert_equal 'Local Class', @calc.age_grade_label(60.0)
     assert_equal 'Developing', @calc.age_grade_label(55.0)
+    assert_equal 'Developing', @calc.age_grade_label(0.0)
   end
 
   def test_raises_for_invalid_distance
