@@ -1,11 +1,11 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.5&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.6&x2=0)](https://badge.fury.io/rb/calcpace)
 
 A Ruby gem for running and cycling calculations: pace, time, distance, unit conversions, race predictions, GPS track analysis, and VO2max estimation.
 
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.9'
+gem 'calcpace', '~> 1.9.6'
 ```
 
 ## Usage
@@ -220,7 +220,7 @@ All errors inherit from `Calcpace::Error`:
 bundle exec rake
 ```
 
-Requires Ruby >= 3.2.0.
+Requires Ruby >= 3.2.0. Tested with Ruby 3.2, 3.3, 3.4, and 4.0.
 
 ## Contributing
 

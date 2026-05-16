@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.6] - 2026-05-15
+
+### Changed
+- Bump Ruby from 3.4.4 to 4.0.4
+
 ## [1.9.5] - 2026-05-02
 
 ### Added
@@ -164,6 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.9.5...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.9.6...HEAD
+[1.9.6]: https://github.com/0jonjo/calcpace/compare/v1.9.5...v1.9.6
 [1.9.5]: https://github.com/0jonjo/calcpace/compare/v1.9.4...v1.9.5
 [1.6.0]: https://github.com/0jonjo/calcpace/releases/tag/v1.6.0
