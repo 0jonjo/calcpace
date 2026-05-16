@@ -39,11 +39,11 @@ module EnvironmentalAdjuster
   def adjust_time(time_seconds, **)
     penalty = calculate_penalty(time_seconds: time_seconds, **)
     percent = penalty[:total_penalty_percent]
-    adjusted_seconds = time_seconds * (1 + (percent / 100.0))
+    adjusted_seconds = (time_seconds * (1 + (percent / 100.0))).round(2)
 
     {
       original_time: time_seconds,
-      adjusted_time: adjusted_seconds.round(2),
+      adjusted_time: adjusted_seconds,
       adjusted_time_clock: convert_to_clocktime(adjusted_seconds),
       penalty_percent: percent,
       factors: penalty[:factors]
@@ -58,11 +58,11 @@ module EnvironmentalAdjuster
   def normalize_time(time_seconds, **)
     penalty = calculate_penalty(time_seconds: time_seconds, **)
     percent = penalty[:total_penalty_percent]
-    normalized_seconds = time_seconds / (1 + (percent / 100.0))
+    normalized_seconds = (time_seconds / (1 + (percent / 100.0))).round(2)
 
     {
       original_time: time_seconds,
-      normalized_time: normalized_seconds.round(2),
+      normalized_time: normalized_seconds,
       normalized_time_clock: convert_to_clocktime(normalized_seconds),
       penalty_percent: percent,
       factors: penalty[:factors]
