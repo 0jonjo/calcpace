@@ -149,4 +149,17 @@ class TestCameronPredictor < CalcpaceTest
       @calc.predict_time_cameron('5k', 0, '10k')
     end
   end
+
+  # ── adjusted predictions ───────────────────────────────────────────────────
+
+  def test_predict_time_cameron_adjusted_with_heat
+    # 5K in 20:00 to 10K
+    # Normal Cameron: ~2544s
+    # Adjusted for 20°C (4.5% penalty): 2544 * 1.045 ≈ 2658.5s
+    result = @calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 20)
+
+    assert_kind_of Hash, result
+    assert_in_delta 2658.5, result[:adjusted_time], 10
+    assert_equal 4.5, result[:penalty_percent]
+  end
 end

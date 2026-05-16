@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.7] - 2026-05-16
+
+### Added
+- Environmental Performance Adjustments module (`EnvironmentalAdjuster`)
+  - Adjust race results and predictions based on temperature and altitude
+  - Scientific basis: Matthew Ely et al. (2007) for heat and NCAA standards for altitude
+  - Data-driven penalty tables stored in `lib/calcpace/data/environmental_factors.yml`
+  - Support for interpolation between data points in penalty tables
+  - Transparent return values including penalty percentage and factor breakdown
+- New prediction methods with environmental support:
+  - `predict_time_adjusted` (Riegel-based)
+  - `predict_time_cameron_adjusted` (Cameron-based)
+- `adjust_time` and `calculate_penalty` methods for direct environmental impact analysis
+
 ## [1.9.6] - 2026-05-15
 
 ### Changed

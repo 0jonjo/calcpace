@@ -1,0 +1,36 @@
+# Environmental Performance Adjustment Factors
+#
+# Sources:
+# - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
+#   Ref: ~32.76s for 5000m at 1828.8m (6000ft) -> ~3.76% penalty
+# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+#   Ref: ~3% for Elites, ~12% for 3h runners at 25°C.
+#   We use a conservative mid-range factor to protect the average user.
+
+# Altitude adjustments (NCAA standards)
+# Threshold: 914.4m (3000ft)
+# Factors represent the percentage increase in time compared to sea level
+altitude:
+  threshold_meters: 914.4
+  data_points:
+    0: 0.0
+    914.4: 1.41     # ~3000ft
+    1219.2: 2.15    # ~4000ft
+    1524.0: 2.90    # ~5000ft
+    1828.8: 3.76    # ~6000ft: Adjusted to match NCAA ~32.7s/14:30 (5000m)
+    2133.6: 4.75    # ~7000ft
+    2438.4: 5.90    # ~8000ft
+
+# Heat adjustments (Matthew Ely et al. 2007)
+# WBGT (Wet-Bulb Globe Temperature) or Ambient Temperature approximation
+# Factors represent the percentage increase in time compared to ideal (10-15°C)
+# Using a "Sub-Elite/Advanced" profile as baseline (more conservative than Elites)
+heat:
+  ideal_range_celsius: [10.0, 15.0]
+  data_points:
+    5: 0.0
+    10: 0.0
+    15: 0.0
+    20: 4.5    # ~9% for 3h runners, we use ~4.5% as a balanced "Safe" baseline
+    25: 8.5    # ~12% for 3h runners, we use ~8.5% as a balanced "Safe" baseline
+    30: 14.0   # Extrapolated
