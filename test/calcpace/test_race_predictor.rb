@@ -227,12 +227,13 @@ class TestRacePredictor < CalcpaceTest
   def test_predict_time_adjusted_with_heat
     # 5K in 20:00 to 10K
     # Normal: ~2501s
-    # Adjusted for 20°C (4.5% penalty): 2501.9 * 1.045 ≈ 2614.5s
+    # Duration factor for ~41:41 (2501s) is: 0.5 + ((41.68 - 30) / 30) * 0.5 ≈ 0.695x
+    # Adjusted for 20°C (Base 2.8% * 0.695 ≈ 1.95% penalty): 2501.9 * 1.0195 ≈ 2550.7s
     result = @calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 20)
 
     assert_kind_of Hash, result
-    assert_in_delta 2614.5, result[:adjusted_time], 10
-    assert_equal 4.5, result[:penalty_percent]
+    assert_in_delta 2550.7, result[:adjusted_time], 10
+    assert_equal 1.95, result[:penalty_percent]
   end
 
   def test_predict_time_adjusted_with_altitude

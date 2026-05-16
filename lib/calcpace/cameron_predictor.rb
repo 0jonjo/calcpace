@@ -101,7 +101,7 @@ module CameronPredictor
   # @param from_race [String, Symbol] known race distance
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [String, Symbol] target race distance to predict
-  # @param options [Hash] environmental options (temperature, humidity, altitude, etc.)
+  # @param options [Hash] environmental options (temperature, altitude, etc.)
   # @return [Hash] hash with adjusted prediction and penalty details
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)

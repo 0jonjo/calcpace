@@ -15,14 +15,12 @@ module EnvironmentalAdjuster
   #
   # @param temperature [Numeric, nil] ambient temperature
   # @param temperature_unit [Symbol, String] :c (Celsius) or :f (Fahrenheit)
-  # @param _humidity [Numeric, nil] relative humidity percentage (reserved for future use)
   # @param altitude [Numeric, nil] altitude in meters
+  # @param time_seconds [Numeric, nil] duration of the effort in seconds
   # @return [Hash] hash with :total_penalty_percent and breakdown in :factors
-  def calculate_penalty(temperature: nil, temperature_unit: :c, humidity: nil, altitude: nil)
-    heat_penalty = calculate_heat_penalty(temperature, temperature_unit)
+  def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil)
+    heat_penalty = calculate_heat_penalty(temperature, temperature_unit, time_seconds)
     altitude_penalty = calculate_altitude_penalty(altitude)
-    # Mark humidity as potentially unused but kept for interface consistency
-    _ = humidity
 
     {
       total_penalty_percent: (heat_penalty + altitude_penalty).round(2),
@@ -36,14 +34,10 @@ module EnvironmentalAdjuster
   # Adjusts a given time based on environmental conditions
   #
   # @param time_seconds [Numeric] original time in seconds
-  # @param temperature [Numeric, nil] ambient temperature
-  # @param temperature_unit [Symbol, String] :c (Celsius) or :f (Fahrenheit)
-  # @param humidity [Numeric, nil] relative humidity percentage
-  # @param altitude [Numeric, nil] altitude in meters
+  # @param options [Hash] environmental options
   # @return [Hash] hash with adjusted time and penalty details
-  def adjust_time(time_seconds, temperature: nil, temperature_unit: :c, humidity: nil, altitude: nil)
-    penalty = calculate_penalty(temperature: temperature, temperature_unit: temperature_unit,
-                                humidity: humidity, altitude: altitude)
+  def adjust_time(time_seconds, **)
+    penalty = calculate_penalty(time_seconds: time_seconds, **)
     percent = penalty[:total_penalty_percent]
     adjusted_seconds = time_seconds * (1 + (percent / 100.0))
 
@@ -62,7 +56,7 @@ module EnvironmentalAdjuster
   # @param options [Hash] environmental options
   # @return [Hash] hash with normalized time and penalty details
   def normalize_time(time_seconds, **)
-    penalty = calculate_penalty(**)
+    penalty = calculate_penalty(time_seconds: time_seconds, **)
     percent = penalty[:total_penalty_percent]
     normalized_seconds = time_seconds / (1 + (percent / 100.0))
 
@@ -77,7 +71,7 @@ module EnvironmentalAdjuster
 
   private
 
-  def calculate_heat_penalty(temp, unit)
+  def calculate_heat_penalty(temp, unit, time_seconds)
     return 0.0 if temp.nil?
 
     temp_c = normalize_temperature(temp, unit)
@@ -87,7 +81,31 @@ module EnvironmentalAdjuster
     return 0.0 if temp_c.between?(ideal_min, ideal_max)
 
     points = data.fetch('data_points')
-    interpolate_environmental_factor(points, temp_c)
+    base_penalty = interpolate_environmental_factor(points, temp_c)
+
+    (base_penalty * duration_factor(time_seconds)).round(2)
+  end
+
+  def duration_factor(time_seconds)
+    return 1.0 if time_seconds.nil?
+
+    minutes = time_seconds / 60.0
+
+    # Rule based on Matthew Ely (2007) heat degradation curve.
+    # Scaled for piecewise linear interpolation to avoid jumps.
+    if minutes <= 30
+      0.5
+    elsif minutes <= 60
+      # Scale from 0.5x (30m) up to 1.0x (60m)
+      0.5 + (((minutes - 30.0) / 30.0) * 0.5)
+    elsif minutes <= 180
+      # Scale from 1.0x (60m) up to 3.0x (180m / 3h)
+      1.0 + (((minutes - 60.0) / 120.0) * 2.0)
+    else
+      # Scale from 3.0x (3h) up to 4.5x (4h)
+      capped_minutes = [minutes, 240.0].min
+      3.0 + (((capped_minutes - 180.0) / 60.0) * 1.5)
+    end
   end
 
   def normalize_temperature(temp, unit)

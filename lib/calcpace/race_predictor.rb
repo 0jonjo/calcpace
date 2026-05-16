@@ -132,7 +132,6 @@ module RacePredictor
   # @param options [Hash] environmental options:
   #   - :temperature [Numeric]
   #   - :temperature_unit [Symbol, String] :c or :f
-  #   - :humidity [Numeric]
   #   - :altitude [Numeric]
   # @return [Hash] hash with adjusted prediction and penalty details
   #
