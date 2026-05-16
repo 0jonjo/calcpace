@@ -57,4 +57,27 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     assert_equal 4.5, result[:factors][:heat]
     assert_equal 4.5, result[:total_penalty_percent]
   end
+
+  def test_normalize_time_returns_original_for_ideal_conditions
+    # 3600s in 15C/0m should normalize to 3600s
+    result = @calc.normalize_time(3600, temperature: 15, altitude: 0)
+    assert_equal 3600, result[:normalized_time]
+  end
+
+  def test_normalize_time_with_heat
+    # If I ran 3600s at 20C (4.5% penalty), my ideal time should be ~3444.98s
+    # Calculation: 3600 / 1.045 = 3444.976...
+    result = @calc.normalize_time(3600, temperature: 20)
+    assert_in_delta 3444.98, result[:normalized_time], 0.01
+    assert_equal 4.5, result[:penalty_percent]
+  end
+
+  def test_environmental_round_trip_consistency
+    # Adjust 3600s for 25C and 2000m, then normalize back.
+    # Result should be very close to 3600s.
+    adjusted = @calc.adjust_time(3600, temperature: 25, altitude: 2000)
+    normalized = @calc.normalize_time(adjusted[:adjusted_time], temperature: 25, altitude: 2000)
+
+    assert_in_delta 3600, normalized[:normalized_time], 0.1
+  end
 end
