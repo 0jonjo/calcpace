@@ -57,6 +57,4 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     assert_equal 4.5, result[:factors][:heat]
     assert_equal 4.5, result[:total_penalty_percent]
   end
-
-    end
-
+end

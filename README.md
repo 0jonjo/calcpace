@@ -42,31 +42,31 @@ Adjust race performance based on heat and altitude. Calculations are based on sc
 # Calculate penalty for 25°C and 2000m altitude
 penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
 # => {
-#      total_penalty_percent: 9.92,
-#      factors: { heat: 6.0, altitude: 3.92 }
+#      total_penalty_percent: 12.82,
+#      factors: { heat: 8.5, altitude: 4.32 }
 #    }
 
 # Fahrenheit support
 calc.calculate_penalty(temperature: 80, temperature_unit: :f)
-# => { total_penalty_percent: 7.34, ... }
+# => { total_penalty_percent: 10.34, ... }
 
 # Adjust a 3:30 marathon time (12600s) for these conditions
 result = calc.adjust_time(12600, temperature: 25, altitude: 2000)
 # => {
 #      original_time: 12600,
-#      adjusted_time: 13849.92,
-#      adjusted_time_clock: "03:50:49",
-#      penalty_percent: 9.92,
-#      factors: { heat: 6.0, altitude: 3.92 }
+#      adjusted_time: 14215.32,
+#      adjusted_time_clock: "03:56:55",
+#      penalty_percent: 12.82,
+#      factors: { heat: 8.5, altitude: 4.32 }
 #    }
 
 # Predicted adjusted times (Riegel formula)
 calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 28)
-# => { adjusted_time: 2712.08, adjusted_time_clock: "00:45:12", penalty_percent: 8.4, ... }
+# => { adjusted_time: 2797.14, adjusted_time_clock: "00:46:37", penalty_percent: 11.8, ... }
 
 # Predicted adjusted times (Cameron formula)
 calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 80, temperature_unit: :f)
-# => { adjusted_time: 10891.0, adjusted_time_clock: "03:01:31", penalty_percent: 7.34, ... }
+# => { adjusted_time: 11196.24, adjusted_time_clock: "03:06:36", penalty_percent: 10.34, ... }
 ```
 
 ---
