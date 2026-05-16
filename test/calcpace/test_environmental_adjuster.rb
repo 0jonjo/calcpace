@@ -92,7 +92,7 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     # 25C at 180 min (Marathon sub-3)
     # Factor: 3.0x
     # Penalty: 4.3 * 3.0 = 12.9%
-    result = @calc.calculate_penalty(temperature: 25, time_seconds: 10800)
+    result = @calc.calculate_penalty(temperature: 25, time_seconds: 10_800)
     assert_equal 12.9, result[:factors][:heat]
   end
 
@@ -100,7 +100,7 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     # 25C at 240 min (Amateur Marathon)
     # Factor: 4.5x
     # Penalty: 4.3 * 4.5 = 19.35%
-    result = @calc.calculate_penalty(temperature: 25, time_seconds: 14400)
+    result = @calc.calculate_penalty(temperature: 25, time_seconds: 14_400)
     assert_equal 19.35, result[:factors][:heat]
   end
 end
