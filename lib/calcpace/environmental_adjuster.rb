@@ -15,12 +15,14 @@ module EnvironmentalAdjuster
   #
   # @param temperature [Numeric, nil] ambient temperature
   # @param temperature_unit [Symbol, String] :c (Celsius) or :f (Fahrenheit)
-  # @param humidity [Numeric, nil] relative humidity percentage (reserved for future use)
+  # @param _humidity [Numeric, nil] relative humidity percentage (reserved for future use)
   # @param altitude [Numeric, nil] altitude in meters
   # @return [Hash] hash with :total_penalty_percent and breakdown in :factors
   def calculate_penalty(temperature: nil, temperature_unit: :c, humidity: nil, altitude: nil)
     heat_penalty = calculate_heat_penalty(temperature, temperature_unit)
     altitude_penalty = calculate_altitude_penalty(altitude)
+    # Mark humidity as potentially unused but kept for interface consistency
+    _ = humidity
 
     {
       total_penalty_percent: (heat_penalty + altitude_penalty).round(2),
@@ -63,7 +65,7 @@ module EnvironmentalAdjuster
 
     data = FACTORS.fetch('heat')
     ideal_min, ideal_max = data.fetch('ideal_range_celsius')
-    return 0.0 if temp_c >= ideal_min && temp_c <= ideal_max
+    return 0.0 if temp_c.between?(ideal_min, ideal_max)
 
     points = data.fetch('data_points')
     interpolate_environmental_factor(points, temp_c)
@@ -88,18 +90,29 @@ module EnvironmentalAdjuster
   end
 
   def interpolate_environmental_factor(points, value)
-    # Create a map of float values to original keys for robust lookup
-    key_map = points.keys.each_with_object({}) { |k, h| h[k.to_f] = k }
-    sorted_floats = key_map.keys.sort
+    key_map, sorted_floats = environmental_key_mapping(points)
 
     return points.fetch(key_map[sorted_floats.first]).to_f if value <= sorted_floats.first
     return points.fetch(key_map[sorted_floats.last]).to_f if value >= sorted_floats.last
 
-    lower_val = sorted_floats.select { |k| k <= value }.max
-    upper_val = sorted_floats.select { |k| k >= value }.min
-
+    lower_val, upper_val = neighboring_environmental_points(sorted_floats, value)
     return points.fetch(key_map[lower_val]).to_f if lower_val == upper_val
 
+    interpolate_values(points, key_map, lower_val, upper_val, value)
+  end
+
+  def environmental_key_mapping(points)
+    map = points.keys.to_h { |k| [k.to_f, k] }
+    [map, map.keys.sort]
+  end
+
+  def neighboring_environmental_points(sorted_floats, value)
+    lower = sorted_floats.select { |k| k <= value }.max
+    upper = sorted_floats.select { |k| k >= value }.min
+    [lower, upper]
+  end
+
+  def interpolate_values(points, key_map, lower_val, upper_val, value)
     lower_factor = points.fetch(key_map[lower_val]).to_f
     upper_factor = points.fetch(key_map[upper_val]).to_f
 

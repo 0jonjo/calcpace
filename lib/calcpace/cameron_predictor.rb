@@ -101,16 +101,11 @@ module CameronPredictor
   # @param from_race [String, Symbol] known race distance
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [String, Symbol] target race distance to predict
-  # @param temperature [Numeric, nil] ambient temperature
-  # @param temperature_unit [Symbol, String] :c or :f
-  # @param humidity [Numeric, nil] relative humidity percentage
-  # @param altitude [Numeric, nil] altitude in meters
+  # @param options [Hash] environmental options (temperature, humidity, altitude, etc.)
   # @return [Hash] hash with adjusted prediction and penalty details
-  def predict_time_cameron_adjusted(from_race, from_time, to_race, temperature: nil, temperature_unit: :c,
-                                    humidity: nil, altitude: nil)
+  def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
-    adjust_time(predicted_seconds, temperature: temperature, temperature_unit: temperature_unit,
-                                   humidity: humidity, altitude: altitude)
+    adjust_time(predicted_seconds, **)
   end
 
   private
