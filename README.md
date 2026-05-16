@@ -5,7 +5,7 @@ A Ruby gem for running and cycling calculations: pace, time, distance, unit conv
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.9.6'
+gem 'calcpace', '~> 1.9.7'
 ```
 
 ## Usage
@@ -29,6 +29,44 @@ calc.distance(9660, 120)            # => 80.5   (velocity × time)
 calc.clock_pace('01:00:00', 10)     # => "00:06:00"
 calc.clock_time('00:05:31', 12.6)   # => "01:09:30"
 calc.checked_distance('01:21:32', '00:06:27') # => 12.64
+```
+
+---
+
+### Environmental Performance Adjustments
+
+Adjust race performance based on heat and altitude. Calculations are based on scientific models
+(Matthew Ely 2007 for heat, NCAA standards for altitude).
+
+```ruby
+# Calculate penalty for 25°C and 2000m altitude (Defaults to 60-min effort)
+penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
+# => {
+#      total_penalty_percent: 8.62,
+#      factors: { heat: 4.3, altitude: 4.32 }
+#    }
+
+# Fahrenheit support
+calc.calculate_penalty(temperature: 80, temperature_unit: :f)
+# => { total_penalty_percent: 5.03, ... }
+
+# Adjust a 3:30 marathon time (12600s) for these conditions (High exposure penalty)
+result = calc.adjust_time(12600, temperature: 25, altitude: 2000)
+# => {
+#      original_time: 12600,
+#      adjusted_time: 15176.7,
+#      adjusted_time_clock: "04:12:56",
+#      penalty_percent: 20.45,
+#      factors: { heat: 16.13, altitude: 4.32 }
+#    }
+
+# Predicted adjusted times (Riegel formula)
+calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 28)
+# => { adjusted_time: 2599.74, adjusted_time_clock: "00:43:19", penalty_percent: 3.91, ... }
+
+# Predicted adjusted times (Cameron formula)
+calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 80, temperature_unit: :f)
+# => { adjusted_time: 11585.88, adjusted_time_clock: "03:13:05", penalty_percent: 14.18, ... }
 ```
 
 ---

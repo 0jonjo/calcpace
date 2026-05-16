@@ -1,0 +1,31 @@
+# Environmental Performance Adjustment Factors
+#
+# Sources:
+# - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
+#   Ref: ~3.76% penalty for 1828.8m (6000ft).
+# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+#   NOTE: These heat factors are the BASELINE for a 60-minute effort.
+#   The final penalty is scaled by a DurationFactor (0.5x to 4.5x) based on total exposure time.
+
+# Altitude adjustments (NCAA standards)
+altitude:
+  threshold_meters: 914.4
+  data_points:
+    0: 0.0
+    914.4: 1.41
+    1219.2: 2.15
+    1524.0: 2.90
+    1828.8: 3.76
+    2133.6: 4.75
+    2438.4: 5.90
+
+# Heat adjustments (60-minute baseline)
+# These values represent the penalty for a 1-hour run.
+# For longer/shorter runs, the DurationFactor will scale these up/down.
+heat:
+  ideal_range_celsius: [10.0, 15.0]
+  data_points:
+    15: 0.0
+    20: 2.8    # Base for 60m. For 3h (3.0x) = 8.4% (Ely: 9%)
+    25: 4.3    # Base for 60m. For 3h (3.0x) = 12.9% (Ely: 12%)
+    30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%

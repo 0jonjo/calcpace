@@ -96,6 +96,18 @@ module CameronPredictor
     convert_to_clocktime(predict_pace_cameron(from_race, from_time, to_race))
   end
 
+  # Predicts race time adjusted for environmental conditions using Cameron formula
+  #
+  # @param from_race [String, Symbol] known race distance
+  # @param from_time [String, Numeric] time achieved at known distance
+  # @param to_race [String, Symbol] target race distance to predict
+  # @param options [Hash] environmental options (temperature, altitude, etc.)
+  # @return [Hash] hash with adjusted prediction and penalty details
+  def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
+    predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
+    adjust_time(predicted_seconds, **)
+  end
+
   private
 
   # Computes the Cameron exponential correction factor for a given distance

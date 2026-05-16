@@ -222,4 +222,27 @@ class TestRacePredictor < CalcpaceTest
     result = @calc.predict_time('marathon', '03:00:00', '100k')
     assert_in_delta 27_021, result, 100
   end
+
+  # Test adjusted predictions (Environmental)
+  def test_predict_time_adjusted_with_heat
+    # 5K in 20:00 to 10K
+    # Normal: ~2501s
+    # Duration factor for ~41:41 (2501s) is: 0.5 + ((41.68 - 30) / 30) * 0.5 ≈ 0.695x
+    # Adjusted for 20°C (Base 2.8% * 0.695 ≈ 1.95% penalty): 2501.9 * 1.0195 ≈ 2550.7s
+    result = @calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 20)
+
+    assert_kind_of Hash, result
+    assert_in_delta 2550.7, result[:adjusted_time], 10
+    assert_equal 1.95, result[:penalty_percent]
+  end
+
+  def test_predict_time_adjusted_with_altitude
+    # 5K in 20:00 to 10K
+    # Normal: ~2501s
+    # Adjusted for 1828.8m (3.76% penalty): 2501.9 * 1.0376 ≈ 2596s
+    result = @calc.predict_time_adjusted('5k', '00:20:00', '10k', altitude: 1828.8)
+
+    assert_in_delta 2596, result[:adjusted_time], 10
+    assert_equal 3.76, result[:penalty_percent]
+  end
 end

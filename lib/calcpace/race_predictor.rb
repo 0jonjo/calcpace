@@ -123,4 +123,23 @@ module RacePredictor
       pace_clock: convert_to_clocktime(predicted_pace)
     }
   end
+
+  # Predicts race time adjusted for environmental conditions
+  #
+  # @param from_race [String, Symbol] known race distance
+  # @param from_time [String, Numeric] time achieved at known distance
+  # @param to_race [String, Symbol] target race distance to predict
+  # @param options [Hash] environmental options:
+  #   - :temperature [Numeric]
+  #   - :temperature_unit [Symbol, String] :c or :f
+  #   - :altitude [Numeric]
+  # @return [Hash] hash with adjusted prediction and penalty details
+  #
+  # @example Predict marathon time from 5K adjusted for heat (25C)
+  #   predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)
+  #   #=> { adjusted_time: 12213.4, penalty_percent: 6.0, ... }
+  def predict_time_adjusted(from_race, from_time, to_race, **)
+    predicted_seconds = predict_time(from_race, from_time, to_race)
+    adjust_time(predicted_seconds, **)
+  end
 end
