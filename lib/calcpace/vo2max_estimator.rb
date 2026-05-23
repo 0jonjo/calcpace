@@ -14,6 +14,10 @@
 # Accuracy: ±3–5 ml/kg/min vs laboratory testing. Best results with efforts
 # between 5 and 60 minutes at race pace (i.e. near-maximal effort).
 module Vo2maxEstimator
+  # Classification thresholds based on:
+  # Daniels, J. (2014). Daniels' Running Formula (3rd ed.). Human Kinetics.
+  # General ranges are consistent with ACSM guidelines and widely cited in
+  # exercise physiology literature (McArdle, Katch & Katch, 2015).
   VO2MAX_LABELS = [
     { min: 70, label: 'Elite' },
     { min: 60, label: 'Excellent' },
@@ -22,6 +26,9 @@ module Vo2maxEstimator
     { min: 30, label: 'Fair' },
     { min: 0,  label: 'Beginner' }
   ].freeze
+
+  # Represents a contextualized VO2max estimation result
+  Vo2maxResult = Struct.new(:value, :confidence, :sub_maximal, :adjusted_distance_km)
 
   # Estimates VO2max from a race performance using Daniels & Gilbert formula
   #
@@ -48,6 +55,44 @@ module Vo2maxEstimator
     (vo2 / pct_vo2max).round(1)
   end
 
+  # Estimates a detailed and contextualized VO2max
+  #
+  # @param distance_km [Numeric] race distance in kilometres
+  # @param time [String, Integer] finish time
+  # @param elevation_gain_m [Numeric] total elevation gain in metres
+  # @param hr_avg [Numeric] average heart rate during the effort
+  # @param hr_max [Numeric] athlete's maximum heart rate
+  # @return [Vo2maxResult] structured result with value and metadata
+  def estimate_detailed_vo2max(distance_km, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil)
+    # 1. Elevation adjustment (Naismith-based heuristic: 100m gain = +600m flat)
+    adjusted_distance_m = (distance_km.to_f * 1000) + (elevation_gain_m.to_f * 6.0)
+    adjusted_distance_km = adjusted_distance_m / 1000.0
+
+    # 2. Base VO2max calculation
+    vo2max_value = estimate_vo2max(adjusted_distance_km, time)
+
+    # 3. Confidence based on effort duration
+    time_min = parse_time_minutes(time)
+    confidence = calculate_time_confidence(time_min)
+
+    # 4. HR validation for sub-maximal effort
+    sub_maximal = false
+    raise Calcpace::Error, 'hr_avg cannot exceed hr_max' if hr_avg && hr_max && (hr_avg.to_f > hr_max.to_f)
+
+    # If effort is below 85% of HRmax, it's considered sub-maximal
+    if hr_avg && hr_max && ((hr_avg.to_f / hr_max) < 0.85)
+      sub_maximal = true
+      confidence = :low
+    end
+
+    Vo2maxResult.new(
+      value: vo2max_value,
+      confidence: confidence,
+      sub_maximal: sub_maximal,
+      adjusted_distance_km: adjusted_distance_km.round(2)
+    )
+  end
+
   # Returns a descriptive label for a given VO2max value
   #
   # @param value [Numeric] VO2max in ml/kg/min
@@ -63,6 +108,16 @@ module Vo2maxEstimator
   end
 
   private
+
+  def calculate_time_confidence(time_min)
+    if time_min.between?(5, 60)
+      :high
+    elsif time_min > 60 && time_min <= 120
+      :medium
+    else
+      :low
+    end
+  end
 
   def vo2_at_velocity(velocity)
     -4.60 + (0.182258 * velocity) + (0.000104 * (velocity**2))
