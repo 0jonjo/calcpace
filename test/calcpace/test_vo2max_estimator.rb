@@ -142,15 +142,20 @@ class TestVo2maxEstimator < CalcpaceTest
     assert_equal :high, result.confidence
   end
 
-  def test_detailed_vo2max_confidence_low_for_short_effort
-    # < 5 min has high anaerobic contribution — outside Daniels & Gilbert optimal window
-    result = @calc.estimate_detailed_vo2max(1.0, '00:04:00')
-    assert_equal :low, result.confidence
+  def test_detailed_vo2max_raises_for_invalid_hr_values
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_avg: 0, hr_max: 200) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_avg: 150, hr_max: 0) }
   end
 
   def test_detailed_vo2max_raises_when_hr_avg_exceeds_hr_max
     assert_raises(Calcpace::Error) do
       @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_avg: 210, hr_max: 200)
     end
+  end
+
+  def test_detailed_vo2max_confidence_low_for_short_effort
+    # < 5 min has high anaerobic contribution
+    result = @calc.estimate_detailed_vo2max(1.0, '00:04:00')
+    assert_equal :low, result.confidence
   end
 end

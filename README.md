@@ -267,7 +267,7 @@ easy.value        # => 29.3   (underestimates real aerobic capacity)
 | `confidence` | Effort duration | Notes |
 |---|---|---|
 | `:high` | 5–60 min | Daniels & Gilbert optimal window |
-| `:medium` | 60–120 min | Muscular fatigue starts distorting the estimate |
+| `:medium` | > 60–120 min | Muscular fatigue starts distorting the estimate |
 | `:low` | < 5 min or > 120 min | Anaerobic / glycogen-depletion effects dominate |
 
 > If `hr_avg > hr_max`, a `Calcpace::Error` is raised (physiologically impossible input).

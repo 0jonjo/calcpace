@@ -77,12 +77,20 @@ module Vo2maxEstimator
 
     # 4. HR validation for sub-maximal effort
     sub_maximal = false
-    raise Calcpace::Error, 'hr_avg cannot exceed hr_max' if hr_avg && hr_max && (hr_avg.to_f > hr_max.to_f)
+    if hr_avg && hr_max
+      check_positive(hr_avg, 'Average heart rate')
+      check_positive(hr_max, 'Maximum heart rate')
 
-    # If effort is below 85% of HRmax, it's considered sub-maximal
-    if hr_avg && hr_max && ((hr_avg.to_f / hr_max) < 0.85)
-      sub_maximal = true
-      confidence = :low
+      avg = hr_avg.to_f
+      max = hr_max.to_f
+
+      raise Calcpace::Error, "Average heart rate (#{avg}) cannot exceed maximum heart rate (#{max})" if avg > max
+
+      # If effort is below 85% of HRmax, it's considered sub-maximal
+      if (avg / max) < 0.85
+        sub_maximal = true
+        confidence = :low
+      end
     end
 
     Vo2maxResult.new(
