@@ -153,6 +153,22 @@ class TestVo2maxEstimator < CalcpaceTest
     end
   end
 
+  def test_detailed_vo2max_raises_when_only_one_hr_value_is_provided
+    assert_raises(Calcpace::Error) do
+      @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_avg: 170)
+    end
+
+    assert_raises(Calcpace::Error) do
+      @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_max: 190)
+    end
+  end
+
+  def test_detailed_vo2max_raises_for_negative_elevation_gain
+    assert_raises(Calcpace::Error) do
+      @calc.estimate_detailed_vo2max(10.0, '00:40:00', elevation_gain_m: -100)
+    end
+  end
+
   def test_detailed_vo2max_confidence_low_for_short_effort
     # < 5 min has high anaerobic contribution
     result = @calc.estimate_detailed_vo2max(1.0, '00:04:00')

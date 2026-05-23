@@ -5,7 +5,7 @@ A Ruby gem for running and cycling calculations: pace, time, distance, unit conv
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.9.7'
+gem 'calcpace', '~> 1.9.8'
 ```
 
 ## Usage
@@ -271,6 +271,8 @@ easy.value        # => 29.3   (underestimates real aerobic capacity)
 | `:low` | < 5 min or > 120 min | Anaerobic / glycogen-depletion effects dominate |
 
 > If `hr_avg > hr_max`, a `Calcpace::Error` is raised (physiologically impossible input).
+> If you provide heart rate data, both `hr_avg` and `hr_max` must be present.
+> `elevation_gain_m` must be zero or positive.
 
 ---
 

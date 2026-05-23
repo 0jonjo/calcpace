@@ -96,11 +96,17 @@ module Vo2maxEstimator
   private
 
   def adjusted_distance_for_vo2(distance_km, elevation_gain_m)
+    check_non_negative(elevation_gain_m, 'Elevation gain')
+
     # Naismith-based heuristic: 100m gain = +600m flat
     ((distance_km.to_f * 1000) + (elevation_gain_m.to_f * 6.0)) / 1000.0
   end
 
   def validate_and_analyze_hr(hr_avg, hr_max)
+    if hr_avg.nil? ^ hr_max.nil?
+      raise Calcpace::Error, 'Average heart rate and maximum heart rate must be provided together'
+    end
+
     return { sub_maximal: false } unless hr_avg && hr_max
 
     check_positive(hr_avg, 'Average heart rate')
@@ -122,6 +128,12 @@ module Vo2maxEstimator
     else
       :low
     end
+  end
+
+  def check_non_negative(number, name = 'Input')
+    return if number.is_a?(Numeric) && number >= 0
+
+    raise Calcpace::Error, "#{name} must be zero or a positive number"
   end
 
   def vo2_at_velocity(velocity)
