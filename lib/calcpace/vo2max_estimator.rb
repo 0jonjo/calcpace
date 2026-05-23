@@ -64,40 +64,18 @@ module Vo2maxEstimator
   # @param hr_max [Numeric] athlete's maximum heart rate
   # @return [Vo2maxResult] structured result with value and metadata
   def estimate_detailed_vo2max(distance_km, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil)
-    # 1. Elevation adjustment (Naismith-based heuristic: 100m gain = +600m flat)
-    adjusted_distance_m = (distance_km.to_f * 1000) + (elevation_gain_m.to_f * 6.0)
-    adjusted_distance_km = adjusted_distance_m / 1000.0
+    adj_dist_km = adjusted_distance_for_vo2(distance_km, elevation_gain_m)
+    vo2max_val  = estimate_vo2max(adj_dist_km, time)
+    confidence  = calculate_time_confidence(parse_time_minutes(time))
 
-    # 2. Base VO2max calculation
-    vo2max_value = estimate_vo2max(adjusted_distance_km, time)
-
-    # 3. Confidence based on effort duration
-    time_min = parse_time_minutes(time)
-    confidence = calculate_time_confidence(time_min)
-
-    # 4. HR validation for sub-maximal effort
-    sub_maximal = false
-    if hr_avg && hr_max
-      check_positive(hr_avg, 'Average heart rate')
-      check_positive(hr_max, 'Maximum heart rate')
-
-      avg = hr_avg.to_f
-      max = hr_max.to_f
-
-      raise Calcpace::Error, "Average heart rate (#{avg}) cannot exceed maximum heart rate (#{max})" if avg > max
-
-      # If effort is below 85% of HRmax, it's considered sub-maximal
-      if (avg / max) < 0.85
-        sub_maximal = true
-        confidence = :low
-      end
-    end
+    hr_data = validate_and_analyze_hr(hr_avg, hr_max)
+    confidence = :low if hr_data[:sub_maximal]
 
     Vo2maxResult.new(
-      value: vo2max_value,
+      value: vo2max_val,
       confidence: confidence,
-      sub_maximal: sub_maximal,
-      adjusted_distance_km: adjusted_distance_km.round(2)
+      sub_maximal: hr_data[:sub_maximal],
+      adjusted_distance_km: adj_dist_km.round(2)
     )
   end
 
@@ -116,6 +94,25 @@ module Vo2maxEstimator
   end
 
   private
+
+  def adjusted_distance_for_vo2(distance_km, elevation_gain_m)
+    # Naismith-based heuristic: 100m gain = +600m flat
+    ((distance_km.to_f * 1000) + (elevation_gain_m.to_f * 6.0)) / 1000.0
+  end
+
+  def validate_and_analyze_hr(hr_avg, hr_max)
+    return { sub_maximal: false } unless hr_avg && hr_max
+
+    check_positive(hr_avg, 'Average heart rate')
+    check_positive(hr_max, 'Maximum heart rate')
+
+    avg = hr_avg.to_f
+    max = hr_max.to_f
+
+    raise Calcpace::Error, "Average heart rate (#{avg}) cannot exceed maximum heart rate (#{max})" if avg > max
+
+    { sub_maximal: (avg / max) < 0.85 }
+  end
 
   def calculate_time_confidence(time_min)
     if time_min.between?(5, 60)
