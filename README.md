@@ -1,4 +1,4 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.6&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.8&x2=0)](https://badge.fury.io/rb/calcpace)
 
 A Ruby gem for running and cycling calculations: pace, time, distance, unit conversions, race predictions, GPS track analysis, and VO2max estimation.
 
