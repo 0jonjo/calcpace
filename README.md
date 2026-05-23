@@ -233,7 +233,7 @@ VO2max           = VO2 / %VO2max
 
 Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
 
-#### Contextualized estimation (v1.9.8+)
+#### Contextualized estimation
 
 `estimate_detailed_vo2max` returns a richer result that accounts for elevation, heart rate, and formula reliability:
 
