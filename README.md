@@ -5,7 +5,7 @@ A Ruby gem for running and cycling calculations: pace, time, distance, unit conv
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.9.7'
+gem 'calcpace', '~> 1.9.8'
 ```
 
 ## Usage
@@ -221,6 +221,8 @@ calc.vo2max_label(51.9)  # => "Very Good"
 | 30–39              | Fair      |
 | < 30               | Beginner  |
 
+*Thresholds based on Daniels, J. (2014). Daniels' Running Formula (3rd ed.), consistent with ACSM guidelines and McArdle, Katch & Katch (2015) Exercise Physiology.*
+
 **Formula:**
 ```
 velocity (m/min) = distance_m / time_min
@@ -230,6 +232,47 @@ VO2max           = VO2 / %VO2max
 ```
 
 Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
+
+#### Contextualized estimation
+
+`estimate_detailed_vo2max` returns a richer result that accounts for elevation, heart rate, and formula reliability:
+
+```ruby
+# Mountain 10K: 200 m elevation gain, avg HR 172, max HR 190
+result = calc.estimate_detailed_vo2max(
+  10.0, '00:48:30',
+  elevation_gain_m: 200,
+  hr_avg: 172,
+  hr_max: 190
+)
+
+result.value              # => 47.7  (corrected for 1.2 km of equivalent flat distance)
+result.adjusted_distance_km # => 11.2  (10 km + 200 m × 6 flat-equivalent)
+result.confidence         # => :high  (48 min is inside the 5–60 min optimal window)
+result.sub_maximal        # => false  (172/190 = 90.5 % HRmax → maximal effort)
+
+calc.vo2max_label(result.value)  # => "Good"
+
+# Compare: same effort ignoring elevation → underestimates VO2max
+flat = calc.estimate_detailed_vo2max(10.0, '00:48:30')
+flat.value  # => 41.5
+
+# Easy recovery run: sub-maximal effort flag + confidence downgrade
+easy = calc.estimate_detailed_vo2max(10.0, '01:05:00', hr_avg: 135, hr_max: 190)
+easy.sub_maximal  # => true   (135/190 = 71 % HRmax < 85 %)
+easy.confidence   # => :low   (formula assumes race-pace effort)
+easy.value        # => 29.3   (underestimates real aerobic capacity)
+```
+
+| `confidence` | Effort duration | Notes |
+|---|---|---|
+| `:high` | 5–60 min | Daniels & Gilbert optimal window |
+| `:medium` | > 60–120 min | Muscular fatigue starts distorting the estimate |
+| `:low` | < 5 min or > 120 min | Anaerobic / glycogen-depletion effects dominate |
+
+> If `hr_avg > hr_max`, a `Calcpace::Error` is raised (physiologically impossible input).
+> If you provide heart rate data, both `hr_avg` and `hr_max` must be present.
+> `elevation_gain_m` must be zero or positive.
 
 ---
 

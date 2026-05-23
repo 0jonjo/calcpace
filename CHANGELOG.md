@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.8] - 2026-05-23
+
+### Added
+- Contextualized VO2max estimation (`Vo2maxEstimator#estimate_detailed_vo2max`)
+  - Confidence Score based on effort duration (Daniels & Gilbert optimal window)
+  - Elevation Adjustment (Equivalent Flat Distance) using Naismith-based heuristic
+  - Sub-maximal effort detection via Heart Rate intensity validation (%HRmax)
+  - Structured result object (`Vo2maxResult`) with value, confidence, and metadata
+
 ## [1.9.7] - 2026-05-16
 
 ### Added
