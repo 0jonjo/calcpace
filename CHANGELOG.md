@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.9] - 2026-06-17
+
+### Changed
+- Bump minitest from 5.x to 6.x
+- Bump rdoc from 6.x to 7.x
+- Bump rake, rubocop, parallel, and other dev dependencies to latest versions
+- Drop Ruby 3.2 support (EOL March 2025); minimum is now Ruby 3.3
+
 ## [1.9.8] - 2026-05-23
 
 ### Added
