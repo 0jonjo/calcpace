@@ -74,8 +74,8 @@ module TrackCalculator
     return 0.0 if points.nil? || points.size < 2
 
     total = points.each_cons(2).sum do |a, b|
-      haversine_distance(fetch_coord(a, :lat), fetch_coord(a, :lon),
-                         fetch_coord(b, :lat), fetch_coord(b, :lon))
+      haversine_distance(dig_key(a, :lat), dig_key(a, :lon),
+                         dig_key(b, :lat), dig_key(b, :lon))
     end
 
     total.round(2)
@@ -180,13 +180,12 @@ module TrackCalculator
     end
   end
 
-  def fetch_coord(point, key)
+  def dig_key(point, key)
     point[key] || point[key.to_s]
   end
 
   def fetch_ele(point)
-    val = point[:ele] || point['ele']
-    val&.to_f
+    dig_key(point, :ele)&.to_f
   end
 
   def validate_points_have_time(points)
@@ -198,7 +197,7 @@ module TrackCalculator
   end
 
   def point_time(point)
-    t = point[:time] || point['time']
+    t = dig_key(point, :time)
     t.respond_to?(:to_f) ? t.to_f : t
   end
 
@@ -228,8 +227,8 @@ module TrackCalculator
   end
 
   def process_segment(point_a, point_b, split_km, state)
-    segment_km = haversine_distance(fetch_coord(point_a, :lat), fetch_coord(point_a, :lon),
-                                    fetch_coord(point_b, :lat), fetch_coord(point_b, :lon))
+    segment_km = haversine_distance(dig_key(point_a, :lat), dig_key(point_a, :lon),
+                                    dig_key(point_b, :lat), dig_key(point_b, :lon))
     state[:accumulated_km] += segment_km
 
     while state[:accumulated_km] >= split_km * state[:split_number]
