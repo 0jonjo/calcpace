@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.10] - 2026-07-09
+
+### Changed
+- Refactor `TrackCalculator`: extract a single `dig_key` helper for symbol/string key access, removing duplicated fallback logic across coordinate, elevation, and time readers (no behavior change)
+
 ## [1.9.9] - 2026-06-17
 
 ### Changed
