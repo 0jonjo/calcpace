@@ -190,7 +190,7 @@ module TrackCalculator
 
   def validate_points_have_time(points)
     points.each_with_index do |pt, i|
-      next if pt[:time] || pt['time']
+      next if dig_key(pt, :time)
 
       raise ArgumentError, "Point at index #{i} is missing :time key required for splits"
     end
