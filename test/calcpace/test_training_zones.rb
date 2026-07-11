@@ -84,4 +84,40 @@ class TestTrainingZones < CalcpaceTest
       @calc.training_paces_from_race(10.0, 'banana')
     end
   end
+
+  # --- hr_zones ---
+  def test_hr_zones_returns_five_karvonen_zones
+    zones = @calc.hr_zones(hr_max: 190, hr_rest: 55)
+
+    assert_equal 5, zones.size
+    assert_equal (1..5).to_a, zones.map(&:zone)
+  end
+
+  def test_hr_zones_karvonen_values
+    zones = @calc.hr_zones(hr_max: 190, hr_rest: 55) # reserve = 135
+
+    assert_equal 123, zones[0].min_bpm # 55 + 0.50*135 = 122.5 → 123
+    assert_equal 136, zones[0].max_bpm # 55 + 0.60*135
+    assert_equal 163, zones[3].min_bpm # 55 + 0.80*135
+    assert_equal 177, zones[3].max_bpm # 55 + 0.90*135 = 176.5 → 177
+    assert_equal 190, zones[4].max_bpm # Z5 ends at max heart rate
+  end
+
+  def test_hr_zones_are_contiguous
+    zones = @calc.hr_zones(hr_max: 185, hr_rest: 60)
+
+    zones.each_cons(2) do |prev, nxt|
+      assert_equal prev.max_bpm, nxt.min_bpm
+    end
+  end
+
+  def test_hr_zones_rejects_rest_greater_or_equal_to_max
+    error = assert_raises(Calcpace::Error) { @calc.hr_zones(hr_max: 150, hr_rest: 150) }
+    assert_match(/resting heart rate/i, error.message)
+  end
+
+  def test_hr_zones_rejects_non_positive_values
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 0, hr_rest: 55) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 190, hr_rest: -5) }
+  end
 end

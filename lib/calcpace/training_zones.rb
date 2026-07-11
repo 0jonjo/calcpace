@@ -23,6 +23,12 @@ module TrainingZones
   # slow = lower-intensity end of the band, fast = higher-intensity end.
   PaceBand = Struct.new(:slow_seconds, :fast_seconds, :slow_clock, :fast_clock)
 
+  # Heart-rate zone boundaries as fractions of Heart Rate Reserve (Karvonen)
+  HR_ZONE_BOUNDARIES = [0.50, 0.60, 0.70, 0.80, 0.90, 1.00].freeze
+
+  # One heart-rate training zone (1 = recovery … 5 = maximal)
+  HrZone = Struct.new(:zone, :min_bpm, :max_bpm)
+
   # Derives training pace bands from a VO2max value
   #
   # @param vo2max [Numeric] VO2max in ml/kg/min (must be > 0)
@@ -65,7 +71,41 @@ module TrainingZones
     training_paces(estimate_vo2max(distance_km, time))
   end
 
+  # Computes the five Karvonen heart-rate training zones
+  #
+  # target_bpm = hr_rest + pct * (hr_max - hr_rest)
+  #
+  # @param hr_max [Numeric] maximum heart rate in bpm (must be > 0)
+  # @param hr_rest [Numeric] resting heart rate in bpm (must be > 0 and < hr_max)
+  # @return [Array<HrZone>] five contiguous zones from Z1 (50–60% HRR) to Z5 (90–100% HRR)
+  # @raise [Calcpace::NonPositiveInputError] if any rate is not positive
+  # @raise [Calcpace::Error] if hr_rest >= hr_max
+  #
+  # @example
+  #   calc.hr_zones(hr_max: 190, hr_rest: 55).last.max_bpm #=> 190
+  def hr_zones(hr_max:, hr_rest:)
+    max  = hr_max.to_f
+    rest = hr_rest.to_f
+    check_heart_rates(max, rest)
+
+    reserve = max - rest
+    points  = HR_ZONE_BOUNDARIES.map { |pct| (rest + (pct * reserve)).round }
+
+    points.each_cons(2).with_index(1).map do |(min_bpm, max_bpm), zone|
+      HrZone.new(zone: zone, min_bpm: min_bpm, max_bpm: max_bpm)
+    end
+  end
+
   private
+
+  def check_heart_rates(hr_max, hr_rest)
+    check_positive(hr_max, 'Maximum heart rate')
+    check_positive(hr_rest, 'Resting heart rate')
+    return if hr_rest < hr_max
+
+    raise Calcpace::Error,
+          "Resting heart rate (#{hr_rest}) must be lower than maximum heart rate (#{hr_max})"
+  end
 
   # Inverts Daniels & Gilbert: velocity (m/min) that demands a given VO2
   def velocity_at_vo2(vo2)
