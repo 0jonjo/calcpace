@@ -12,7 +12,8 @@ Gem::Specification.new do |spec|
   spec.description   = 'Ruby gem for running and cycling calculations: pace, time, distance, ' \
                        'unit conversions (30+ units), race predictions (Riegel & Cameron), ' \
                        'GPS track analysis (Haversine, elevation gain, per-km splits), ' \
-                       'and VO2max estimation (Daniels & Gilbert).'
+                       'VO2max estimation (Daniels & Gilbert), and training zones ' \
+                       '(Daniels paces & Karvonen heart-rate zones).'
   spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage
   spec.license = 'MIT'

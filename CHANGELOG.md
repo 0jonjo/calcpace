@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-07-11
+
+### Added
+- Training Zones module (`TrainingZones`)
+  - `training_paces(vo2max)`: personalized Easy/Marathon/Threshold/Interval/Repetition
+    pace bands per km, inverting the Daniels & Gilbert velocity equation
+  - `training_paces_from_race(distance_km, time)`: pace bands straight from a race result
+  - `hr_zones(hr_max:, hr_rest:)`: five Karvonen (Heart Rate Reserve) heart-rate zones
+  - Structured results (`PaceBand`, `HrZone`) with seconds and clock formats
+
 ## [1.9.10] - 2026-07-09
 
 ### Changed
@@ -205,7 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.9.6...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/0jonjo/calcpace/compare/v1.9.10...v1.10.0
 [1.9.6]: https://github.com/0jonjo/calcpace/compare/v1.9.5...v1.9.6
 [1.9.5]: https://github.com/0jonjo/calcpace/compare/v1.9.4...v1.9.5
 [1.6.0]: https://github.com/0jonjo/calcpace/releases/tag/v1.6.0

@@ -66,7 +66,7 @@ module TrainingZones
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
   #
   # @example
-  #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:41"
+  #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:42"
   def training_paces_from_race(distance_km, time)
     training_paces(estimate_vo2max(distance_km, time))
   end
