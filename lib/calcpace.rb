@@ -13,6 +13,7 @@ require_relative 'calcpace/pace_converter'
 require_relative 'calcpace/race_predictor'
 require_relative 'calcpace/race_splits'
 require_relative 'calcpace/track_calculator'
+require_relative 'calcpace/training_zones'
 require_relative 'calcpace/vo2max_estimator'
 
 # Calcpace - A Ruby gem for pace, distance, and time calculations
@@ -49,6 +50,7 @@ class Calcpace
   include RacePredictor
   include RaceSplits
   include TrackCalculator
+  include TrainingZones
   include Vo2maxEstimator
 
   # Creates a new Calcpace instance
