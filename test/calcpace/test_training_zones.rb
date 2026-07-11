@@ -58,4 +58,30 @@ class TestTrainingZones < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(0) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(-10) }
   end
+
+  # --- training_paces_from_race ---
+  def test_training_paces_from_race_delegates_to_vo2max_estimation
+    # 10k in 40:00 → VO2max 51.9 (value already validated in test_vo2max_estimator.rb)
+    from_race = @calc.training_paces_from_race(10.0, '00:40:00')
+    from_vo2  = @calc.training_paces(51.9)
+
+    assert_equal from_vo2[:threshold].fast_seconds, from_race[:threshold].fast_seconds
+    assert_equal from_vo2[:easy].slow_clock, from_race[:easy].slow_clock
+  end
+
+  def test_training_paces_from_race_accepts_seconds_input
+    from_clock   = @calc.training_paces_from_race(10.0, '00:40:00')
+    from_seconds = @calc.training_paces_from_race(10.0, 2400)
+
+    assert_equal from_clock[:interval].fast_seconds, from_seconds[:interval].fast_seconds
+  end
+
+  def test_training_paces_from_race_propagates_input_errors
+    assert_raises(Calcpace::NonPositiveInputError) do
+      @calc.training_paces_from_race(0, '00:40:00')
+    end
+    assert_raises(Calcpace::InvalidTimeFormatError) do
+      @calc.training_paces_from_race(10.0, 'banana')
+    end
+  end
 end

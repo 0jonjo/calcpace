@@ -48,6 +48,23 @@ module TrainingZones
     end
   end
 
+  # Derives training pace bands from a recent race result
+  #
+  # Convenience wrapper: estimates VO2max via Daniels & Gilbert
+  # (see Vo2maxEstimator#estimate_vo2max) and derives the bands from it.
+  #
+  # @param distance_km [Numeric] race distance in kilometres (must be > 0)
+  # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
+  # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
+  # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
+  # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
+  #
+  # @example
+  #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:41"
+  def training_paces_from_race(distance_km, time)
+    training_paces(estimate_vo2max(distance_km, time))
+  end
+
   private
 
   # Inverts Daniels & Gilbert: velocity (m/min) that demands a given VO2
