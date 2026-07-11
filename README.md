@@ -1,11 +1,11 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.9.8&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.10.0&x2=0)](https://badge.fury.io/rb/calcpace)
 
-A Ruby gem for running and cycling calculations: pace, time, distance, unit conversions, race predictions, GPS track analysis, and VO2max estimation.
+A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions, GPS track analysis, age grading, VO2max estimation, and training zones.
 
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.9.8'
+gem 'calcpace', '~> 1.10.0'
 ```
 
 ## Usage
@@ -273,6 +273,34 @@ easy.value        # => 29.3   (underestimates real aerobic capacity)
 > If `hr_avg > hr_max`, a `Calcpace::Error` is raised (physiologically impossible input).
 > If you provide heart rate data, both `hr_avg` and `hr_max` must be present.
 > `elevation_gain_m` must be zero or positive.
+
+---
+
+### Training Zones
+
+Personalized training paces (Daniels' Running Formula) and Karvonen heart-rate zones:
+
+```ruby
+zones = calc.training_paces(50.0)
+zones[:threshold].fast_clock   # => "00:04:15" per km
+zones[:easy].slow_clock        # => "00:05:52" per km
+
+calc.training_paces_from_race(10.0, '00:40:00')  # from a recent race result
+
+calc.hr_zones(hr_max: 190, hr_rest: 55)
+# => [#<struct zone=1, min_bpm=123, max_bpm=136>, ... zone=5, max_bpm=190]
+```
+
+| Zone | %VO2max | Purpose |
+|------|---------|---------|
+| Easy | 59–74% | Base building, recovery |
+| Marathon | 75–84% | Marathon race pace |
+| Threshold | 83–88% | Lactate threshold, tempo runs |
+| Interval | 95–100% | VO2max development |
+| Repetition | 105–110% | Speed and running economy |
+
+Pace accuracy vs published VDOT tables: within a few seconds per km
+(threshold matches exactly; easy band is a range heuristic).
 
 ---
 
