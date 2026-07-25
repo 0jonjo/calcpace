@@ -99,11 +99,40 @@ class TestAgeGrading < CalcpaceTest
     end
   end
 
-  def test_age_grade_percent_accepts_distance_in_miles
+  def test_age_grade_percent_accepts_distances_as_runners_write_them_in_miles
+    # Real-world mile inputs, not 6-decimal conversions: 3.1mi ≈ 5k, 6.2mi ≈ 10k,
+    # 13.1mi ≈ half marathon, 26.2mi ≈ marathon
+    { 3.1 => 5.0, 6.2 => 10.0, 13.1 => 21.0975, 26.2 => 42.195 }.each do |miles, km|
+      expected = @calc.age_grade_percent(km, '01:30:00', age: 40, sex: :male)
+      actual = @calc.age_grade_percent(miles, '01:30:00', age: 40, sex: :male, distance_unit: :mi)
+
+      assert_equal expected, actual, "#{miles} mi should resolve to the #{km} km standard"
+    end
+  end
+
+  def test_age_grade_percent_accepts_exact_mile_conversions
     km = @calc.age_grade_percent(21.0975, '01:30:00', age: 40, sex: :male)
     mi = @calc.age_grade_percent(13.109455, '01:30:00', age: 40, sex: :male, distance_unit: :mi)
 
     assert_equal km, mi
+  end
+
+  def test_age_grade_still_rejects_distances_outside_tolerance
+    error = assert_raises(ArgumentError) do
+      @calc.age_grade(7.5, '00:35:00', age: 45, sex: :male)
+    end
+
+    assert_match(/7\.5/, error.message)
+  end
+
+  def test_age_grade_error_message_reports_the_input_in_its_own_unit
+    error = assert_raises(ArgumentError) do
+      @calc.age_grade(9.0, '01:00:00', age: 40, sex: :male, distance_unit: :mi)
+    end
+
+    assert_match(/9\.0/, error.message)
+    assert_match(/mi/, error.message)
+    refute_match(/9\.0\s*km/, error.message)
   end
 
   def test_age_grade_rejects_unknown_distance_unit

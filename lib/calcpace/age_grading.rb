@@ -114,22 +114,31 @@ module AgeGrading
   private
 
   def normalize_distance(distance_input, distance_unit = :km)
-    if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
-      key = distance_input.to_s.strip.downcase
-      return RACE_TO_METERS.fetch(key) if RACE_TO_METERS.key?(key)
-
-      raise ArgumentError,
-            "Unsupported race '#{distance_input}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
-    end
+    return race_key_to_meters(distance_input) if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
 
     distance = normalize_distance_km(distance_input, distance_unit)
     check_positive(distance, 'Distance')
 
-    match = SUPPORTED_DISTANCES_KM.find { |value| (distance - value).abs <= 0.001 }
+    match = SUPPORTED_DISTANCES_KM.find { |value| standard_distance?(distance, value) }
     return DISTANCE_TO_METERS.fetch(match) if match
 
     raise ArgumentError,
-          "Unsupported distance #{distance_input}km. Supported: #{SUPPORTED_DISTANCES_KM.join(', ')}"
+          "Unsupported distance #{distance_input}#{distance_unit.to_s.downcase}. " \
+          "Supported: #{SUPPORTED_DISTANCES_KM.join(', ')} km"
+  end
+
+  def race_key_to_meters(race_input)
+    key = race_input.to_s.strip.downcase
+    return RACE_TO_METERS.fetch(key) if RACE_TO_METERS.key?(key)
+
+    raise ArgumentError,
+          "Unsupported race '#{race_input}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
+  end
+
+  # Runners write rounded distances (3.1 mi, 13.1 mi, 26.2 mi), so the match
+  # window is relative — 0.5% of the standard distance, never below 1 metre
+  def standard_distance?(distance, standard)
+    (distance - standard).abs <= [0.001, standard * 0.005].max
   end
 
   def parse_time_seconds(time)
