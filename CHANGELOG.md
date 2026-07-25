@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     pace bands per mile (default remains `:km`)
   - `hr_zones_from_max(hr_max:)`: five heart-rate zones from maximum heart
     rate only (%HRmax method) — fallback when resting heart rate is unknown
+  - `training_paces_from_race` accepts standard race names ('10k', 'marathon',
+    '5mile', ...) in addition to numeric kilometres, matching `predict_time`
+    and `race_pace`
 
 ## [1.10.0] - 2026-07-11
 

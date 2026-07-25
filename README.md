@@ -287,7 +287,8 @@ zones[:easy].slow_clock        # => "00:05:52" per km
 
 calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  # => "00:06:51" per mile
 
-calc.training_paces_from_race(10.0, '00:40:00')  # from a recent race result
+calc.training_paces_from_race(10.0, '00:40:00')          # from a recent race result
+calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)  # race names work too
 
 calc.hr_zones(hr_max: 190, hr_rest: 55)
 # => [#<struct zone=1, min_bpm=123, max_bpm=136>, ... zone=5, max_bpm=190]

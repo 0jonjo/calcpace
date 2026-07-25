@@ -112,6 +112,25 @@ class TestTrainingZones < CalcpaceTest
     assert_equal from_vo2[:threshold].fast_seconds, from_race[:threshold].fast_seconds
   end
 
+  def test_training_paces_from_race_accepts_race_names
+    from_name = @calc.training_paces_from_race('10k', '00:40:00')
+    from_km   = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_km[:threshold].fast_seconds, from_name[:threshold].fast_seconds
+  end
+
+  def test_training_paces_from_race_accepts_mile_race_names
+    from_name = @calc.training_paces_from_race('5mile', '00:35:00')
+    from_km   = @calc.training_paces_from_race(8.04672, '00:35:00')
+
+    assert_equal from_km[:easy].slow_seconds, from_name[:easy].slow_seconds
+  end
+
+  def test_training_paces_from_race_rejects_unknown_race_name
+    error = assert_raises(ArgumentError) { @calc.training_paces_from_race('parsec', '00:40:00') }
+    assert_match(/unknown race/i, error.message)
+  end
+
   def test_training_paces_from_race_propagates_input_errors
     assert_raises(Calcpace::NonPositiveInputError) do
       @calc.training_paces_from_race(0, '00:40:00')

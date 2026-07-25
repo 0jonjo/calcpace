@@ -66,16 +66,21 @@ module TrainingZones
   # Convenience wrapper: estimates VO2max via Daniels & Gilbert
   # (see Vo2maxEstimator#estimate_vo2max) and derives the bands from it.
   #
-  # @param distance_km [Numeric] race distance in kilometres (must be > 0)
+  # @param race [Numeric, String, Symbol] race distance in kilometres, or a
+  #   standard race name ('5k', '10k', 'half_marathon', 'marathon', '1mile',
+  #   '5mile', '10mile', '100k' — see PaceCalculator::RACE_DISTANCES)
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
   # @param unit [Symbol] pace unit — :km (default) or :mi
   # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
+  # @raise [ArgumentError] if a race name is not recognized
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
   #
   # @example
   #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:42"
-  def training_paces_from_race(distance_km, time, unit: :km)
+  #   calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)
+  def training_paces_from_race(race, time, unit: :km)
+    distance_km = race.is_a?(Numeric) ? race : race_distance(race)
     training_paces(estimate_vo2max(distance_km, time), unit: unit)
   end
 
