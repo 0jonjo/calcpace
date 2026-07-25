@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-07-25
+
+### Added
+- Training zones improvements
+  - `training_paces` and `training_paces_from_race` accept `unit: :mi` for
+    pace bands per mile (default remains `:km`)
+  - `hr_zones_from_max(hr_max:)`: five heart-rate zones from maximum heart
+    rate only (%HRmax method) — fallback when resting heart rate is unknown
+
 ## [1.10.0] - 2026-07-11
 
 ### Added

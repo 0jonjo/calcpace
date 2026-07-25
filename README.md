@@ -285,10 +285,16 @@ zones = calc.training_paces(50.0)
 zones[:threshold].fast_clock   # => "00:04:15" per km
 zones[:easy].slow_clock        # => "00:05:52" per km
 
+calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  # => "00:06:51" per mile
+
 calc.training_paces_from_race(10.0, '00:40:00')  # from a recent race result
 
 calc.hr_zones(hr_max: 190, hr_rest: 55)
 # => [#<struct zone=1, min_bpm=123, max_bpm=136>, ... zone=5, max_bpm=190]
+
+calc.hr_zones_from_max(hr_max: 190)
+# => [#<struct zone=1, min_bpm=95, max_bpm=114>, ... zone=5, max_bpm=190]
+# %HRmax fallback — prefer hr_zones (Karvonen) when resting HR is known
 ```
 
 | Zone | %VO2max | Purpose |
