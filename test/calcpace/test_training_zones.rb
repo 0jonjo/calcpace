@@ -155,10 +155,18 @@ class TestTrainingZones < CalcpaceTest
     assert_equal from_km[:easy].slow_seconds, from_name[:easy].slow_seconds
   end
 
-  def test_training_paces_from_race_ignores_distance_unit_for_race_names
-    # Contract: a race name already carries its own distance, so distance_unit: is ignored
-    assert_equal @calc.training_paces_from_race('10k', '00:40:00'),
-                 @calc.training_paces_from_race('10k', '00:40:00', distance_unit: :mi)
+  def test_training_paces_from_race_rejects_distance_unit_with_race_name
+    # A race name already carries its own distance, so a distance_unit alongside it
+    # is always a caller mistake — say so instead of silently ignoring the keyword
+    error = assert_raises(ArgumentError) do
+      @calc.training_paces_from_race('10k', '00:40:00', distance_unit: :mi)
+    end
+
+    assert_match(/race name/i, error.message)
+  end
+
+  def test_mile_pace_unit_derives_from_the_canonical_mile
+    assert_equal Converter::Distance::MI_TO_METERS, TrainingZones::PACE_UNIT_METERS[:mi]
   end
 
   def test_training_paces_from_race_rejects_unknown_race_name

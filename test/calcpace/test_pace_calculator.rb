@@ -13,9 +13,16 @@ class TestPaceCalculator < CalcpaceTest
     assert_equal 21.0975, races['half_marathon']
     assert_equal 42.195, races['marathon']
     assert_equal 100.0, races['100k']
-    assert_equal 1.60934, races['1mile']
+    # Derived from the canonical international mile (1.609344 km)
+    assert_equal 1.609344, races['1mile']
     assert_equal 8.04672, races['5mile']
-    assert_equal 16.0934, races['10mile']
+    assert_equal 16.09344, races['10mile']
+  end
+
+  def test_race_lookup_tolerates_whitespace_and_case
+    # 300 s/km over 10 km — same race, however the caller spells it
+    assert_equal 3000.0, @calc.race_time(300, ' 10K ')
+    assert_equal @calc.race_time(300, 'marathon'), @calc.race_time(300, :MARATHON)
   end
 
   def test_race_time_with_numeric_pace

@@ -76,8 +76,8 @@ calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 8
 30+ units supported. String or symbol format:
 
 ```ruby
-calc.convert(10, :km_to_mi)         # => 6.21371
-calc.convert(10, 'mi to km')        # => 16.0934
+calc.convert(10, :km_to_mi)         # => 6.213711922...
+calc.convert(10, 'mi to km')        # => 16.09344
 calc.convert(1, :m_s_to_km_h)       # => 3.6
 
 # Chain conversions
@@ -313,9 +313,13 @@ Pace accuracy vs published VDOT tables: within a few seconds per km
 (threshold matches exactly; easy band is a range heuristic).
 
 `unit:` sets the unit of the returned pace bands; `distance_unit:` sets the unit of a
-numeric race distance you pass in. `distance_unit:` is ignored for race names — `'10k'`
-is a 10 km race regardless of it. Mile bands are computed natively (not converted from
-the km bands), so they can differ by ±1 s from `pace_km_to_mi(km_band)`.
+numeric race distance you pass in. Combining `distance_unit:` with a race name raises
+`ArgumentError` — `'10k'` already carries its own distance. Mile bands are computed
+natively (not converted from the km bands), so they can differ by ±1 s from
+`pace_km_to_mi(km_band)`.
+
+All mile factors derive from the exact international mile (1609.344 m), so distances,
+pace bands, and age-grading tolerances agree to the metre.
 
 ---
 

@@ -37,6 +37,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `unit: :mi` pace bands are computed natively per mile instead of being converted
   from the km bands, so they can differ by ±1 s from `pace_km_to_mi(km_band)` —
   the native value is the one without double rounding.
+- Every mile-based factor now derives from the exact international mile
+  (1 mi = 1609.344 m), which was previously truncated to 1.60934 in some places
+  and exact in others. Affected values move by ~2.5e-6 relative:
+  `convert(1, :mi_to_km)` 1.60934 → 1.609344, `convert(1, :km_to_mi)` 0.621371 →
+  0.6213711922…, `convert(1, :mi_to_meters)` 1609.34 → 1609.344, the `mi_h`/`m_s`
+  speed pairs, and `list_races` entries `'1mile'` (1.609344) and `'10mile'`
+  (16.09344). Age-grading tolerance and pace bands now agree on mile length.
+- Passing `distance_unit:` together with a race name (`training_paces_from_race('10k',
+  t, distance_unit: :mi)`, `age_grade('10k', …, distance_unit: :mi)`) raises
+  `ArgumentError` instead of silently ignoring the keyword — a standard race already
+  carries its own distance.
+- Race-name lookup is normalized in one place: `' 10K '` and `:MARATHON` now resolve
+  everywhere (previously `PaceCalculator` did not strip whitespace), and `AgeGrading`
+  uses the same "Unknown race: …" message wording as the rest of the gem.
 
 ### Fixed
 - Age grading accepts mile distances as runners write them (`3.1`, `6.2`, `13.1`,

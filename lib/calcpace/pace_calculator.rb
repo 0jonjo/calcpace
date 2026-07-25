@@ -12,9 +12,9 @@ module PaceCalculator
     'half_marathon' => 21.0975,
     'marathon' => 42.195,
     '100k' => 100.0,
-    '1mile' => 1.60934,
-    '5mile' => 8.04672,
-    '10mile' => 16.0934
+    '1mile' => Converter::Distance::MI_TO_KM,
+    '5mile' => 5 * Converter::Distance::MI_TO_KM,
+    '10mile' => 10 * Converter::Distance::MI_TO_KM
   }.freeze
 
   # Calculates the finish time for a race given a pace per kilometer
@@ -93,10 +93,18 @@ module PaceCalculator
   # @return [Float] distance in kilometers
   # @raise [ArgumentError] if race is not recognized
   def race_distance(race)
-    key = race.to_s.downcase
-    RACE_DISTANCES.fetch(key) do
+    RACE_DISTANCES.fetch(normalize_race_key(race)) do
       raise ArgumentError,
             "Unknown race: #{race}. Available races: #{RACE_DISTANCES.keys.join(', ')}"
     end
+  end
+
+  # Single normalization for every race-name lookup in the gem (here and in
+  # AgeGrading), so ' 10K ' and :marathon always resolve like '10k' and 'marathon'
+  #
+  # @param race [String, Symbol] race name in any case, with or without padding
+  # @return [String] normalized lookup key
+  def normalize_race_key(race)
+    race.to_s.strip.downcase
   end
 end

@@ -50,9 +50,11 @@ Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
 
-# Keyword arguments are self-documenting; only positional params hurt readability
+# Keyword arguments are self-documenting, so the ceiling is a little higher than
+# the default 5 — but it stays a ceiling: kwargs still count, so a method growing
+# to eight or ten of them is flagged.
 Metrics/ParameterLists:
-  CountKeywordArgs: false
+  Max: 6
 
 Metrics/BlockLength:
   Exclude:

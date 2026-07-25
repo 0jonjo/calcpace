@@ -24,7 +24,7 @@ module TrainingZones
   PaceBand = Struct.new(:slow_seconds, :fast_seconds, :slow_clock, :fast_clock)
 
   # Metres per pace unit — pace bands can be expressed per km or per mile
-  PACE_UNIT_METERS = { km: 1000.0, mi: 1609.344 }.freeze
+  PACE_UNIT_METERS = { km: 1000.0, mi: Converter::Distance::MI_TO_METERS }.freeze
 
   # Heart-rate zone boundaries as fractions of the range being split:
   # Heart Rate Reserve in #hr_zones (Karvonen) and HRmax in #hr_zones_from_max
@@ -75,10 +75,11 @@ module TrainingZones
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
   # @param unit [Symbol] pace unit of the output bands — :km (default) or :mi
   # @param distance_unit [Symbol] unit of a numeric race distance input — :km (default) or :mi.
-  #   Ignored when race is a race name: standard races already carry their own distance,
-  #   so training_paces_from_race('10k', time, distance_unit: :mi) is still a 10 km race
+  #   Rejected when race is a race name: standard races already carry their own
+  #   distance, so the combination is always a caller mistake
   # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
-  # @raise [ArgumentError] if a race name is not recognized
+  # @raise [ArgumentError] if a race name is not recognized, or if distance_unit
+  #   is combined with a race name
   # @raise [Calcpace::UnsupportedUnitError] if unit or distance_unit is not :km or :mi
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
@@ -87,11 +88,16 @@ module TrainingZones
   #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:42"
   #   calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)
   #   calc.training_paces_from_race(6.2, '00:40:00', distance_unit: :mi, unit: :mi)
-  def training_paces_from_race(race, time, unit: :km, distance_unit: :km)
+  def training_paces_from_race(race, time, unit: :km, distance_unit: nil)
     # Numeric strings ('10') keep working as distances; only non-numeric input
     # (race names) falls through to the RACE_DISTANCES lookup
     numeric = race.is_a?(Numeric) ? race : Float(race, exception: false)
-    distance_km = numeric ? normalize_distance_km(numeric, distance_unit) : race_distance(race)
+    distance_km = if numeric
+                    normalize_distance_km(numeric, distance_unit || :km)
+                  else
+                    reject_distance_unit_with_race_name!(distance_unit, race)
+                    race_distance(race)
+                  end
 
     training_paces(estimate_vo2max(distance_km, time), unit: unit)
   end

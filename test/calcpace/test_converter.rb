@@ -16,9 +16,19 @@ class TestConverter < CalcpaceTest
     assert_equal '1 03:46:40', @calc.convert_to_clocktime(100_000)
   end
 
+  def test_mile_factors_derive_from_a_single_canonical_value
+    # One international mile is exactly 1609.344 m — every mile factor derives
+    # from it, so no two call sites can disagree about how long a mile is
+    assert_equal 1.609344, Converter::Distance::MI_TO_KM
+    assert_equal 1609.344, Converter::Distance::MI_TO_METERS
+    assert_in_delta 1.0, Converter::Distance::MI_TO_KM * Converter::Distance::KM_TO_MI, 1e-12
+    assert_in_delta 1.0, Converter::Distance::MI_TO_METERS * Converter::Distance::METERS_TO_MI, 1e-12
+    assert_equal Converter::Distance::MI_TO_KM, Converter::Speed::MI_H_TO_KM_H
+  end
+
   def test_convert_distance_one
-    assert_equal 0.621371, @calc.convert(1, :km_to_mi)
-    assert_equal 1.60934, @calc.convert(1, :mi_to_km)
+    assert_in_delta 0.6213712, @calc.convert(1, :km_to_mi), 1e-7
+    assert_equal 1.609344, @calc.convert(1, :mi_to_km)
     assert_equal 1.852, @calc.convert(1, :nautical_mi_to_km)
     assert_equal 0.539957, @calc.convert(1, :km_to_nautical_mi)
     assert_equal 0.001, @calc.convert(1, :meters_to_km)
@@ -26,8 +36,8 @@ class TestConverter < CalcpaceTest
   end
 
   def test_convert_distance_two
-    assert_equal 0.000621371, @calc.convert(1, :meters_to_mi)
-    assert_equal 1609.34, @calc.convert(1, :mi_to_meters)
+    assert_in_delta 0.0006213712, @calc.convert(1, :meters_to_mi), 1e-10
+    assert_equal 1609.344, @calc.convert(1, :mi_to_meters)
     assert_equal 3.28084, @calc.convert(1, :meters_to_feet)
     assert_equal 0.3048, @calc.convert(1, :feet_to_meters)
     assert_equal 1.09361, @calc.convert(1, :meters_to_yards)
@@ -42,26 +52,26 @@ class TestConverter < CalcpaceTest
   def test_convert_velocity_one
     assert_equal 3.60, @calc.convert(1, :m_s_to_km_h)
     assert_equal 0.277778, @calc.convert(1, :km_h_to_m_s)
-    assert_equal 2.23694, @calc.convert(1, :m_s_to_mi_h)
+    assert_in_delta 2.2369363, @calc.convert(1, :m_s_to_mi_h), 1e-7
     assert_equal 0.44704, @calc.convert(1, :mi_h_to_m_s)
     assert_equal 1.94384, @calc.convert(1, :m_s_to_nautical_mi_h)
   end
 
   def test_convert_velocity_two
     assert_equal 0.514444, @calc.convert(1, :nautical_mi_h_to_m_s)
-    assert_equal 0.621371, @calc.convert(1, :km_h_to_mi_h)
-    assert_equal 1.60934, @calc.convert(1, :mi_h_to_km_h)
+    assert_in_delta 0.6213712, @calc.convert(1, :km_h_to_mi_h), 1e-7
+    assert_equal 1.609344, @calc.convert(1, :mi_h_to_km_h)
     assert_equal 1.94384, @calc.convert(1, :m_s_to_knots)
     assert_equal 0.514444, @calc.convert(1, :knots_to_m_s)
   end
 
   def test_convert_with_string
-    assert_equal 0.621371, @calc.convert(1, 'km to mi')
+    assert_in_delta 0.6213712, @calc.convert(1, 'km to mi'), 1e-7
   end
 
   def test_constant
-    assert_equal 0.621371, @calc.constant(:km_to_mi)
-    assert_equal 1.60934, @calc.constant('mi to km')
+    assert_in_delta 0.6213712, @calc.constant(:km_to_mi), 1e-7
+    assert_equal 1.609344, @calc.constant('mi to km')
     assert_equal 1.852, @calc.constant('nautical mi to km')
   end
 

@@ -135,10 +135,20 @@ class TestAgeGrading < CalcpaceTest
     refute_match(/9\.0\s*km/, error.message)
   end
 
-  def test_age_grade_ignores_distance_unit_for_race_keys
-    # Contract: a race key already carries its own distance, so distance_unit: is ignored
-    assert_equal @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male),
-                 @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male, distance_unit: :mi)
+  def test_age_grade_rejects_distance_unit_with_race_key
+    # A race key already carries its own distance, so a distance_unit alongside it
+    # is always a caller mistake — say so instead of silently ignoring the keyword
+    error = assert_raises(ArgumentError) do
+      @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male, distance_unit: :mi)
+    end
+
+    assert_match(/race name/i, error.message)
+  end
+
+  def test_age_grade_tolerates_whitespace_and_case_in_race_keys
+    padded = @calc.age_grade_percent(' 10K ', '00:45:00', age: 40, sex: :male)
+
+    assert_equal @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male), padded
   end
 
   def test_age_grade_rejects_unknown_distance_unit

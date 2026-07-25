@@ -56,13 +56,14 @@ module AgeGrading
   # @param age [Integer] athlete age (must be >= 18)
   # @param sex [String, Symbol] male or female
   # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi.
-  #   Ignored when distance is a race key: standard races already carry their own distance,
-  #   so age_grade('10k', time, ..., distance_unit: :mi) is still a 10 km race
+  #   Rejected when distance is a race key: standard races already carry their own
+  #   distance, so the combination is always a caller mistake
   # @return [Hash] age-grading result details
-  # @raise [ArgumentError] if the distance, race key, age or sex is not supported
+  # @raise [ArgumentError] if the distance, race key, age or sex is not supported,
+  #   or if distance_unit is combined with a race key
   # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
-  def age_grade(distance, time, age:, sex:, distance_unit: :km)
+  def age_grade(distance, time, age:, sex:, distance_unit: nil)
     distance_m = normalize_distance(distance, distance_unit)
     seconds = parse_time_seconds(time)
     age_value = normalize_age(age)
@@ -95,9 +96,9 @@ module AgeGrading
   # @param age [Integer] athlete age
   # @param sex [String, Symbol] male or female
   # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
-  #   (ignored for race keys, see #age_grade)
+  #   (rejected alongside race keys, see #age_grade)
   # @return [Float] age-grade percentage
-  def age_grade_percent(distance, time, age:, sex:, distance_unit: :km)
+  def age_grade_percent(distance, time, age:, sex:, distance_unit: nil)
     age_grade(distance, time, age: age, sex: sex, distance_unit: distance_unit)[:age_grade_percent]
   end
 
@@ -119,26 +120,29 @@ module AgeGrading
 
   private
 
-  def normalize_distance(distance_input, distance_unit = :km)
-    return race_key_to_meters(distance_input) if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
+  def normalize_distance(distance_input, distance_unit = nil)
+    if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
+      reject_distance_unit_with_race_name!(distance_unit, distance_input)
+      return race_key_to_meters(distance_input)
+    end
 
-    distance = normalize_distance_km(distance_input, distance_unit)
+    distance = normalize_distance_km(distance_input, distance_unit || :km)
     check_positive(distance, 'Distance')
 
     match = SUPPORTED_DISTANCES_KM.find { |value| standard_distance?(distance, value) }
     return DISTANCE_TO_METERS.fetch(match) if match
 
     raise ArgumentError,
-          "Unsupported distance #{distance_input}#{distance_unit.to_s.downcase}. " \
+          "Unsupported distance #{distance_input}#{(distance_unit || :km).to_s.downcase}. " \
           "Supported: #{SUPPORTED_DISTANCES_KM.join(', ')} km"
   end
 
   def race_key_to_meters(race_input)
-    key = race_input.to_s.strip.downcase
-    return RACE_TO_METERS.fetch(key) if RACE_TO_METERS.key?(key)
-
-    raise ArgumentError,
-          "Unsupported race '#{race_input}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
+    # normalize_race_key is PaceCalculator's — one lookup convention gem-wide
+    RACE_TO_METERS.fetch(normalize_race_key(race_input)) do
+      raise ArgumentError,
+            "Unknown race: #{race_input}. Available races: #{RACE_TO_METERS.keys.join(', ')}"
+    end
   end
 
   # Runners write rounded distances (3.1 mi, 13.1 mi, 26.2 mi), so the match
