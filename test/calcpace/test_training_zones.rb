@@ -156,4 +156,41 @@ class TestTrainingZones < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 0, hr_rest: 55) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 190, hr_rest: -5) }
   end
+
+  # --- hr_zones_from_max ---
+  def test_hr_zones_from_max_returns_five_zones
+    zones = @calc.hr_zones_from_max(hr_max: 190)
+
+    assert_equal 5, zones.size
+    assert_equal (1..5).to_a, zones.map(&:zone)
+  end
+
+  def test_hr_zones_from_max_percentage_values
+    zones = @calc.hr_zones_from_max(hr_max: 190)
+
+    assert_equal 95,  zones[0].min_bpm # 50% of 190
+    assert_equal 114, zones[0].max_bpm # 60% of 190
+    assert_equal 152, zones[3].min_bpm # 80% of 190
+    assert_equal 171, zones[3].max_bpm # 90% of 190
+    assert_equal 190, zones[4].max_bpm # Z5 ends at max heart rate
+  end
+
+  def test_hr_zones_from_max_are_contiguous
+    @calc.hr_zones_from_max(hr_max: 185).each_cons(2) do |prev, nxt|
+      assert_equal prev.max_bpm, nxt.min_bpm
+    end
+  end
+
+  def test_hr_zones_from_max_is_more_conservative_than_karvonen
+    from_max = @calc.hr_zones_from_max(hr_max: 190)
+    karvonen = @calc.hr_zones(hr_max: 190, hr_rest: 55)
+
+    # Without resting HR the lower bounds drop — expected from the %HRmax model
+    assert_operator from_max[0].min_bpm, :<, karvonen[0].min_bpm
+  end
+
+  def test_hr_zones_from_max_rejects_non_positive
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: 0) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: -180) }
+  end
 end

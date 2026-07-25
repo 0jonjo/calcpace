@@ -97,14 +97,38 @@ module TrainingZones
     check_heart_rates(max, rest)
 
     reserve = max - rest
-    points  = HR_ZONE_BOUNDARIES.map { |pct| (rest + (pct * reserve)).round }
+    build_hr_zones(HR_ZONE_BOUNDARIES.map { |pct| (rest + (pct * reserve)).round })
+  end
 
+  # Computes five heart-rate zones from maximum heart rate only (%HRmax method)
+  #
+  # Fallback for athletes who don't know their resting heart rate — the
+  # classic percent-of-max model used as default by most sports watches:
+  #   target_bpm = pct * hr_max
+  #
+  # Prefer #hr_zones (Karvonen) when resting heart rate is available.
+  #
+  # @param hr_max [Numeric] maximum heart rate in bpm (must be > 0)
+  # @return [Array<HrZone>] five contiguous zones from Z1 (50–60% HRmax) to Z5 (90–100% HRmax)
+  # @raise [Calcpace::NonPositiveInputError] if hr_max is not positive
+  #
+  # @example
+  #   calc.hr_zones_from_max(hr_max: 190).first.min_bpm #=> 95
+  def hr_zones_from_max(hr_max:)
+    max = hr_max.to_f
+    check_positive(max, 'Maximum heart rate')
+
+    build_hr_zones(HR_ZONE_BOUNDARIES.map { |pct| (pct * max).round })
+  end
+
+  private
+
+  # Turns six ascending bpm boundary points into five contiguous HrZone structs
+  def build_hr_zones(points)
     points.each_cons(2).with_index(1).map do |(min_bpm, max_bpm), zone|
       HrZone.new(zone: zone, min_bpm: min_bpm, max_bpm: max_bpm)
     end
   end
-
-  private
 
   def check_heart_rates(hr_max, hr_rest)
     check_positive(hr_max, 'Maximum heart rate')
