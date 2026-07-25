@@ -26,7 +26,8 @@ module TrainingZones
   # Metres per pace unit — pace bands can be expressed per km or per mile
   PACE_UNIT_METERS = { km: 1000.0, mi: 1609.344 }.freeze
 
-  # Heart-rate zone boundaries as fractions of Heart Rate Reserve (Karvonen)
+  # Heart-rate zone boundaries as fractions of the range being split:
+  # Heart Rate Reserve in #hr_zones (Karvonen) and HRmax in #hr_zones_from_max
   HR_ZONE_BOUNDARIES = [0.50, 0.60, 0.70, 0.80, 0.90, 1.00].freeze
 
   # One heart-rate training zone (1 = recovery … 5 = maximal)
@@ -73,7 +74,9 @@ module TrainingZones
   #   PaceCalculator::RACE_DISTANCES)
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
   # @param unit [Symbol] pace unit of the output bands — :km (default) or :mi
-  # @param distance_unit [Symbol] unit of a numeric race distance input — :km (default) or :mi
+  # @param distance_unit [Symbol] unit of a numeric race distance input — :km (default) or :mi.
+  #   Ignored when race is a race name: standard races already carry their own distance,
+  #   so training_paces_from_race('10k', time, distance_unit: :mi) is still a 10 km race
   # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
   # @raise [ArgumentError] if a race name is not recognized
   # @raise [Calcpace::UnsupportedUnitError] if unit or distance_unit is not :km or :mi

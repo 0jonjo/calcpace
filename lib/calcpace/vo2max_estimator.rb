@@ -70,8 +70,14 @@ module Vo2maxEstimator
   # @param distance_unit [Symbol] unit of the distance input — :km (default) or :mi
   # @return [Vo2maxResult] structured result with value and metadata
   #   (adjusted_distance_km is always in kilometres)
+  # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   def estimate_detailed_vo2max(distance, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil, distance_unit: :km)
     distance_km = normalize_distance_km(distance, distance_unit)
+    # Validated before the elevation adjustment, which would otherwise turn a
+    # negative distance into a positive equivalent-flat one
+    check_positive(distance_km, 'Distance')
+
     adj_dist_km = adjusted_distance_for_vo2(distance_km, elevation_gain_m)
     vo2max_val  = estimate_vo2max(adj_dist_km, time)
     confidence  = calculate_time_confidence(parse_time_minutes(time))

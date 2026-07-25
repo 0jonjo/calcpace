@@ -55,8 +55,13 @@ module AgeGrading
   # @param time [String, Numeric] performance time as HH:MM:SS / MM:SS, or total seconds
   # @param age [Integer] athlete age (must be >= 18)
   # @param sex [String, Symbol] male or female
-  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
+  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi.
+  #   Ignored when distance is a race key: standard races already carry their own distance,
+  #   so age_grade('10k', time, ..., distance_unit: :mi) is still a 10 km race
   # @return [Hash] age-grading result details
+  # @raise [ArgumentError] if the distance, race key, age or sex is not supported
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
+  # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
   def age_grade(distance, time, age:, sex:, distance_unit: :km)
     distance_m = normalize_distance(distance, distance_unit)
     seconds = parse_time_seconds(time)
@@ -90,6 +95,7 @@ module AgeGrading
   # @param age [Integer] athlete age
   # @param sex [String, Symbol] male or female
   # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
+  #   (ignored for race keys, see #age_grade)
   # @return [Float] age-grade percentage
   def age_grade_percent(distance, time, age:, sex:, distance_unit: :km)
     age_grade(distance, time, age: age, sex: sex, distance_unit: distance_unit)[:age_grade_percent]

@@ -289,8 +289,9 @@ zones[:easy].slow_clock        # => "00:05:52" per km
 
 calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  # => "00:06:51" per mile
 
-calc.training_paces_from_race(10.0, '00:40:00')          # from a recent race result
+calc.training_paces_from_race(10.0, '00:40:00')                # from a recent race result
 calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)  # race names work too
+calc.training_paces_from_race(6.2, '00:40:00', distance_unit: :mi, unit: :mi)  # race distance in miles
 
 calc.hr_zones(hr_max: 190, hr_rest: 55)
 # => [#<struct zone=1, min_bpm=123, max_bpm=136>, ... zone=5, max_bpm=190]
@@ -311,6 +312,11 @@ calc.hr_zones_from_max(hr_max: 190)
 Pace accuracy vs published VDOT tables: within a few seconds per km
 (threshold matches exactly; easy band is a range heuristic).
 
+`unit:` sets the unit of the returned pace bands; `distance_unit:` sets the unit of a
+numeric race distance you pass in. `distance_unit:` is ignored for race names — `'10k'`
+is a 10 km race regardless of it. Mile bands are computed natively (not converted from
+the km bands), so they can differ by ±1 s from `pace_km_to_mi(km_band)`.
+
 ---
 
 ### Other Utilities
@@ -329,6 +335,11 @@ All errors inherit from `Calcpace::Error`:
 
 - `Calcpace::NonPositiveInputError` — numeric input is zero or negative
 - `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format
+- `Calcpace::UnsupportedUnitError` — unknown conversion (`convert`) or unknown
+  `unit:` / `distance_unit:` keyword
+
+Argument validation that is not about units or numbers raises a plain `ArgumentError`:
+unknown race names, unsupported age-grading distances, and invalid `age` / `sex` values.
 
 ---
 

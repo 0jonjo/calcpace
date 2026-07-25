@@ -135,6 +135,12 @@ class TestAgeGrading < CalcpaceTest
     refute_match(/9\.0\s*km/, error.message)
   end
 
+  def test_age_grade_ignores_distance_unit_for_race_keys
+    # Contract: a race key already carries its own distance, so distance_unit: is ignored
+    assert_equal @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male),
+                 @calc.age_grade_percent('10k', '00:45:00', age: 40, sex: :male, distance_unit: :mi)
+  end
+
   def test_age_grade_rejects_unknown_distance_unit
     assert_raises(Calcpace::UnsupportedUnitError) do
       @calc.age_grade(21.0975, '01:30:00', age: 40, sex: :male, distance_unit: :furlong)

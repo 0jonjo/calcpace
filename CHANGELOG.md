@@ -22,6 +22,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `age_grade`, `age_grade_percent`, and `training_paces_from_race` — numeric
     distance inputs can now be given in miles (default remains kilometres)
 
+### Changed
+- `training_paces_from_race` resolves non-numeric distances as race names. Strings
+  that v1.10.0 silently parsed with `to_f` change meaning: `'5mile'` was 5.0 km and
+  is now the 5-mile standard distance (8.04672 km). Numeric strings (`'10'`,
+  `'21.0975'`) keep working as before, in kilometres.
+- `training_paces_from_race` with an unparseable distance (`nil`, `'banana'`) now
+  raises `ArgumentError` ("Unknown race: ...") instead of
+  `Calcpace::NonPositiveInputError`.
+- Unknown `unit:` / `distance_unit:` values raise `Calcpace::UnsupportedUnitError`
+  (inherits from `Calcpace::Error`) instead of `ArgumentError`. Unit keywords are
+  now case-insensitive (`'MI'` works) and `nil` raises the same error instead of a
+  `NoMethodError`.
+- `unit: :mi` pace bands are computed natively per mile instead of being converted
+  from the km bands, so they can differ by ±1 s from `pace_km_to_mi(km_band)` —
+  the native value is the one without double rounding.
+
+### Fixed
+- Age grading accepts mile distances as runners write them (`3.1`, `6.2`, `13.1`,
+  `26.2` with `distance_unit: :mi`); the previous 0.001 km match window only
+  accepted 6-decimal conversions.
+- Unsupported age-grading distances report the input in the unit it was given
+  instead of always labelling it "km".
+- `estimate_detailed_vo2max` rejects a non-positive distance even when
+  `elevation_gain_m` is positive (the elevation adjustment used to mask it).
+
 ## [1.10.0] - 2026-07-11
 
 ### Added

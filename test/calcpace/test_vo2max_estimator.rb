@@ -189,6 +189,13 @@ class TestVo2maxEstimator < CalcpaceTest
     assert_match(/km.*mi/i, error.message)
   end
 
+  def test_estimate_detailed_vo2max_rejects_negative_distance_with_elevation_gain
+    # Elevation adjustment used to turn the negative distance positive before validation
+    assert_raises(Calcpace::NonPositiveInputError) do
+      @calc.estimate_detailed_vo2max(-1.0, '00:40:00', elevation_gain_m: 1000)
+    end
+  end
+
   def test_estimate_vo2max_accepts_distance_unit_in_any_case
     assert_equal @calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi),
                  @calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: 'MI')

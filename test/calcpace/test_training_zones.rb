@@ -155,6 +155,12 @@ class TestTrainingZones < CalcpaceTest
     assert_equal from_km[:easy].slow_seconds, from_name[:easy].slow_seconds
   end
 
+  def test_training_paces_from_race_ignores_distance_unit_for_race_names
+    # Contract: a race name already carries its own distance, so distance_unit: is ignored
+    assert_equal @calc.training_paces_from_race('10k', '00:40:00'),
+                 @calc.training_paces_from_race('10k', '00:40:00', distance_unit: :mi)
+  end
+
   def test_training_paces_from_race_rejects_unknown_race_name
     error = assert_raises(ArgumentError) { @calc.training_paces_from_race('parsec', '00:40:00') }
     assert_match(/unknown race/i, error.message)
