@@ -39,7 +39,7 @@ module TrainingZones
   # @return [Hash{Symbol => PaceBand}] keys: :easy, :marathon, :threshold,
   #   :interval, :repetition — paces per chosen unit
   # @raise [Calcpace::NonPositiveInputError] if vo2max is not positive
-  # @raise [ArgumentError] if unit is not :km or :mi
+  # @raise [Calcpace::UnsupportedUnitError] if unit is not :km or :mi
   #
   # @example
   #   calc.training_paces(50.0)[:threshold].fast_clock             #=> "00:04:15"
@@ -75,7 +75,8 @@ module TrainingZones
   # @param unit [Symbol] pace unit of the output bands — :km (default) or :mi
   # @param distance_unit [Symbol] unit of a numeric race distance input — :km (default) or :mi
   # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
-  # @raise [ArgumentError] if a race name or unit is not recognized
+  # @raise [ArgumentError] if a race name is not recognized
+  # @raise [Calcpace::UnsupportedUnitError] if unit or distance_unit is not :km or :mi
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
   #
@@ -162,8 +163,8 @@ module TrainingZones
   end
 
   def pace_unit_meters(unit)
-    PACE_UNIT_METERS.fetch(unit.to_sym) do
-      raise ArgumentError, "Unknown pace unit: #{unit}. Supported units: :km, :mi"
+    PACE_UNIT_METERS.fetch(unit.to_s.downcase.to_sym) do
+      raise Calcpace::UnsupportedUnitError.new(unit, supported: PACE_UNIT_METERS.keys)
     end
   end
 

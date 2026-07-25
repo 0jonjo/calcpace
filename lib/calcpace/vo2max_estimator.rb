@@ -39,7 +39,7 @@ module Vo2maxEstimator
   # @return [Float] estimated VO2max in ml/kg/min, rounded to one decimal place
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is not in HH:MM:SS or MM:SS format
-  # @raise [ArgumentError] if distance_unit is not :km or :mi
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   #
   # @example 10 km in 40:00 → ~51.9 ml/kg/min
   #   calc = Calcpace.new

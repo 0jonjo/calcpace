@@ -183,10 +183,21 @@ class TestVo2maxEstimator < CalcpaceTest
   end
 
   def test_estimate_vo2max_rejects_unknown_distance_unit
-    error = assert_raises(ArgumentError) do
+    error = assert_raises(Calcpace::UnsupportedUnitError) do
       @calc.estimate_vo2max(10.0, '00:40:00', distance_unit: :furlong)
     end
     assert_match(/km.*mi/i, error.message)
+  end
+
+  def test_estimate_vo2max_accepts_distance_unit_in_any_case
+    assert_equal @calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi),
+                 @calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: 'MI')
+  end
+
+  def test_estimate_vo2max_rejects_nil_distance_unit
+    assert_raises(Calcpace::UnsupportedUnitError) do
+      @calc.estimate_vo2max(10.0, '00:40:00', distance_unit: nil)
+    end
   end
 
   def test_estimate_detailed_vo2max_accepts_distance_in_miles

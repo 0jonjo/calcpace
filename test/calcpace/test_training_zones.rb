@@ -84,8 +84,16 @@ class TestTrainingZones < CalcpaceTest
   end
 
   def test_training_paces_rejects_unknown_unit
-    error = assert_raises(ArgumentError) { @calc.training_paces(50.0, unit: :furlong) }
+    error = assert_raises(Calcpace::UnsupportedUnitError) { @calc.training_paces(50.0, unit: :furlong) }
     assert_match(/km.*mi/i, error.message)
+  end
+
+  def test_training_paces_accepts_unit_in_any_case
+    assert_equal @calc.training_paces(50.0, unit: :mi), @calc.training_paces(50.0, unit: 'MI')
+  end
+
+  def test_training_paces_rejects_nil_unit
+    assert_raises(Calcpace::UnsupportedUnitError) { @calc.training_paces(50.0, unit: nil) }
   end
 
   # --- training_paces_from_race ---

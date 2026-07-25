@@ -136,7 +136,7 @@ class TestAgeGrading < CalcpaceTest
   end
 
   def test_age_grade_rejects_unknown_distance_unit
-    assert_raises(ArgumentError) do
+    assert_raises(Calcpace::UnsupportedUnitError) do
       @calc.age_grade(21.0975, '01:30:00', age: 40, sex: :male, distance_unit: :furlong)
     end
   end

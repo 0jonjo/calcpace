@@ -146,9 +146,11 @@ module Converter
   private
 
   # Normalizes a numeric distance input to kilometres
+  #
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   def normalize_distance_km(value, distance_unit)
-    factor = DISTANCE_UNIT_TO_KM.fetch(distance_unit.to_sym) do
-      raise ArgumentError, "Unknown distance unit: #{distance_unit}. Supported units: :km, :mi"
+    factor = DISTANCE_UNIT_TO_KM.fetch(distance_unit.to_s.downcase.to_sym) do
+      raise Calcpace::UnsupportedUnitError.new(distance_unit, supported: DISTANCE_UNIT_TO_KM.keys)
     end
     value.to_f * factor
   end
