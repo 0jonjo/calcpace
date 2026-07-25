@@ -19,9 +19,12 @@ module TrainingZones
     repetition: { low: 1.05, high: 1.10 }
   }.freeze
 
-  # A pace band for one training zone (paces per kilometre).
+  # A pace band for one training zone (paces per kilometre or mile).
   # slow = lower-intensity end of the band, fast = higher-intensity end.
   PaceBand = Struct.new(:slow_seconds, :fast_seconds, :slow_clock, :fast_clock)
+
+  # Metres per pace unit — pace bands can be expressed per km or per mile
+  PACE_UNIT_METERS = { km: 1000.0, mi: 1609.344 }.freeze
 
   # Heart-rate zone boundaries as fractions of Heart Rate Reserve (Karvonen)
   HR_ZONE_BOUNDARIES = [0.50, 0.60, 0.70, 0.80, 0.90, 1.00].freeze
@@ -32,18 +35,22 @@ module TrainingZones
   # Derives training pace bands from a VO2max value
   #
   # @param vo2max [Numeric] VO2max in ml/kg/min (must be > 0)
+  # @param unit [Symbol] pace unit — :km (default) or :mi
   # @return [Hash{Symbol => PaceBand}] keys: :easy, :marathon, :threshold,
-  #   :interval, :repetition — paces per km
+  #   :interval, :repetition — paces per chosen unit
   # @raise [Calcpace::NonPositiveInputError] if vo2max is not positive
+  # @raise [ArgumentError] if unit is not :km or :mi
   #
   # @example
-  #   calc.training_paces(50.0)[:threshold].fast_clock #=> "00:04:15"
-  def training_paces(vo2max)
+  #   calc.training_paces(50.0)[:threshold].fast_clock             #=> "00:04:15"
+  #   calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  #=> "00:06:51"
+  def training_paces(vo2max, unit: :km)
     check_positive(vo2max.to_f, 'VO2max')
+    meters = pace_unit_meters(unit)
 
     TRAINING_INTENSITIES.transform_values do |band|
-      slow = pace_seconds_at_pct(vo2max.to_f, band[:low])
-      fast = pace_seconds_at_pct(vo2max.to_f, band[:high])
+      slow = pace_seconds_at_pct(vo2max.to_f, band[:low], meters)
+      fast = pace_seconds_at_pct(vo2max.to_f, band[:high], meters)
 
       PaceBand.new(
         slow_seconds: slow,
@@ -61,14 +68,15 @@ module TrainingZones
   #
   # @param distance_km [Numeric] race distance in kilometres (must be > 0)
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
+  # @param unit [Symbol] pace unit — :km (default) or :mi
   # @return [Hash{Symbol => PaceBand}] same shape as #training_paces
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
   #
   # @example
   #   calc.training_paces_from_race(10.0, '00:40:00')[:easy].slow_clock #=> "00:05:42"
-  def training_paces_from_race(distance_km, time)
-    training_paces(estimate_vo2max(distance_km, time))
+  def training_paces_from_race(distance_km, time, unit: :km)
+    training_paces(estimate_vo2max(distance_km, time), unit: unit)
   end
 
   # Computes the five Karvonen heart-rate training zones
@@ -116,8 +124,14 @@ module TrainingZones
     (-b + Math.sqrt((b**2) - (4 * a * c))) / (2 * a)
   end
 
-  def pace_seconds_at_pct(vo2max, pct)
+  def pace_unit_meters(unit)
+    PACE_UNIT_METERS.fetch(unit.to_sym) do
+      raise ArgumentError, "Unknown pace unit: #{unit}. Supported units: :km, :mi"
+    end
+  end
+
+  def pace_seconds_at_pct(vo2max, pct, meters)
     velocity = velocity_at_vo2(vo2max * pct)
-    (60_000.0 / velocity).round
+    (meters * 60.0 / velocity).round
   end
 end

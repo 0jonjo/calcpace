@@ -59,6 +59,35 @@ class TestTrainingZones < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(-10) }
   end
 
+  # --- training_paces in miles ---
+  def test_training_paces_in_miles_scales_km_paces_by_mile_factor
+    km = @calc.training_paces(50.0)
+    mi = @calc.training_paces(50.0, unit: :mi)
+
+    km.each_key do |zone|
+      # Delta 2s: both paces are rounded independently, km rounding scales by 1.609
+      assert_in_delta km[zone].fast_seconds * 1.609344, mi[zone].fast_seconds, 2
+      assert_in_delta km[zone].slow_seconds * 1.609344, mi[zone].slow_seconds, 2
+    end
+  end
+
+  def test_threshold_mile_pace_matches_daniels_vdot_table
+    zones = @calc.training_paces(50.0, unit: :mi)
+
+    # VDOT 50 → T-pace ~06:51/mile in Daniels' official table
+    assert_in_delta 411, zones[:threshold].fast_seconds, 2
+    assert_equal '00:06:51', zones[:threshold].fast_clock
+  end
+
+  def test_training_paces_default_unit_is_km
+    assert_equal @calc.training_paces(50.0), @calc.training_paces(50.0, unit: :km)
+  end
+
+  def test_training_paces_rejects_unknown_unit
+    error = assert_raises(ArgumentError) { @calc.training_paces(50.0, unit: :furlong) }
+    assert_match(/km.*mi/i, error.message)
+  end
+
   # --- training_paces_from_race ---
   def test_training_paces_from_race_delegates_to_vo2max_estimation
     # 10k in 40:00 → VO2max 51.9 (value already validated in test_vo2max_estimator.rb)
@@ -74,6 +103,13 @@ class TestTrainingZones < CalcpaceTest
     from_seconds = @calc.training_paces_from_race(10.0, 2400)
 
     assert_equal from_clock[:interval].fast_seconds, from_seconds[:interval].fast_seconds
+  end
+
+  def test_training_paces_from_race_accepts_unit
+    from_race = @calc.training_paces_from_race(10.0, '00:40:00', unit: :mi)
+    from_vo2  = @calc.training_paces(51.9, unit: :mi)
+
+    assert_equal from_vo2[:threshold].fast_seconds, from_race[:threshold].fast_seconds
   end
 
   def test_training_paces_from_race_propagates_input_errors
