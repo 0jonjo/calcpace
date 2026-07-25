@@ -20,11 +20,27 @@ class Calcpace
     end
   end
 
-  # Raised when an unsupported unit conversion is requested
+  # Raised when an unsupported unit or unit conversion is requested
+  #
+  # @example conversion pair
+  #   raise UnsupportedUnitError, :km_to_furlong
+  # @example single unit, with the supported ones listed
+  #   raise UnsupportedUnitError.new(:furlong, supported: %i[km mi])
   class UnsupportedUnitError < Error
-    def initialize(unit = nil)
-      msg = unit ? "Unsupported unit conversion: #{unit}" : 'Unsupported unit conversion'
-      super(msg)
+    def initialize(unit = nil, supported: nil)
+      super(build_message(unit, supported))
+    end
+
+    private
+
+    def build_message(unit, supported)
+      return conversion_message(unit) unless supported
+
+      "Unsupported unit: #{unit.inspect}. Supported units: #{supported.map(&:inspect).join(', ')}"
+    end
+
+    def conversion_message(unit)
+      unit ? "Unsupported unit conversion: #{unit}" : 'Unsupported unit conversion'
     end
   end
 end

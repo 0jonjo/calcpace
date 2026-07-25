@@ -7,14 +7,18 @@
 # speed units (m/s, km/h, mi/h, knots, etc.).
 module Converter
   module Distance
-    KM_TO_MI = 0.621371
-    MI_TO_KM = 1.60934
+    # One international mile is exactly 1609.344 m. Every mile-based factor
+    # derives from this single value so that no two call sites — a pace band, a
+    # distance conversion, an age-grading tolerance — can disagree about how
+    # long a mile is.
+    MI_TO_KM = 1.609344
+    KM_TO_MI = 1 / MI_TO_KM
     NAUTICAL_MI_TO_KM = 1.852
     KM_TO_NAUTICAL_MI = 0.539957
     METERS_TO_KM = 0.001
     KM_TO_METERS = 1000
-    METERS_TO_MI = 0.000621371
-    MI_TO_METERS = 1609.34
+    MI_TO_METERS = MI_TO_KM * 1000
+    METERS_TO_MI = 1 / MI_TO_METERS
     METERS_TO_FEET = 3.28084
     FEET_TO_METERS = 0.3048
     METERS_TO_YARDS = 1.09361
@@ -28,30 +32,30 @@ module Converter
     KM_TO_INCHES = 39_370.1
     INCHES_TO_KM = 0.0000254
     MI_TO_YARDS = 1760
-    YARDS_TO_MI = 0.000568182
+    YARDS_TO_MI = 1.0 / MI_TO_YARDS
     MI_TO_FEET = 5280
-    FEET_TO_MI = 0.000189394
+    FEET_TO_MI = 1.0 / MI_TO_FEET
     MI_TO_INCHES = 63_360
-    INCHES_TO_MI = 0.0000157828
+    INCHES_TO_MI = 1.0 / MI_TO_INCHES
   end
 
   module Speed
     M_S_TO_KM_H = 3.6
     KM_H_TO_M_S = 0.277778
-    M_S_TO_MI_H = 2.23694
-    MI_H_TO_M_S = 0.44704
+    M_S_TO_MI_H = 3.6 / Distance::MI_TO_KM
+    MI_H_TO_M_S = Distance::MI_TO_METERS / 3600
     M_S_TO_NAUTICAL_MI_H = 1.94384
     NAUTICAL_MI_H_TO_M_S = 0.514444
     M_S_TO_FEET_S = 3.28084
     FEET_S_TO_M_S = 0.3048
     M_S_TO_KNOTS = 1.94384
     KNOTS_TO_M_S = 0.514444
-    KM_H_TO_MI_H = 0.621371
-    MI_H_TO_KM_H = 1.60934
+    KM_H_TO_MI_H = Distance::KM_TO_MI
+    MI_H_TO_KM_H = Distance::MI_TO_KM
     KM_H_TO_NAUTICAL_MI_H = 0.539957
     NAUTICAL_MI_H_TO_KM_H = 1.852
-    MI_H_TO_NAUTICAL_MI_H = 0.868976
-    NAUTICAL_MI_H_TO_MI_H = 1.15078
+    MI_H_TO_NAUTICAL_MI_H = Distance::MI_TO_KM / Distance::NAUTICAL_MI_TO_KM
+    NAUTICAL_MI_H_TO_MI_H = Distance::NAUTICAL_MI_TO_KM / Distance::MI_TO_KM
   end
 
   # Converts a value from one unit to another
@@ -139,7 +143,34 @@ module Converter
     format_list(Distance.constants)
   end
 
+  # Multipliers from a supported distance-input unit to kilometres
+  # (used by methods that accept a distance_unit: keyword)
+  DISTANCE_UNIT_TO_KM = { km: 1.0, mi: Distance::MI_TO_KM }.freeze
+
   private
+
+  # Guards the "race name + distance_unit" combination. A standard race already
+  # carries its own distance, so the keyword can only be a caller mistake —
+  # better to say so than to ignore it silently.
+  #
+  # @raise [ArgumentError] if a distance_unit was given alongside a race name
+  def reject_distance_unit_with_race_name!(distance_unit, race)
+    return if distance_unit.nil?
+
+    raise ArgumentError,
+          "distance_unit: #{distance_unit.inspect} cannot be combined with the race name " \
+          "#{race.inspect} — a standard race already carries its own distance"
+  end
+
+  # Normalizes a numeric distance input to kilometres
+  #
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
+  def normalize_distance_km(value, distance_unit)
+    factor = DISTANCE_UNIT_TO_KM.fetch(distance_unit.to_s.downcase.to_sym) do
+      raise Calcpace::UnsupportedUnitError.new(distance_unit, supported: DISTANCE_UNIT_TO_KM.keys)
+    end
+    value.to_f * factor
+  end
 
   def format_unit(unit)
     unit.downcase.gsub(' ', '_').to_sym

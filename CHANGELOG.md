@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-07-25
+
+### Added
+- Training zones improvements
+  - `training_paces` and `training_paces_from_race` accept `unit: :mi` for
+    pace bands per mile (default remains `:km`)
+  - `hr_zones_from_max(hr_max:)`: five heart-rate zones from maximum heart
+    rate only (%HRmax method) — fallback when resting heart rate is unknown
+  - `training_paces_from_race` accepts standard race names ('10k', 'marathon',
+    '5mile', ...) in addition to numeric kilometres, matching `predict_time`
+    and `race_pace`
+  - `distance_unit: :mi` keyword on `estimate_vo2max`, `estimate_detailed_vo2max`,
+    `age_grade`, `age_grade_percent`, and `training_paces_from_race` — numeric
+    distance inputs can now be given in miles (default remains kilometres)
+
+### Changed
+- `training_paces_from_race` resolves non-numeric distances as race names. Strings
+  that v1.10.0 silently parsed with `to_f` change meaning: `'5mile'` was 5.0 km and
+  is now the 5-mile standard distance (8.04672 km). Numeric strings (`'10'`,
+  `'21.0975'`) keep working as before, in kilometres.
+- `training_paces_from_race` with an unparseable distance (`nil`, `'banana'`) now
+  raises `ArgumentError` ("Unknown race: ...") instead of
+  `Calcpace::NonPositiveInputError`.
+- Unknown `unit:` / `distance_unit:` values raise `Calcpace::UnsupportedUnitError`
+  (inherits from `Calcpace::Error`) instead of `ArgumentError`. Unit keywords are
+  now case-insensitive (`'MI'` works) and `nil` raises the same error instead of a
+  `NoMethodError`.
+- `unit: :mi` pace bands are computed natively per mile instead of being converted
+  from the km bands, so they can differ by ±1 s from `pace_km_to_mi(km_band)` —
+  the native value is the one without double rounding.
+- Every mile-based factor now derives from the exact international mile
+  (1 mi = 1609.344 m), which was previously truncated to 1.60934 in some places
+  and exact in others. Affected values move by ~2.5e-6 relative:
+  `convert(1, :mi_to_km)` 1.60934 → 1.609344, `convert(1, :km_to_mi)` 0.621371 →
+  0.6213711922…, `convert(1, :mi_to_meters)` 1609.34 → 1609.344, the `mi_h`/`m_s`
+  speed pairs, and `list_races` entries `'1mile'` (1.609344) and `'10mile'`
+  (16.09344). Age-grading tolerance and pace bands now agree on mile length.
+- Passing `distance_unit:` together with a race name (`training_paces_from_race('10k',
+  t, distance_unit: :mi)`, `age_grade('10k', …, distance_unit: :mi)`) raises
+  `ArgumentError` instead of silently ignoring the keyword — a standard race already
+  carries its own distance.
+- Race-name lookup is normalized in one place: `' 10K '` and `:MARATHON` now resolve
+  everywhere (previously `PaceCalculator` did not strip whitespace), and `AgeGrading`
+  uses the same "Unknown race: …" message wording as the rest of the gem.
+
+### Fixed
+- Age grading accepts mile distances as runners write them (`3.1`, `6.2`, `13.1`,
+  `26.2` with `distance_unit: :mi`); the previous 0.001 km match window only
+  accepted 6-decimal conversions.
+- Unsupported age-grading distances report the input in the unit it was given
+  instead of always labelling it "km".
+- `estimate_detailed_vo2max` rejects a non-positive distance even when
+  `elevation_gain_m` is positive (the elevation adjustment used to mask it).
+
 ## [1.10.0] - 2026-07-11
 
 ### Added

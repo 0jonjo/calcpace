@@ -59,6 +59,43 @@ class TestTrainingZones < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(-10) }
   end
 
+  # --- training_paces in miles ---
+  def test_training_paces_in_miles_scales_km_paces_by_mile_factor
+    km = @calc.training_paces(50.0)
+    mi = @calc.training_paces(50.0, unit: :mi)
+
+    km.each_key do |zone|
+      # Delta 2s: both paces are rounded independently, km rounding scales by 1.609
+      assert_in_delta km[zone].fast_seconds * 1.609344, mi[zone].fast_seconds, 2
+      assert_in_delta km[zone].slow_seconds * 1.609344, mi[zone].slow_seconds, 2
+    end
+  end
+
+  def test_threshold_mile_pace_matches_daniels_vdot_table
+    zones = @calc.training_paces(50.0, unit: :mi)
+
+    # VDOT 50 → T-pace ~06:51/mile in Daniels' official table
+    assert_in_delta 411, zones[:threshold].fast_seconds, 2
+    assert_equal '00:06:51', zones[:threshold].fast_clock
+  end
+
+  def test_training_paces_default_unit_is_km
+    assert_equal @calc.training_paces(50.0), @calc.training_paces(50.0, unit: :km)
+  end
+
+  def test_training_paces_rejects_unknown_unit
+    error = assert_raises(Calcpace::UnsupportedUnitError) { @calc.training_paces(50.0, unit: :furlong) }
+    assert_match(/km.*mi/i, error.message)
+  end
+
+  def test_training_paces_accepts_unit_in_any_case
+    assert_equal @calc.training_paces(50.0, unit: :mi), @calc.training_paces(50.0, unit: 'MI')
+  end
+
+  def test_training_paces_rejects_nil_unit
+    assert_raises(Calcpace::UnsupportedUnitError) { @calc.training_paces(50.0, unit: nil) }
+  end
+
   # --- training_paces_from_race ---
   def test_training_paces_from_race_delegates_to_vo2max_estimation
     # 10k in 40:00 → VO2max 51.9 (value already validated in test_vo2max_estimator.rb)
@@ -74,6 +111,67 @@ class TestTrainingZones < CalcpaceTest
     from_seconds = @calc.training_paces_from_race(10.0, 2400)
 
     assert_equal from_clock[:interval].fast_seconds, from_seconds[:interval].fast_seconds
+  end
+
+  def test_training_paces_from_race_accepts_unit
+    from_race = @calc.training_paces_from_race(10.0, '00:40:00', unit: :mi)
+    from_vo2  = @calc.training_paces(51.9, unit: :mi)
+
+    assert_equal from_vo2[:threshold].fast_seconds, from_race[:threshold].fast_seconds
+  end
+
+  def test_training_paces_from_race_accepts_numeric_strings
+    from_string = @calc.training_paces_from_race('10', '00:40:00')
+    from_float  = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_float, from_string
+  end
+
+  def test_training_paces_from_race_accepts_decimal_numeric_strings
+    from_string = @calc.training_paces_from_race('21.0975', '01:30:00')
+    from_float  = @calc.training_paces_from_race(21.0975, '01:30:00')
+
+    assert_equal from_float, from_string
+  end
+
+  def test_training_paces_from_race_applies_distance_unit_to_numeric_strings
+    from_string = @calc.training_paces_from_race('6.21371', '00:40:00', distance_unit: :mi)
+    from_km     = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_km, from_string
+  end
+
+  def test_training_paces_from_race_accepts_race_names
+    from_name = @calc.training_paces_from_race('10k', '00:40:00')
+    from_km   = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_km[:threshold].fast_seconds, from_name[:threshold].fast_seconds
+  end
+
+  def test_training_paces_from_race_accepts_mile_race_names
+    from_name = @calc.training_paces_from_race('5mile', '00:35:00')
+    from_km   = @calc.training_paces_from_race(8.04672, '00:35:00')
+
+    assert_equal from_km[:easy].slow_seconds, from_name[:easy].slow_seconds
+  end
+
+  def test_training_paces_from_race_rejects_distance_unit_with_race_name
+    # A race name already carries its own distance, so a distance_unit alongside it
+    # is always a caller mistake — say so instead of silently ignoring the keyword
+    error = assert_raises(ArgumentError) do
+      @calc.training_paces_from_race('10k', '00:40:00', distance_unit: :mi)
+    end
+
+    assert_match(/race name/i, error.message)
+  end
+
+  def test_mile_pace_unit_derives_from_the_canonical_mile
+    assert_equal Converter::Distance::MI_TO_METERS, TrainingZones::PACE_UNIT_METERS[:mi]
+  end
+
+  def test_training_paces_from_race_rejects_unknown_race_name
+    error = assert_raises(ArgumentError) { @calc.training_paces_from_race('parsec', '00:40:00') }
+    assert_match(/unknown race/i, error.message)
   end
 
   def test_training_paces_from_race_propagates_input_errors
@@ -119,5 +217,49 @@ class TestTrainingZones < CalcpaceTest
   def test_hr_zones_rejects_non_positive_values
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 0, hr_rest: 55) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones(hr_max: 190, hr_rest: -5) }
+  end
+
+  # --- hr_zones_from_max ---
+  def test_hr_zones_from_max_returns_five_zones
+    zones = @calc.hr_zones_from_max(hr_max: 190)
+
+    assert_equal 5, zones.size
+    assert_equal (1..5).to_a, zones.map(&:zone)
+  end
+
+  def test_hr_zones_from_max_percentage_values
+    zones = @calc.hr_zones_from_max(hr_max: 190)
+
+    assert_equal 95,  zones[0].min_bpm # 50% of 190
+    assert_equal 114, zones[0].max_bpm # 60% of 190
+    assert_equal 152, zones[3].min_bpm # 80% of 190
+    assert_equal 171, zones[3].max_bpm # 90% of 190
+    assert_equal 190, zones[4].max_bpm # Z5 ends at max heart rate
+  end
+
+  def test_hr_zones_from_max_are_contiguous
+    @calc.hr_zones_from_max(hr_max: 185).each_cons(2) do |prev, nxt|
+      assert_equal prev.max_bpm, nxt.min_bpm
+    end
+  end
+
+  def test_hr_zones_from_max_is_more_conservative_than_karvonen
+    from_max = @calc.hr_zones_from_max(hr_max: 190)
+    karvonen = @calc.hr_zones(hr_max: 190, hr_rest: 55)
+
+    # Without resting HR the lower bounds drop — expected from the %HRmax model
+    assert_operator from_max[0].min_bpm, :<, karvonen[0].min_bpm
+  end
+
+  def test_hr_zones_from_max_rejects_non_positive
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: 0) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: -180) }
+  end
+
+  def test_training_paces_from_race_accepts_distance_in_miles
+    mi = @calc.training_paces_from_race(6.21371, '00:40:00', distance_unit: :mi)
+    km = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal km[:threshold].fast_seconds, mi[:threshold].fast_seconds
   end
 end

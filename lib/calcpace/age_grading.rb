@@ -49,14 +49,22 @@ module AgeGrading
 
   # Returns a full age-grading report for a race performance
   #
-  # @param distance_km [Numeric, String, Symbol] race distance in kilometres
-  #   (5.0, 10.0, 21.0975, 42.195) or race key (:5k, :10k, :half_marathon, :marathon)
+  # @param distance [Numeric, String, Symbol] race distance in kilometres
+  #   (5.0, 10.0, 21.0975, 42.195) or race key (:5k, :10k, :half_marathon, :marathon);
+  #   numeric input can also be given in miles via distance_unit: :mi
   # @param time [String, Numeric] performance time as HH:MM:SS / MM:SS, or total seconds
   # @param age [Integer] athlete age (must be >= 18)
   # @param sex [String, Symbol] male or female
+  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi.
+  #   Rejected when distance is a race key: standard races already carry their own
+  #   distance, so the combination is always a caller mistake
   # @return [Hash] age-grading result details
-  def age_grade(distance_km, time, age:, sex:)
-    distance_m = normalize_distance(distance_km)
+  # @raise [ArgumentError] if the distance, race key, age or sex is not supported,
+  #   or if distance_unit is combined with a race key
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
+  # @raise [Calcpace::InvalidTimeFormatError] if time string is malformed
+  def age_grade(distance, time, age:, sex:, distance_unit: nil)
+    distance_m = normalize_distance(distance, distance_unit)
     seconds = parse_time_seconds(time)
     age_value = normalize_age(age)
     sex_value = normalize_sex(sex)
@@ -83,13 +91,15 @@ module AgeGrading
 
   # Returns only the age-grade percentage
   #
-  # @param distance_km [Numeric] race distance in kilometres
+  # @param distance [Numeric, String, Symbol] race distance in kilometres or race key
   # @param time [String, Numeric] performance time
   # @param age [Integer] athlete age
   # @param sex [String, Symbol] male or female
+  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
+  #   (rejected alongside race keys, see #age_grade)
   # @return [Float] age-grade percentage
-  def age_grade_percent(distance_km, time, age:, sex:)
-    age_grade(distance_km, time, age: age, sex: sex)[:age_grade_percent]
+  def age_grade_percent(distance, time, age:, sex:, distance_unit: nil)
+    age_grade(distance, time, age: age, sex: sex, distance_unit: distance_unit)[:age_grade_percent]
   end
 
   # Returns a descriptive label for an age-grade percentage
@@ -110,23 +120,35 @@ module AgeGrading
 
   private
 
-  def normalize_distance(distance_km)
-    if distance_km.is_a?(String) || distance_km.is_a?(Symbol)
-      key = distance_km.to_s.strip.downcase
-      return RACE_TO_METERS.fetch(key) if RACE_TO_METERS.key?(key)
-
-      raise ArgumentError,
-            "Unsupported race '#{distance_km}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
+  def normalize_distance(distance_input, distance_unit = nil)
+    if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
+      reject_distance_unit_with_race_name!(distance_unit, distance_input)
+      return race_key_to_meters(distance_input)
     end
 
-    distance = distance_km.to_f
+    distance = normalize_distance_km(distance_input, distance_unit || :km)
     check_positive(distance, 'Distance')
 
-    match = SUPPORTED_DISTANCES_KM.find { |value| (distance - value).abs <= 0.001 }
+    match = SUPPORTED_DISTANCES_KM.find { |value| standard_distance?(distance, value) }
     return DISTANCE_TO_METERS.fetch(match) if match
 
     raise ArgumentError,
-          "Unsupported distance #{distance_km}km. Supported: #{SUPPORTED_DISTANCES_KM.join(', ')}"
+          "Unsupported distance #{distance_input}#{(distance_unit || :km).to_s.downcase}. " \
+          "Supported: #{SUPPORTED_DISTANCES_KM.join(', ')} km"
+  end
+
+  def race_key_to_meters(race_input)
+    # normalize_race_key is PaceCalculator's — one lookup convention gem-wide
+    RACE_TO_METERS.fetch(normalize_race_key(race_input)) do
+      raise ArgumentError,
+            "Unknown race: #{race_input}. Available races: #{RACE_TO_METERS.keys.join(', ')}"
+    end
+  end
+
+  # Runners write rounded distances (3.1 mi, 13.1 mi, 26.2 mi), so the match
+  # window is relative — 0.5% of the standard distance, never below 1 metre
+  def standard_distance?(distance, standard)
+    (distance - standard).abs <= [0.001, standard * 0.005].max
   end
 
   def parse_time_seconds(time)

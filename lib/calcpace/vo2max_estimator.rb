@@ -32,17 +32,21 @@ module Vo2maxEstimator
 
   # Estimates VO2max from a race performance using Daniels & Gilbert formula
   #
-  # @param distance_km [Numeric] race distance in kilometres (must be > 0)
+  # @param distance [Numeric] race distance (must be > 0), in kilometres by
+  #   default or in the unit given by distance_unit
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS", or total seconds (must be > 0)
+  # @param distance_unit [Symbol] unit of the distance input — :km (default) or :mi
   # @return [Float] estimated VO2max in ml/kg/min, rounded to one decimal place
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::InvalidTimeFormatError] if time string is not in HH:MM:SS or MM:SS format
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   #
   # @example 10 km in 40:00 → ~51.9 ml/kg/min
   #   calc = Calcpace.new
-  #   calc.estimate_vo2max(10.0, '00:40:00') #=> 51.9
-  def estimate_vo2max(distance_km, time)
-    distance_m = distance_km.to_f * 1000
+  #   calc.estimate_vo2max(10.0, '00:40:00')                    #=> 51.9
+  #   calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi) #=> 51.9
+  def estimate_vo2max(distance, time, distance_unit: :km)
+    distance_m = normalize_distance_km(distance, distance_unit) * 1000
     time_min   = parse_time_minutes(time)
 
     check_positive(distance_m, 'Distance')
@@ -57,13 +61,23 @@ module Vo2maxEstimator
 
   # Estimates a detailed and contextualized VO2max
   #
-  # @param distance_km [Numeric] race distance in kilometres
+  # @param distance [Numeric] race distance, in kilometres by default or in
+  #   the unit given by distance_unit
   # @param time [String, Integer] finish time
   # @param elevation_gain_m [Numeric] total elevation gain in metres
   # @param hr_avg [Numeric] average heart rate during the effort
   # @param hr_max [Numeric] athlete's maximum heart rate
+  # @param distance_unit [Symbol] unit of the distance input — :km (default) or :mi
   # @return [Vo2maxResult] structured result with value and metadata
-  def estimate_detailed_vo2max(distance_km, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil)
+  #   (adjusted_distance_km is always in kilometres)
+  # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
+  # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
+  def estimate_detailed_vo2max(distance, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil, distance_unit: :km)
+    distance_km = normalize_distance_km(distance, distance_unit)
+    # Validated before the elevation adjustment, which would otherwise turn a
+    # negative distance into a positive equivalent-flat one
+    check_positive(distance_km, 'Distance')
+
     adj_dist_km = adjusted_distance_for_vo2(distance_km, elevation_gain_m)
     vo2max_val  = estimate_vo2max(adj_dist_km, time)
     confidence  = calculate_time_confidence(parse_time_minutes(time))

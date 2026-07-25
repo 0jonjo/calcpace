@@ -76,8 +76,8 @@ calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 8
 30+ units supported. String or symbol format:
 
 ```ruby
-calc.convert(10, :km_to_mi)         # => 6.21371
-calc.convert(10, 'mi to km')        # => 16.0934
+calc.convert(10, :km_to_mi)         # => 6.213711922...
+calc.convert(10, 'mi to km')        # => 16.09344
 calc.convert(1, :m_s_to_km_h)       # => 3.6
 
 # Chain conversions
@@ -169,6 +169,7 @@ age factors and open standards.
 
 ```ruby
 result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
+# numeric distances also accepted in miles: calc.age_grade(6.21371, '00:45:00', age: 55, sex: :male, distance_unit: :mi)
 # => {
 #      age_grade_percent: 64.6,
 #      category: "Local Class",
@@ -208,6 +209,7 @@ Estimate aerobic fitness from a race result using the **Daniels & Gilbert formul
 calc.estimate_vo2max(10.0, '00:40:00')   # => 51.9 ml/kg/min
 calc.estimate_vo2max(42.195, '03:30:00') # => 44.8
 calc.estimate_vo2max(5.0, 2400)          # also accepts total seconds
+calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi)  # => 51.9 (miles input)
 
 calc.vo2max_label(51.9)  # => "Very Good"
 ```
@@ -285,10 +287,18 @@ zones = calc.training_paces(50.0)
 zones[:threshold].fast_clock   # => "00:04:15" per km
 zones[:easy].slow_clock        # => "00:05:52" per km
 
-calc.training_paces_from_race(10.0, '00:40:00')  # from a recent race result
+calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  # => "00:06:51" per mile
+
+calc.training_paces_from_race(10.0, '00:40:00')                # from a recent race result
+calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)  # race names work too
+calc.training_paces_from_race(6.2, '00:40:00', distance_unit: :mi, unit: :mi)  # race distance in miles
 
 calc.hr_zones(hr_max: 190, hr_rest: 55)
 # => [#<struct zone=1, min_bpm=123, max_bpm=136>, ... zone=5, max_bpm=190]
+
+calc.hr_zones_from_max(hr_max: 190)
+# => [#<struct zone=1, min_bpm=95, max_bpm=114>, ... zone=5, max_bpm=190]
+# %HRmax fallback — prefer hr_zones (Karvonen) when resting HR is known
 ```
 
 | Zone | %VO2max | Purpose |
@@ -301,6 +311,15 @@ calc.hr_zones(hr_max: 190, hr_rest: 55)
 
 Pace accuracy vs published VDOT tables: within a few seconds per km
 (threshold matches exactly; easy band is a range heuristic).
+
+`unit:` sets the unit of the returned pace bands; `distance_unit:` sets the unit of a
+numeric race distance you pass in. Combining `distance_unit:` with a race name raises
+`ArgumentError` — `'10k'` already carries its own distance. Mile bands are computed
+natively (not converted from the km bands), so they can differ by ±1 s from
+`pace_km_to_mi(km_band)`.
+
+All mile factors derive from the exact international mile (1609.344 m), so distances,
+pace bands, and age-grading tolerances agree to the metre.
 
 ---
 
@@ -320,6 +339,11 @@ All errors inherit from `Calcpace::Error`:
 
 - `Calcpace::NonPositiveInputError` — numeric input is zero or negative
 - `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format
+- `Calcpace::UnsupportedUnitError` — unknown conversion (`convert`) or unknown
+  `unit:` / `distance_unit:` keyword
+
+Argument validation that is not about units or numbers raises a plain `ArgumentError`:
+unknown race names, unsupported age-grading distances, and invalid `age` / `sex` values.
 
 ---
 
