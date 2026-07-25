@@ -67,8 +67,9 @@ module TrainingZones
   # (see Vo2maxEstimator#estimate_vo2max) and derives the bands from it.
   #
   # @param race [Numeric, String, Symbol] race distance in kilometres (or in
-  #   miles via distance_unit: :mi), or a standard race name ('5k', '10k',
-  #   'half_marathon', 'marathon', '1mile', '5mile', '10mile', '100k' — see
+  #   miles via distance_unit: :mi), either numeric or as a numeric string
+  #   ('10', '21.0975'), or a standard race name ('5k', '10k', 'half_marathon',
+  #   'marathon', '1mile', '5mile', '10mile', '100k' — see
   #   PaceCalculator::RACE_DISTANCES)
   # @param time [String, Integer] finish time as "HH:MM:SS" / "MM:SS" or total seconds
   # @param unit [Symbol] pace unit of the output bands — :km (default) or :mi
@@ -83,7 +84,11 @@ module TrainingZones
   #   calc.training_paces_from_race('5mile', '00:35:00', unit: :mi)
   #   calc.training_paces_from_race(6.2, '00:40:00', distance_unit: :mi, unit: :mi)
   def training_paces_from_race(race, time, unit: :km, distance_unit: :km)
-    distance_km = race.is_a?(Numeric) ? normalize_distance_km(race, distance_unit) : race_distance(race)
+    # Numeric strings ('10') keep working as distances; only non-numeric input
+    # (race names) falls through to the RACE_DISTANCES lookup
+    numeric = race.is_a?(Numeric) ? race : Float(race, exception: false)
+    distance_km = numeric ? normalize_distance_km(numeric, distance_unit) : race_distance(race)
+
     training_paces(estimate_vo2max(distance_km, time), unit: unit)
   end
 

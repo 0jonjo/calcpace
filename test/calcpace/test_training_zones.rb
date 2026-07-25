@@ -112,6 +112,27 @@ class TestTrainingZones < CalcpaceTest
     assert_equal from_vo2[:threshold].fast_seconds, from_race[:threshold].fast_seconds
   end
 
+  def test_training_paces_from_race_accepts_numeric_strings
+    from_string = @calc.training_paces_from_race('10', '00:40:00')
+    from_float  = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_float, from_string
+  end
+
+  def test_training_paces_from_race_accepts_decimal_numeric_strings
+    from_string = @calc.training_paces_from_race('21.0975', '01:30:00')
+    from_float  = @calc.training_paces_from_race(21.0975, '01:30:00')
+
+    assert_equal from_float, from_string
+  end
+
+  def test_training_paces_from_race_applies_distance_unit_to_numeric_strings
+    from_string = @calc.training_paces_from_race('6.21371', '00:40:00', distance_unit: :mi)
+    from_km     = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal from_km, from_string
+  end
+
   def test_training_paces_from_race_accepts_race_names
     from_name = @calc.training_paces_from_race('10k', '00:40:00')
     from_km   = @calc.training_paces_from_race(10.0, '00:40:00')
