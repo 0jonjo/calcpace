@@ -50,6 +50,10 @@ Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
 
+# Keyword arguments are self-documenting; only positional params hurt readability
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+
 Metrics/BlockLength:
   Exclude:
     - 'test/**/*'

@@ -98,4 +98,17 @@ class TestAgeGrading < CalcpaceTest
       @calc.age_grade(10.0, 'fast', age: 45, sex: :male)
     end
   end
+
+  def test_age_grade_percent_accepts_distance_in_miles
+    km = @calc.age_grade_percent(21.0975, '01:30:00', age: 40, sex: :male)
+    mi = @calc.age_grade_percent(13.109455, '01:30:00', age: 40, sex: :male, distance_unit: :mi)
+
+    assert_equal km, mi
+  end
+
+  def test_age_grade_rejects_unknown_distance_unit
+    assert_raises(ArgumentError) do
+      @calc.age_grade(21.0975, '01:30:00', age: 40, sex: :male, distance_unit: :furlong)
+    end
+  end
 end

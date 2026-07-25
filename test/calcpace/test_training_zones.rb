@@ -212,4 +212,11 @@ class TestTrainingZones < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: 0) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.hr_zones_from_max(hr_max: -180) }
   end
+
+  def test_training_paces_from_race_accepts_distance_in_miles
+    mi = @calc.training_paces_from_race(6.21371, '00:40:00', distance_unit: :mi)
+    km = @calc.training_paces_from_race(10.0, '00:40:00')
+
+    assert_equal km[:threshold].fast_seconds, mi[:threshold].fast_seconds
+  end
 end

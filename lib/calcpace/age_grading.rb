@@ -49,14 +49,16 @@ module AgeGrading
 
   # Returns a full age-grading report for a race performance
   #
-  # @param distance_km [Numeric, String, Symbol] race distance in kilometres
-  #   (5.0, 10.0, 21.0975, 42.195) or race key (:5k, :10k, :half_marathon, :marathon)
+  # @param distance [Numeric, String, Symbol] race distance in kilometres
+  #   (5.0, 10.0, 21.0975, 42.195) or race key (:5k, :10k, :half_marathon, :marathon);
+  #   numeric input can also be given in miles via distance_unit: :mi
   # @param time [String, Numeric] performance time as HH:MM:SS / MM:SS, or total seconds
   # @param age [Integer] athlete age (must be >= 18)
   # @param sex [String, Symbol] male or female
+  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
   # @return [Hash] age-grading result details
-  def age_grade(distance_km, time, age:, sex:)
-    distance_m = normalize_distance(distance_km)
+  def age_grade(distance, time, age:, sex:, distance_unit: :km)
+    distance_m = normalize_distance(distance, distance_unit)
     seconds = parse_time_seconds(time)
     age_value = normalize_age(age)
     sex_value = normalize_sex(sex)
@@ -83,13 +85,14 @@ module AgeGrading
 
   # Returns only the age-grade percentage
   #
-  # @param distance_km [Numeric] race distance in kilometres
+  # @param distance [Numeric, String, Symbol] race distance in kilometres or race key
   # @param time [String, Numeric] performance time
   # @param age [Integer] athlete age
   # @param sex [String, Symbol] male or female
+  # @param distance_unit [Symbol] unit of a numeric distance input — :km (default) or :mi
   # @return [Float] age-grade percentage
-  def age_grade_percent(distance_km, time, age:, sex:)
-    age_grade(distance_km, time, age: age, sex: sex)[:age_grade_percent]
+  def age_grade_percent(distance, time, age:, sex:, distance_unit: :km)
+    age_grade(distance, time, age: age, sex: sex, distance_unit: distance_unit)[:age_grade_percent]
   end
 
   # Returns a descriptive label for an age-grade percentage
@@ -110,23 +113,23 @@ module AgeGrading
 
   private
 
-  def normalize_distance(distance_km)
-    if distance_km.is_a?(String) || distance_km.is_a?(Symbol)
-      key = distance_km.to_s.strip.downcase
+  def normalize_distance(distance_input, distance_unit = :km)
+    if distance_input.is_a?(String) || distance_input.is_a?(Symbol)
+      key = distance_input.to_s.strip.downcase
       return RACE_TO_METERS.fetch(key) if RACE_TO_METERS.key?(key)
 
       raise ArgumentError,
-            "Unsupported race '#{distance_km}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
+            "Unsupported race '#{distance_input}'. Supported: #{RACE_TO_METERS.keys.join(', ')}"
     end
 
-    distance = distance_km.to_f
+    distance = normalize_distance_km(distance_input, distance_unit)
     check_positive(distance, 'Distance')
 
     match = SUPPORTED_DISTANCES_KM.find { |value| (distance - value).abs <= 0.001 }
     return DISTANCE_TO_METERS.fetch(match) if match
 
     raise ArgumentError,
-          "Unsupported distance #{distance_km}km. Supported: #{SUPPORTED_DISTANCES_KM.join(', ')}"
+          "Unsupported distance #{distance_input}km. Supported: #{SUPPORTED_DISTANCES_KM.join(', ')}"
   end
 
   def parse_time_seconds(time)

@@ -139,7 +139,19 @@ module Converter
     format_list(Distance.constants)
   end
 
+  # Multipliers from a supported distance-input unit to kilometres
+  # (used by methods that accept a distance_unit: keyword)
+  DISTANCE_UNIT_TO_KM = { km: 1.0, mi: Distance::MI_TO_KM }.freeze
+
   private
+
+  # Normalizes a numeric distance input to kilometres
+  def normalize_distance_km(value, distance_unit)
+    factor = DISTANCE_UNIT_TO_KM.fetch(distance_unit.to_sym) do
+      raise ArgumentError, "Unknown distance unit: #{distance_unit}. Supported units: :km, :mi"
+    end
+    value.to_f * factor
+  end
 
   def format_unit(unit)
     unit.downcase.gsub(' ', '_').to_sym

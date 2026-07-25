@@ -174,4 +174,26 @@ class TestVo2maxEstimator < CalcpaceTest
     result = @calc.estimate_detailed_vo2max(1.0, '00:04:00')
     assert_equal :low, result.confidence
   end
+
+  def test_estimate_vo2max_accepts_distance_in_miles
+    km = @calc.estimate_vo2max(10.0, '00:40:00')
+    mi = @calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi)
+
+    assert_equal km, mi
+  end
+
+  def test_estimate_vo2max_rejects_unknown_distance_unit
+    error = assert_raises(ArgumentError) do
+      @calc.estimate_vo2max(10.0, '00:40:00', distance_unit: :furlong)
+    end
+    assert_match(/km.*mi/i, error.message)
+  end
+
+  def test_estimate_detailed_vo2max_accepts_distance_in_miles
+    km = @calc.estimate_detailed_vo2max(10.0, '00:40:00', elevation_gain_m: 100)
+    mi = @calc.estimate_detailed_vo2max(6.21371, '00:40:00', elevation_gain_m: 100, distance_unit: :mi)
+
+    assert_equal km.value, mi.value
+    assert_equal km.adjusted_distance_km, mi.adjusted_distance_km
+  end
 end

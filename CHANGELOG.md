@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `training_paces_from_race` accepts standard race names ('10k', 'marathon',
     '5mile', ...) in addition to numeric kilometres, matching `predict_time`
     and `race_pace`
+  - `distance_unit: :mi` keyword on `estimate_vo2max`, `estimate_detailed_vo2max`,
+    `age_grade`, `age_grade_percent`, and `training_paces_from_race` — numeric
+    distance inputs can now be given in miles (default remains kilometres)
 
 ## [1.10.0] - 2026-07-11
 

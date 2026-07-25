@@ -169,6 +169,7 @@ age factors and open standards.
 
 ```ruby
 result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
+# numeric distances also accepted in miles: calc.age_grade(6.21371, '00:45:00', age: 55, sex: :male, distance_unit: :mi)
 # => {
 #      age_grade_percent: 64.6,
 #      category: "Local Class",
@@ -208,6 +209,7 @@ Estimate aerobic fitness from a race result using the **Daniels & Gilbert formul
 calc.estimate_vo2max(10.0, '00:40:00')   # => 51.9 ml/kg/min
 calc.estimate_vo2max(42.195, '03:30:00') # => 44.8
 calc.estimate_vo2max(5.0, 2400)          # also accepts total seconds
+calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi)  # => 51.9 (miles input)
 
 calc.vo2max_label(51.9)  # => "Very Good"
 ```
