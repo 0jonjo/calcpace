@@ -154,6 +154,17 @@ module Vo2maxEstimator
     -4.60 + (0.182258 * velocity) + (0.000104 * (velocity**2))
   end
 
+  # Unrounded Daniels & Gilbert VO2max for a distance/time pair. Lives next to
+  # the formula it composes so the two cannot drift apart: FitnessPredictor
+  # bisects against this to guarantee an exact round trip with the public
+  # estimator, which only differs by rounding to one decimal.
+  def raw_vo2max(distance_km, seconds)
+    time_min = seconds / 60.0
+    velocity = distance_km * Converter::Distance::KM_TO_METERS / time_min
+
+    vo2_at_velocity(velocity) / percent_vo2max(time_min)
+  end
+
   def percent_vo2max(time_min)
     0.8 +
       (0.1894393 * Math.exp(-0.012778 * time_min)) +

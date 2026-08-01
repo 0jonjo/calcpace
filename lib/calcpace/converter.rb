@@ -106,8 +106,8 @@ module Converter
   #   convert_to_clocktime(3600)    #=> '01:00:00' (1 hour)
   #   convert_to_clocktime(100000)  #=> '1 03:46:40' (1 day, 3 hours, 46 minutes, 40 seconds)
   def convert_to_clocktime(seconds)
-    days = seconds / 86_400
-    format = days.to_i.positive? ? "#{days} %H:%M:%S" : '%H:%M:%S'
+    days = (seconds / 86_400).to_i
+    format = days.positive? ? "#{days} %H:%M:%S" : '%H:%M:%S'
     Time.at(seconds).utc.strftime(format)
   end
 
