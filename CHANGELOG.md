@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-01
+
+### Added
+- Fitness predictor — race times from a VO2max value, the inverse of
+  `estimate_vo2max`
+  - `predict_time_from_vo2max(vo2max, race, distance_unit: nil)`: predicted
+    finish time in seconds. `race` accepts a standard race name ('5k',
+    'marathon', '5mile', ...) or a numeric distance in kilometres (miles via
+    `distance_unit: :mi`), same semantics as `training_paces_from_race`
+  - `predict_time_from_vo2max_clock(...)`: same prediction as `HH:MM:SS`
+  - `race_times_from_vo2max(vo2max, races: nil, unit: :km)`: one call returns a
+    table of `time`, `time_clock`, `pace`, and `pace_clock` per race (default
+    races: 5k, 10k, half marathon, marathon; `unit: :mi` for paces per mile)
+  - VO2max inputs outside 10–100 ml/kg/min raise `ArgumentError`, where the
+    Daniels & Gilbert model stops being physiologically meaningful
+
+Predictions come from bisecting the Daniels & Gilbert curve on the time axis
+(it has no closed-form inverse), so
+`estimate_vo2max(d, predict_time_from_vo2max(v, d))` returns `v` back. Times
+match Daniels' published VDOT table within a few seconds for the shorter races
+and about a minute for the marathon.
+
+No existing behaviour changed: the Riegel (`predict_time`) and Cameron
+predictors are untouched.
+
 ## [1.11.0] - 2026-07-25
 
 ### Added
