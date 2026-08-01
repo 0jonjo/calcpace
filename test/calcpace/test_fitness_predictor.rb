@@ -26,20 +26,20 @@ class TestFitnessPredictor < CalcpaceTest
   # --- sanity against Daniels' published VDOT table ---
   def test_vdot_fifty_matches_daniels_table
     # VDOT 50 → 5k 19:57, marathon 3:10:49 in Daniels' Running Formula
-    assert_in_delta 1197, @calc.predict_time_from_vo2max(50, '5k'), 30
-    assert_in_delta 11_449, @calc.predict_time_from_vo2max(50, 'marathon'), 300
+    assert_in_delta 1197, @calc.predict_time_from_vo2max(50, '5k'), 10
+    assert_in_delta 11_449, @calc.predict_time_from_vo2max(50, 'marathon'), 60
   end
 
   def test_vdot_thirty_matches_daniels_table
     # VDOT 30 → 5k 30:40, marathon 4:49:17
-    assert_in_delta 1840, @calc.predict_time_from_vo2max(30, '5k'), 60
-    assert_in_delta 17_357, @calc.predict_time_from_vo2max(30, 'marathon'), 300
+    assert_in_delta 1840, @calc.predict_time_from_vo2max(30, '5k'), 10
+    assert_in_delta 17_357, @calc.predict_time_from_vo2max(30, 'marathon'), 60
   end
 
   def test_vdot_seventy_matches_daniels_table
     # VDOT 70 → 5k 14:55, marathon 2:23:10
-    assert_in_delta 895, @calc.predict_time_from_vo2max(70, '5k'), 30
-    assert_in_delta 8590, @calc.predict_time_from_vo2max(70, 'marathon'), 300
+    assert_in_delta 895, @calc.predict_time_from_vo2max(70, '5k'), 10
+    assert_in_delta 8590, @calc.predict_time_from_vo2max(70, 'marathon'), 60
   end
 
   # --- inputs ---

@@ -294,7 +294,9 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/0jonjo/calcpace/compare/v1.11.0...v1.12.0
+[1.11.0]: https://github.com/0jonjo/calcpace/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/0jonjo/calcpace/compare/v1.9.10...v1.10.0
 [1.9.6]: https://github.com/0jonjo/calcpace/compare/v1.9.5...v1.9.6
 [1.9.5]: https://github.com/0jonjo/calcpace/compare/v1.9.4...v1.9.5

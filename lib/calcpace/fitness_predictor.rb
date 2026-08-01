@@ -53,6 +53,10 @@ module FitnessPredictor
   #   name is not recognized, or if distance_unit is combined with a race name
   # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   #
+  # @note estimate_vo2max can report values below 10 for very slow efforts
+  #   (walking pace); those estimates are outside this predictor's supported
+  #   range on purpose — a race plan built on them would be meaningless
+  #
   # @example
   #   calc.predict_time_from_vo2max(50, '5k')       #=> 1196.02 (≈19:56)
   #   calc.predict_time_from_vo2max(50, 'marathon') #=> 11439.74 (≈3:10:39)
@@ -105,7 +109,7 @@ module FitnessPredictor
 
   def race_time_entry(vo2max, race, meters)
     seconds = predict_time_from_vo2max(vo2max, race)
-    pace = seconds / (race_distance(race) * Converter::Distance::KM_TO_METERS / meters)
+    pace = (seconds / (race_distance(race) * Converter::Distance::KM_TO_METERS / meters)).round(2)
 
     {
       time: seconds,
@@ -146,8 +150,13 @@ module FitnessPredictor
       value = raw_vo2max(distance_km, mid)
       return mid.round(2) if (value - target).abs < VO2MAX_TOLERANCE
 
-      # Faster (lower) times mean a higher VO2max, so the target sits below mid
-      value > target ? low = mid : high = mid
+      # VO2max falls as time grows: a midpoint fitter than the target means
+      # the answer is a slower time (raise low), otherwise a faster one
+      if value > target
+        low = mid
+      else
+        high = mid
+      end
     end
 
     ((low + high) / 2.0).round(2)
@@ -161,16 +170,6 @@ module FitnessPredictor
 
     raise ArgumentError,
           "VO2max #{target} is not reachable over #{distance_km} km within the search bounds " \
-          "(#{reachable.min.round(1)}–#{reachable.max.round(1)} ml/kg/min)"
-  end
-
-  # Unrounded Daniels & Gilbert VO2max for a distance/time pair. The public
-  # #estimate_vo2max rounds to one decimal, which turns the curve into steps
-  # and would cap the round-trip accuracy at the size of a step.
-  def raw_vo2max(distance_km, seconds)
-    time_min = seconds / 60.0
-    velocity = distance_km * Converter::Distance::KM_TO_METERS / time_min
-
-    vo2_at_velocity(velocity) / percent_vo2max(time_min)
+          "(#{reachable.begin.round(1)}–#{reachable.end.round(1)} ml/kg/min)"
   end
 end
