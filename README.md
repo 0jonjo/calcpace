@@ -323,6 +323,42 @@ pace bands, and age-grading tolerances agree to the metre.
 
 ---
 
+### Fitness Predictor (race times from VO2max)
+
+The inverse of `estimate_vo2max`: what a given fitness is worth over a race.
+
+```ruby
+calc.predict_time_from_vo2max(50, '5k')             # => 1196.02 (seconds)
+calc.predict_time_from_vo2max_clock(50, 'marathon') # => "03:10:39"
+
+calc.predict_time_from_vo2max(50, 10.0)                          # numeric distance in km
+calc.predict_time_from_vo2max_clock(50, 6.2, distance_unit: :mi) # => "00:41:13"
+
+calc.race_times_from_vo2max(50)['10k']
+# => { time: 2479.6, time_clock: "00:41:19", pace: 247.96, pace_clock: "00:04:07" }
+
+calc.race_times_from_vo2max(50, races: %w[5k 10mile], unit: :mi)['5k']
+# => { time: 1196.02, time_clock: "00:19:56", pace: 384.96, pace_clock: "00:06:24" }
+```
+
+`race_times_from_vo2max` returns the whole table in one call — default races are
+`5k`, `10k`, `half_marathon`, and `marathon`. `unit:` sets the pace unit;
+`distance_unit:` sets the unit of a numeric distance, and combining it with a race
+name raises `ArgumentError`, as elsewhere in the gem.
+
+The Daniels & Gilbert curve has no closed-form inverse, so the time is found by
+bisection — which makes the round trip exact:
+
+```ruby
+calc.estimate_vo2max(5.0, calc.predict_time_from_vo2max(50, '5k')) # => 50.0
+```
+
+Predictions match Daniels' published VDOT table within a few seconds for the shorter
+races and about a minute for the marathon. VO2max values outside 10–100 ml/kg/min
+raise `ArgumentError` — beyond that range the model stops describing running.
+
+---
+
 ### Other Utilities
 
 ```ruby
