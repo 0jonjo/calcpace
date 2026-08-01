@@ -1,11 +1,11 @@
-# Calcpace [![Gem Version](https://d25lcipzij17d.cloudfront.net/badge.svg?id=rb&r=r&ts=1683906897&type=6e&v=1.10.0&x2=0)](https://badge.fury.io/rb/calcpace)
+# Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
 A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions, GPS track analysis, age grading, VO2max estimation, and training zones.
 
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.10.0'
+gem 'calcpace', '~> 1.12.0'
 ```
 
 ## Usage
