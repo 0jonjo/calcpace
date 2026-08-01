@@ -342,9 +342,9 @@ calc.race_times_from_vo2max(50, races: %w[5k 10mile], unit: :mi)['5k']
 ```
 
 `race_times_from_vo2max` returns the whole table in one call — default races are
-`5k`, `10k`, `half_marathon`, and `marathon`. `unit:` sets the pace unit;
-`distance_unit:` sets the unit of a numeric distance, and combining it with a race
-name raises `ArgumentError`, as elsewhere in the gem.
+`5k`, `10k`, `half_marathon`, and `marathon`, and `unit:` sets the pace unit. In
+`predict_time_from_vo2max`, `distance_unit:` sets the unit of a numeric distance;
+combining it with a race name raises `ArgumentError`, as elsewhere in the gem.
 
 The Daniels & Gilbert curve has no closed-form inverse, so the time is found by
 bisection — which makes the round trip exact:

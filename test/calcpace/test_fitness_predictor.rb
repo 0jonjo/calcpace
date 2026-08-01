@@ -152,4 +152,18 @@ class TestFitnessPredictor < CalcpaceTest
   def test_rejects_an_unsupported_distance_unit
     assert_raises(Calcpace::UnsupportedUnitError) { @calc.predict_time_from_vo2max(50, 10, distance_unit: :furlong) }
   end
+
+  def test_race_table_validates_vo2max_even_with_an_empty_race_list
+    assert_raises(ArgumentError) { @calc.race_times_from_vo2max(200, races: []) }
+  end
+
+  def test_race_table_accepts_a_single_race_name
+    assert_equal %w[5k], @calc.race_times_from_vo2max(50, races: '5k').keys
+  end
+
+  def test_clock_prediction_stays_well_formed_beyond_24_hours
+    # A 100k at the floor of the supported range takes more than a day; the
+    # day prefix must be an integer, not a leaked Float
+    assert_match(/\A\d+ \d{2}:\d{2}:\d{2}\z/, @calc.predict_time_from_vo2max_clock(10, '100k'))
+  end
 end

@@ -16,6 +16,12 @@ class TestConverter < CalcpaceTest
     assert_equal '1 03:46:40', @calc.convert_to_clocktime(100_000)
   end
 
+  def test_convert_to_clocktime_more_than_24_hours_with_float_seconds
+    # Float seconds must not leak fractional days into the day prefix
+    # (predictors return Float times, e.g. a 100k at VO2max 10)
+    assert_equal '1 03:46:40', @calc.convert_to_clocktime(100_000.75)
+  end
+
   def test_mile_factors_derive_from_a_single_canonical_value
     # One international mile is exactly 1609.344 m — every mile factor derives
     # from it, so no two call sites can disagree about how long a mile is

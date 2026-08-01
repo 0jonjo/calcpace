@@ -54,8 +54,8 @@ module FitnessPredictor
   # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
   #
   # @example
-  #   calc.predict_time_from_vo2max(50, '5k')       #=> 1194.32 (≈19:54)
-  #   calc.predict_time_from_vo2max(50, 'marathon') #=> 11430.5 (≈3:10:30)
+  #   calc.predict_time_from_vo2max(50, '5k')       #=> 1196.02 (≈19:56)
+  #   calc.predict_time_from_vo2max(50, 'marathon') #=> 11439.74 (≈3:10:39)
   #   calc.predict_time_from_vo2max(50, 6.2, distance_unit: :mi)
   def predict_time_from_vo2max(vo2max, race, distance_unit: nil)
     target = validated_vo2max(vo2max)
@@ -71,7 +71,7 @@ module FitnessPredictor
   # @return [String] predicted finish time in HH:MM:SS format
   #
   # @example
-  #   calc.predict_time_from_vo2max_clock(50, 'marathon') #=> '03:10:30'
+  #   calc.predict_time_from_vo2max_clock(50, 'marathon') #=> '03:10:39'
   def predict_time_from_vo2max_clock(vo2max, race, distance_unit: nil)
     convert_to_clocktime(predict_time_from_vo2max(vo2max, race, distance_unit: distance_unit))
   end
@@ -90,12 +90,13 @@ module FitnessPredictor
   #
   # @example
   #   calc.race_times_from_vo2max(50)['10k']
-  #   #=> { time: 2477.4, time_clock: '00:41:17', pace: 247.74, pace_clock: '00:04:07' }
+  #   #=> { time: 2479.6, time_clock: '00:41:19', pace: 247.96, pace_clock: '00:04:07' }
   #   calc.race_times_from_vo2max(50, races: %w[5k 10mile], unit: :mi)
   def race_times_from_vo2max(vo2max, races: nil, unit: :km)
     meters = pace_unit_meters(unit)
+    validated_vo2max(vo2max)
 
-    (races || DEFAULT_RACES).to_h do |race|
+    Array(races || DEFAULT_RACES).to_h do |race|
       [normalize_race_key(race), race_time_entry(vo2max, race, meters)]
     end
   end
