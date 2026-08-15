@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-08-15
+
+### Changed
+- Development dependency bumps: rubocop 1.89, rdoc 8.0, simplecov 1.1, erb 6.0.7.
+  No library code changes.
+
 ## [1.12.0] - 2026-08-01
 
 ### Added
