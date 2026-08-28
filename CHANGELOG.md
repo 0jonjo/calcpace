@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-08-28
+
+### Added
+- `convert_to_clocktime(seconds, compact: true)` — the display format a runner
+  reads, next to the padded format the gem already returned
+  - drops the hour when it is zero and the leading zero of the most significant
+    component, keeping two digits on everything after it:
+    `convert_to_clocktime(292, compact: true)` #=> `'4:52'`,
+    `convert_to_clocktime(45, compact: true)` #=> `'0:45'`,
+    `convert_to_clocktime(5025, compact: true)` #=> `'1:23:45'`
+  - past 24 hours it keeps counting hours (`100_000` #=> `'27:46:40'`) instead
+    of the padded format's day prefix (`'1 03:46:40'`) — a day count brings back
+    the padding and the extra unit the compact format exists to strip
+  - fractional seconds truncate, as they already did in the padded format:
+    `292.9` #=> `'4:52'`
+
+  The default stays `compact: false`, byte-for-byte the previous output, so every
+  existing caller is unaffected.
+
+### Fixed
+- `convert_to_clocktime` with a negative number now raises
+  `Calcpace::NonPositiveInputError` instead of silently wrapping around
+  (`-5` used to return `'23:59:55'`, a `Time.at` artifact). Zero remains a valid
+  duration in both formats. Non-numeric input keeps raising as before.
+
 ## [1.12.1] - 2026-08-15
 
 ### Changed
@@ -300,7 +325,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/0jonjo/calcpace/compare/v1.12.1...v1.13.0
 [1.12.0]: https://github.com/0jonjo/calcpace/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/0jonjo/calcpace/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/0jonjo/calcpace/compare/v1.9.10...v1.10.0
