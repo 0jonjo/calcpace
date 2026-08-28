@@ -367,6 +367,21 @@ calc.convert_to_clocktime(3600)      # => "01:00:00"
 calc.check_time('01:00:00')          # => nil (valid)
 ```
 
+`convert_to_clocktime` takes a `compact:` keyword for the format a runner reads
+on a screen — no zero hour, no leading zero on the most significant component:
+
+```ruby
+calc.convert_to_clocktime(292, compact: true)      # => "4:52"
+calc.convert_to_clocktime(45, compact: true)       # => "0:45"
+calc.convert_to_clocktime(5025, compact: true)     # => "1:23:45"
+calc.convert_to_clocktime(100_000, compact: true)  # => "27:46:40"
+```
+
+Past 24 hours the compact format keeps counting hours, where the padded one
+prefixes a day count (`"1 03:46:40"`). Fractional seconds truncate in both.
+A negative number of seconds raises `Calcpace::NonPositiveInputError`; zero is a
+valid duration (`"00:00:00"` / `"0:00"`).
+
 ---
 
 ### Errors

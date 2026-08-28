@@ -12,6 +12,21 @@ class TestConverter < CalcpaceTest
     assert_equal '01:11:02', @calc.convert_to_clocktime(4262)
   end
 
+  def test_convert_to_clocktime_compact_omits_the_hour_when_it_is_zero
+    assert_equal '4:52', @calc.convert_to_clocktime(292, compact: true)
+    assert_equal '0:45', @calc.convert_to_clocktime(45, compact: true)
+  end
+
+  def test_convert_to_clocktime_compact_keeps_the_hour_when_there_is_one
+    assert_equal '1:23:45', @calc.convert_to_clocktime(5025, compact: true)
+  end
+
+  def test_convert_to_clocktime_compact_false_is_the_default_padded_format
+    # The padded format is what every existing caller depends on
+    assert_equal '00:04:52', @calc.convert_to_clocktime(292)
+    assert_equal '00:04:52', @calc.convert_to_clocktime(292, compact: false)
+  end
+
   def test_convert_to_clocktime_more_than_24_hours
     assert_equal '1 03:46:40', @calc.convert_to_clocktime(100_000)
   end

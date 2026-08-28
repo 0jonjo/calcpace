@@ -99,13 +99,38 @@ module Converter
 
   # Converts seconds to a clocktime string
   #
-  # @param seconds [Numeric] total seconds
-  # @return [String] time in HH:MM:SS format, or "D HH:MM:SS" for durations over 24 hours
+  # The default (padded) format is the machine-readable one: always HH:MM:SS,
+  # with a day prefix past 24 hours. The compact format is the one a runner
+  # reads on a screen — it drops a zero hour and the leading zero of the most
+  # significant component, keeping two digits on everything after it.
   #
-  # @example
+  # Fractional seconds are truncated, not rounded, in both formats, so a
+  # predictor returning 292.9 s prints the same 4:52 either way. Past 24 hours
+  # the compact format keeps counting hours ('27:46:40') instead of adding the
+  # padded format's day prefix: a day count reintroduces the very padding and
+  # the extra unit the compact format exists to strip, and ultra finish times
+  # are read as a running hour count.
+  #
+  # @param seconds [Numeric] total seconds, zero or more
+  # @param compact [Boolean] when true, return the compact display format
+  # @return [String] time in HH:MM:SS format, or "D HH:MM:SS" for durations over
+  #   24 hours; with compact: true, "M:SS" or "H:MM:SS"
+  # @raise [Calcpace::NonPositiveInputError] if seconds is negative
+  #
+  # @example padded (default)
   #   convert_to_clocktime(3600)    #=> '01:00:00' (1 hour)
+  #   convert_to_clocktime(292)     #=> '00:04:52'
   #   convert_to_clocktime(100000)  #=> '1 03:46:40' (1 day, 3 hours, 46 minutes, 40 seconds)
-  def convert_to_clocktime(seconds)
+  #
+  # @example compact
+  #   convert_to_clocktime(45, compact: true)      #=> '0:45'
+  #   convert_to_clocktime(292, compact: true)     #=> '4:52'
+  #   convert_to_clocktime(5025, compact: true)    #=> '1:23:45'
+  #   convert_to_clocktime(100000, compact: true)  #=> '27:46:40'
+  def convert_to_clocktime(seconds, compact: false)
+    check_not_negative(seconds)
+    return compact_clocktime(seconds) if compact
+
     days = (seconds / 86_400).to_i
     format = days.positive? ? "#{days} %H:%M:%S" : '%H:%M:%S'
     Time.at(seconds).utc.strftime(format)
@@ -148,6 +173,28 @@ module Converter
   DISTANCE_UNIT_TO_KM = { km: 1.0, mi: Distance::MI_TO_KM }.freeze
 
   private
+
+  # Formats a duration without padding the most significant component, dropping
+  # the hour when there is none. Hours accumulate past 24 rather than rolling
+  # over into a day count.
+  def compact_clocktime(seconds)
+    total = seconds.to_i
+    parts = { hours: total / 3600, minutes: (total % 3600) / 60, seconds: total % 60 }
+    return format('%<hours>d:%<minutes>02d:%<seconds>02d', parts) if parts[:hours].positive?
+
+    format('%<minutes>d:%<seconds>02d', parts)
+  end
+
+  # Guards against negative durations. Unlike Checker#check_positive, zero is a
+  # legitimate duration here — a zero split prints as 00:00:00 — so only a
+  # negative value is rejected. Non-numeric input is left to raise on its own,
+  # as it always has.
+  def check_not_negative(seconds)
+    return unless seconds.is_a?(Numeric) && seconds.negative?
+
+    raise Calcpace::NonPositiveInputError,
+          'Seconds must not be a negative number'
+  end
 
   # Guards the "race name + distance_unit" combination. A standard race already
   # carries its own distance, so the keyword can only be a caller mistake —

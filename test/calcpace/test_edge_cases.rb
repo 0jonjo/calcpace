@@ -52,6 +52,29 @@ class TestEdgeCases < CalcpaceTest
     assert_equal '23:59:59', @calc.convert_to_clocktime(86_399)
   end
 
+  # Compact clocktime edge cases
+  def test_convert_to_clocktime_compact_zero
+    assert_equal '0:00', @calc.convert_to_clocktime(0, compact: true)
+  end
+
+  def test_convert_to_clocktime_compact_truncates_fractional_seconds
+    # Same truncation as the padded format, which goes through Time.at
+    assert_equal '00:04:52', @calc.convert_to_clocktime(292.9)
+    assert_equal '4:52', @calc.convert_to_clocktime(292.9, compact: true)
+  end
+
+  def test_convert_to_clocktime_compact_accumulates_hours_beyond_a_day
+    # The padded format prefixes a day count; the compact one keeps a single
+    # running hour count, which is how ultra finish times are read
+    assert_equal '24:00:00', @calc.convert_to_clocktime(86_400, compact: true)
+    assert_equal '27:46:40', @calc.convert_to_clocktime(100_000, compact: true)
+  end
+
+  def test_convert_to_clocktime_rejects_negative_seconds
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.convert_to_clocktime(-5) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.convert_to_clocktime(-5, compact: true) }
+  end
+
   # Test floating point precision
   def test_velocity_with_floats
     result = @calc.velocity(3.5, 10.5)
