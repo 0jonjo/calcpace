@@ -93,6 +93,16 @@ See all units: `calc.list_all`, `calc.list_distance`, `calc.list_speed`.
 ```ruby
 calc.pace_km_to_mi('05:00')   # => "00:08:02"
 calc.pace_mi_to_km('08:00')   # => "00:04:58"
+calc.convert_pace(300, :km_to_mi)  # => "00:08:02"
+```
+
+All three take a `compact:` keyword for the display format a runner reads on a
+screen, the same one `convert_to_clocktime` offers:
+
+```ruby
+calc.pace_km_to_mi('05:00', compact: true)         # => "8:02"
+calc.pace_mi_to_km(480, compact: true)             # => "4:58"
+calc.convert_pace('05:00', :km_to_mi, compact: true)  # => "8:02"
 ```
 
 ---
@@ -156,6 +166,10 @@ calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)  # => 0.089 km
 calc.track_distance(points)    # => 0.87 km
 calc.elevation_gain(points)    # => { gain: 5.0, loss: 7.0 }
 calc.track_splits(points, 1.0) # => [{ km: 1, elapsed: 312, pace: "05:12" }, ...]
+
+# Compact pace for display; :km and :elapsed are unchanged
+calc.track_splits(points, 1.0, compact: true)
+# => [{ km: 1, elapsed: 312, pace: "5:12" }, ...]
 ```
 
 **Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
@@ -381,6 +395,10 @@ Past 24 hours the compact format keeps counting hours, where the padded one
 prefixes a day count (`"1 03:46:40"`). Fractional seconds truncate in both.
 A negative number of seconds raises `Calcpace::NonPositiveInputError`; zero is a
 valid duration (`"00:00:00"` / `"0:00"`).
+
+The same `compact:` keyword is accepted by `convert_pace`, `pace_km_to_mi`,
+`pace_mi_to_km`, and `track_splits`. It always defaults to `false`, so every
+call without it returns exactly what it returned before.
 
 ---
 

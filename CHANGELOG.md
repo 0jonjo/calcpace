@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-08-29
+
+### Added
+- `compact:` keyword on every pace-producing method, so a caller can ask for the
+  display format `convert_to_clocktime(compact: true)` introduced in 1.13.0
+  without reformatting the string itself
+  - `convert_pace(pace, conversion, compact: false)`
+  - `pace_km_to_mi(pace_per_km, compact: false)`
+  - `pace_mi_to_km(pace_per_mi, compact: false)`
+  - `track_splits(points, split_km = 1.0, compact: false)` — only the `:pace`
+    value changes; `:km` and `:elapsed` are numbers and stay as they are
+
+  ```ruby
+  calc.pace_km_to_mi('05:00')                # => "00:08:02"
+  calc.pace_km_to_mi('05:00', compact: true) # => "8:02"
+  calc.track_splits(points, 1.0, compact: true)
+  # => [{ km: 1.0, elapsed: 312, pace: "5:12" }, ...]
+  ```
+
+  The default stays `compact: false` everywhere, byte-for-byte the previous
+  output, so no existing caller changes. Input validation is untouched:
+  a zero or negative pace still raises `Calcpace::NonPositiveInputError` and an
+  unknown conversion still raises `ArgumentError` in both modes.
+
+  A split pace slower than an hour per kilometre is the one place the two
+  formats disagree about more than padding: the padded format keeps counting
+  minutes (`"66:33"`), as `track_splits` always has, while the compact one rolls
+  them into an hour field (`"1:06:33"`), consistent with every other compact
+  duration in the gem.
+
+### Fixed
+- `convert_pace`, `pace_km_to_mi` and `pace_mi_to_km` documented their return
+  value as `'08:02'` when they have always returned the padded `'00:08:02'`.
+  The docs now match the code; the code is unchanged.
+
 ## [1.13.0] - 2026-08-28
 
 ### Added
@@ -325,7 +360,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/0jonjo/calcpace/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/0jonjo/calcpace/compare/v1.12.1...v1.13.0
 [1.12.0]: https://github.com/0jonjo/calcpace/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/0jonjo/calcpace/compare/v1.10.0...v1.11.0

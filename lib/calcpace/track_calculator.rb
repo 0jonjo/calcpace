@@ -117,12 +117,17 @@ module TrackCalculator
   # @param points [Array<Hash>] array of points with :lat, :lon, and :time keys.
   #   :time must respond to #to_f (Unix timestamp) or be a Time object.
   # @param split_km [Numeric] split interval in kilometers (default: 1.0)
+  # @param compact [Boolean] when true, :pace uses the compact display format
   # @return [Array<Hash>] array of split hashes, each with:
   #   - :km [Float] cumulative distance at split end
   #   - :elapsed [Integer] elapsed seconds from start of track to end of split
-  #   - :pace [String] pace for this split in MM:SS format
+  #   - :pace [String] pace for this split in MM:SS format, or 'M:SS' / 'H:MM:SS'
+  #     with compact: true
   # @raise [ArgumentError] if split_km is not positive
   # @raise [ArgumentError] if any point is missing a :time key
+  #
+  # Only :pace changes with compact: — :km and :elapsed are numbers, not
+  # formatted strings, and are the same in both modes.
   #
   # @example 5 km track with 1 km splits
   #   calc.track_splits(points, 1.0)
@@ -131,12 +136,16 @@ module TrackCalculator
   #         { km: 2.0, elapsed: 624, pace: "05:12" },
   #         ...
   #       ]
-  def track_splits(points, split_km = 1.0)
+  #
+  # @example compact pace
+  #   calc.track_splits(points, 1.0, compact: true)
+  #   #=> [{ km: 1.0, elapsed: 312, pace: "5:12" }, ...]
+  def track_splits(points, split_km = 1.0, compact: false)
     raise ArgumentError, 'split_km must be positive' unless split_km.is_a?(Numeric) && split_km.positive?
     return [] if points.nil? || points.size < 2
 
     validate_points_have_time(points)
-    collect_splits(points, split_km)
+    collect_splits(points, split_km, compact)
   end
 
   private
@@ -209,17 +218,23 @@ module TrackCalculator
     t_a + ((t_b - t_a) * (distance_into_segment / segment_km))
   end
 
-  def seconds_to_pace(seconds, km)
-    return '00:00' if km.zero?
+  # Formats a split pace. The default keeps the historical MM:SS, where the
+  # minutes keep counting past 60 (a 66-minute hiking split reads '66:33'); the
+  # compact format defers to #convert_to_clocktime, which rolls those minutes
+  # into an hour field ('1:06:33') exactly as it does everywhere else.
+  def seconds_to_pace(seconds, km, compact: false)
+    return compact ? '0:00' : '00:00' if km.zero?
 
     pace_seconds = (seconds.to_f / km).round
+    return convert_to_clocktime(pace_seconds, compact: true) if compact
+
     format('%<min>02d:%<sec>02d', min: pace_seconds / 60, sec: pace_seconds % 60)
   end
 
-  def collect_splits(points, split_km)
+  def collect_splits(points, split_km, compact)
     state = { splits: [], start_time: point_time(points.first),
               split_start_time: point_time(points.first),
-              accumulated_km: 0.0, split_number: 1 }
+              accumulated_km: 0.0, split_number: 1, compact: compact }
 
     points.each_cons(2) { |a, b| process_segment(a, b, split_km, state) }
     append_partial_split(points.last, split_km, state)
@@ -249,7 +264,7 @@ module TrackCalculator
     {
       km: (split_km * state[:split_number]).round(2),
       elapsed: (boundary_time - state[:start_time]).round,
-      pace: seconds_to_pace(split_elapsed, split_km)
+      pace: seconds_to_pace(split_elapsed, split_km, compact: state[:compact])
     }
   end
 
@@ -261,7 +276,8 @@ module TrackCalculator
     state[:splits] << {
       km: state[:accumulated_km].round(2),
       elapsed: (last_time - state[:start_time]).round,
-      pace: seconds_to_pace((last_time - state[:split_start_time]).round, remaining_km)
+      pace: seconds_to_pace((last_time - state[:split_start_time]).round, remaining_km,
+                            compact: state[:compact])
     }
   end
 end
