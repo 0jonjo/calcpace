@@ -162,15 +162,32 @@ points = [
   { lat: -23.5520, lon: -46.6480, ele: 758.0, time: Time.parse('2024-01-01 07:10:00') },
 ]
 
-calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)  # => 0.089 km
-calc.track_distance(points)    # => 0.87 km
-calc.elevation_gain(points)    # => { gain: 5.0, loss: 7.0 }
-calc.track_splits(points, 1.0) # => [{ km: 1, elapsed: 312, pace: "05:12" }, ...]
+calc.haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)
+# => 0.09045636644035066 (km)
+
+calc.track_distance(points)  # => 1.51 (km)
+calc.elevation_gain(points)  # => { gain: 5.0, loss: 7.0 }
+
+calc.track_splits(points, 1.0)
+# => [{ km: 1.0, elapsed: 415, pace: "06:55" },
+#     { km: 1.51, elapsed: 600, pace: "06:04" }]
 
 # Compact pace for display; :km and :elapsed are unchanged
 calc.track_splits(points, 1.0, compact: true)
-# => [{ km: 1, elapsed: 312, pace: "5:12" }, ...]
+# => [{ km: 1.0, elapsed: 415, pace: "6:55" },
+#     { km: 1.51, elapsed: 600, pace: "6:04" }]
 ```
+
+The last entry is the partial split — the leftover distance after the last full
+one, so its `:km` is the track total rather than a multiple of `split_km`.
+
+Two things to know about `compact:` here. A split slower than an hour per unit
+is where the formats stop differing by padding alone: the padded one keeps
+counting minutes (`"66:33"`), as `track_splits` always has, while the compact
+one rolls them into an hour field (`"1:06:33"`). And a track that steps
+backwards in time — a watch resyncing its clock, a paused device, two segments
+merged out of order — produces a negative split, reported with a leading minus
+in both formats (`"-00:40"` / `"-0:40"`) rather than raising.
 
 **Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
 

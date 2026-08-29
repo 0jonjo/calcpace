@@ -14,7 +14,7 @@
 #     { lat: -23.5510, lon: -46.6340 },
 #     { lat: -23.5520, lon: -46.6350 }
 #   ]
-#   calc.track_distance(points) #=> 0.17 (km)
+#   calc.track_distance(points) #=> 0.24 (km)
 #
 # @example Calculate elevation gain and loss
 #   points = [
@@ -49,7 +49,7 @@ module TrackCalculator
   #
   # @example Distance between two points in São Paulo
   #   haversine_distance(-23.5505, -46.6333, -23.5510, -46.6340)
-  #   #=> 0.089 (km)
+  #   #=> 0.09045636644035066 (km)
   def haversine_distance(lat1, lon1, lat2, lon2)
     validate_coordinates(lat1, lon1)
     validate_coordinates(lat2, lon2)
@@ -69,7 +69,7 @@ module TrackCalculator
   #     { lat: -23.5510, lon: -46.6340 },
   #     { lat: -23.5520, lon: -46.6350 }
   #   ]
-  #   track_distance(points) #=> 0.17
+  #   track_distance(points) #=> 0.24
   def track_distance(points)
     return 0.0 if points.nil? || points.size < 2
 
@@ -114,6 +114,17 @@ module TrackCalculator
   # split distance is reached, then records elapsed time and pace for that split.
   # Any remaining distance at the end is included as a partial split.
   #
+  # Only :pace changes with compact: — :km and :elapsed are numbers, not
+  # formatted strings, and are the same in both modes.
+  #
+  # The two pace formats differ by more than padding once a split is slower than
+  # an hour per unit: the padded format keeps counting minutes ('66:33'), as it
+  # always has, while the compact one rolls them into an hour field ('1:06:33'),
+  # like every other compact duration in the gem. A track that steps backwards
+  # in time (a watch clock resync, a paused device, merged segments) yields a
+  # negative split, reported with a leading minus in both formats ('-00:40' /
+  # '-0:40') rather than raising.
+  #
   # @param points [Array<Hash>] array of points with :lat, :lon, and :time keys.
   #   :time must respond to #to_f (Unix timestamp) or be a Time object.
   # @param split_km [Numeric] split interval in kilometers (default: 1.0)
@@ -125,9 +136,6 @@ module TrackCalculator
   #     with compact: true
   # @raise [ArgumentError] if split_km is not positive
   # @raise [ArgumentError] if any point is missing a :time key
-  #
-  # Only :pace changes with compact: — :km and :elapsed are numbers, not
-  # formatted strings, and are the same in both modes.
   #
   # @example 5 km track with 1 km splits
   #   calc.track_splits(points, 1.0)
@@ -145,7 +153,7 @@ module TrackCalculator
     return [] if points.nil? || points.size < 2
 
     validate_points_have_time(points)
-    collect_splits(points, split_km, compact)
+    collect_splits(points, split_km, compact: compact)
   end
 
   private
@@ -218,20 +226,34 @@ module TrackCalculator
     t_a + ((t_b - t_a) * (distance_into_segment / segment_km))
   end
 
-  # Formats a split pace. The default keeps the historical MM:SS, where the
-  # minutes keep counting past 60 (a 66-minute hiking split reads '66:33'); the
-  # compact format defers to #convert_to_clocktime, which rolls those minutes
-  # into an hour field ('1:06:33') exactly as it does everywhere else.
+  # Formats a split pace, in either format, without ever raising.
+  #
+  # A GPS track can step backwards in time — a watch resyncing its clock, a
+  # device paused and restarted, two segments merged out of order — which makes
+  # a split elapsed time negative. That is bad data, not a caller error, and
+  # track_splits has always reported it rather than blowing up; #sign_of keeps
+  # it that way now that the compact format goes through #convert_to_clocktime,
+  # which rejects negative durations.
   def seconds_to_pace(seconds, km, compact: false)
-    return compact ? '0:00' : '00:00' if km.zero?
-
     pace_seconds = (seconds.to_f / km).round
+    "#{sign_of(pace_seconds)}#{format_pace(pace_seconds.abs, compact: compact)}"
+  end
+
+  def sign_of(pace_seconds)
+    pace_seconds.negative? ? '-' : ''
+  end
+
+  # The padded format keeps the historical MM:SS, where the minutes keep
+  # counting past 60 (a 66-minute hiking split reads '66:33'); the compact
+  # format defers to #convert_to_clocktime, which rolls those minutes into an
+  # hour field ('1:06:33') exactly as it does everywhere else.
+  def format_pace(pace_seconds, compact:)
     return convert_to_clocktime(pace_seconds, compact: true) if compact
 
     format('%<min>02d:%<sec>02d', min: pace_seconds / 60, sec: pace_seconds % 60)
   end
 
-  def collect_splits(points, split_km, compact)
+  def collect_splits(points, split_km, compact:)
     state = { splits: [], start_time: point_time(points.first),
               split_start_time: point_time(points.first),
               accumulated_km: 0.0, split_number: 1, compact: compact }
