@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-08-29
+
+### Added
+- `compact:` keyword on every pace-producing method, so a caller can ask for the
+  display format `convert_to_clocktime(compact: true)` introduced in 1.13.0
+  without reformatting the string itself
+  - `convert_pace(pace, conversion, compact: false)`
+  - `pace_km_to_mi(pace_per_km, compact: false)`
+  - `pace_mi_to_km(pace_per_mi, compact: false)`
+  - `track_splits(points, split_km = 1.0, compact: false)` — only the `:pace`
+    value changes; `:km` and `:elapsed` are numbers and stay as they are
+
+  ```ruby
+  calc.pace_km_to_mi('05:00')                # => "00:08:02"
+  calc.pace_km_to_mi('05:00', compact: true) # => "8:02"
+  calc.track_splits(points, 1.0, compact: true)
+  # => [{ km: 1.0, elapsed: 312, pace: "5:12" }, ...]
+  ```
+
+  The default stays `compact: false` everywhere, byte-for-byte the previous
+  output — the one exception is the negative-split fix below, which corrects a
+  value that was arithmetically wrong. Input validation is untouched:
+  a zero or negative pace still raises `Calcpace::NonPositiveInputError` and an
+  unknown conversion still raises `ArgumentError` in both modes.
+
+  Three places the two formats disagree about more than padding, all of them
+  now reachable through the pace APIs:
+
+  - A split pace slower than an hour per unit: the padded format keeps counting
+    minutes (`"66:33"`), as `track_splits` always has, while the compact one
+    rolls them into an hour field (`"1:06:33"`), consistent with every other
+    compact duration in the gem. Past 24 hours per unit the gap widens —
+    `"2248:18"` padded against `"37:28:18"` compact.
+  - Durations past 24 hours, the day-prefix rule 1.13.0 documented for
+    `convert_to_clocktime` alone, now visible through `convert_pace` too:
+    `convert_pace(100_000, :km_to_mi)` #=> `"1 20:42:14"`, against
+    `"44:42:14"` compact.
+  - A negative split (see Fixed below), signed in both formats but padded to a
+    different width: `"-00:40"` against `"-0:40"`.
+
+### Fixed
+- `track_splits` no longer misreports a negative split pace. A GPS track can
+  step backwards in time — a watch resyncing its clock, a device paused and
+  restarted, two segments merged out of order — which makes a split's elapsed
+  time negative. The padded format rendered that through Ruby's floor division,
+  so a −40 s split printed as `"-1:20"`; it now prints `"-00:40"`, and the
+  compact format prints `"-0:40"`. Neither mode raises: bad GPS data has always
+  been reported rather than blown up, and `compact: true` does not change that.
+- `convert_pace`, `pace_km_to_mi` and `pace_mi_to_km` documented their return
+  value as `'08:02'` when they have always returned the padded `'00:08:02'`.
+  The docs now match the code; the code is unchanged.
+- README and YARD examples for `track_distance`, `haversine_distance` and
+  `track_splits` printed numbers their own input never produced (`0.87` km for
+  a 1.51 km track, a `"05:12"` split for a `"06:55"` one). Every example is now
+  the real output of the code above it.
+
 ## [1.13.0] - 2026-08-28
 
 ### Added
@@ -325,7 +381,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/0jonjo/calcpace/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/0jonjo/calcpace/compare/v1.12.1...v1.13.0
 [1.12.0]: https://github.com/0jonjo/calcpace/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/0jonjo/calcpace/compare/v1.10.0...v1.11.0

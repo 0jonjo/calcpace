@@ -155,4 +155,65 @@ class TestPaceConverter < CalcpaceTest
     result = @calc.pace_km_to_mi('01:00:00')
     assert_equal '01:36:33', result
   end
+  # ---------------------------------------------------------------------------
+  # compact: keyword
+  # ---------------------------------------------------------------------------
+
+  def test_convert_pace_default_stays_padded
+    assert_equal '00:08:02', @calc.convert_pace('05:00', :km_to_mi)
+    assert_equal '00:08:02', @calc.convert_pace('05:00', :km_to_mi, compact: false)
+  end
+
+  def test_convert_pace_compact_with_string_input
+    assert_equal '8:02', @calc.convert_pace('05:00', :km_to_mi, compact: true)
+    assert_equal '4:58', @calc.convert_pace('08:00', :mi_to_km, compact: true)
+  end
+
+  def test_convert_pace_compact_with_numeric_input
+    assert_equal '8:02', @calc.convert_pace(300, :km_to_mi, compact: true)
+    assert_equal '4:58', @calc.convert_pace(480, :mi_to_km, compact: true)
+  end
+
+  def test_convert_pace_compact_with_string_conversion_name
+    assert_equal '8:02', @calc.convert_pace('05:00', 'km to mi', compact: true)
+  end
+
+  def test_convert_pace_compact_sub_minute
+    # A sub-minute pace keeps the zero minute so it still reads as a duration
+    assert_equal '00:00:18', @calc.convert_pace(30, :mi_to_km)
+    assert_equal '0:18', @calc.convert_pace(30, :mi_to_km, compact: true)
+  end
+
+  def test_convert_pace_compact_over_one_hour
+    assert_equal '01:36:33', @calc.convert_pace('01:00:00', :km_to_mi)
+    assert_equal '1:36:33', @calc.convert_pace('01:00:00', :km_to_mi, compact: true)
+  end
+
+  def test_pace_km_to_mi_compact
+    assert_equal '8:02', @calc.pace_km_to_mi('05:00', compact: true)
+    assert_equal '8:02', @calc.pace_km_to_mi(300, compact: true)
+    assert_equal '00:08:02', @calc.pace_km_to_mi('05:00')
+  end
+
+  def test_pace_mi_to_km_compact
+    assert_equal '4:58', @calc.pace_mi_to_km('08:00', compact: true)
+    assert_equal '4:58', @calc.pace_mi_to_km(480, compact: true)
+    assert_equal '00:04:58', @calc.pace_mi_to_km('08:00')
+  end
+
+  def test_pace_km_to_mi_compact_sub_minute
+    assert_equal '1:12', @calc.pace_km_to_mi(45, compact: true)
+  end
+
+  def test_compact_mode_still_rejects_non_positive_pace
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.convert_pace(0, :km_to_mi, compact: true) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.convert_pace(-300, :km_to_mi, compact: true) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.pace_km_to_mi(-300, compact: true) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.pace_mi_to_km(-480, compact: true) }
+  end
+
+  def test_compact_mode_still_rejects_unsupported_conversion
+    error = assert_raises(ArgumentError) { @calc.convert_pace('05:00', :invalid_conversion, compact: true) }
+    assert_match(/Unsupported pace conversion/, error.message)
+  end
 end

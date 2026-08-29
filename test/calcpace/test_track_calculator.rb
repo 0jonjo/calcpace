@@ -244,4 +244,101 @@ class TestTrackCalculator < CalcpaceTest
     elapsed = result.map { |s| s[:elapsed] }
     assert_equal elapsed, elapsed.sort
   end
+  # ---------------------------------------------------------------------------
+  # track_splits — compact: keyword
+  # ---------------------------------------------------------------------------
+
+  def test_track_splits_default_pace_stays_padded
+    points = build_track(num_points: 20)
+    paces = @calc.track_splits(points, 1.0).map { |s| s[:pace] }
+    explicit = @calc.track_splits(points, 1.0, compact: false).map { |s| s[:pace] }
+    assert_equal %w[04:59 04:59 05:02], paces
+    assert_equal paces, explicit
+  end
+
+  def test_track_splits_compact_pace
+    points = build_track(num_points: 20)
+    paces = @calc.track_splits(points, 1.0, compact: true).map { |s| s[:pace] }
+    assert_equal %w[4:59 4:59 5:02], paces
+  end
+
+  def test_track_splits_compact_includes_partial_last_split
+    points = build_track(num_points: 20)
+    padded = @calc.track_splits(points, 1.0)
+    compact = @calc.track_splits(points, 1.0, compact: true)
+    assert_equal padded.size, compact.size
+    # last entry is the partial split: 2.11 km, not a full 1 km
+    assert_equal 2.11, compact.last[:km]
+    assert_equal '5:02', compact.last[:pace]
+  end
+
+  def test_track_splits_compact_does_not_change_km_or_elapsed
+    points = build_track(num_points: 50)
+    padded = @calc.track_splits(points, 1.0)
+    compact = @calc.track_splits(points, 1.0, compact: true)
+    compact_km = compact.map { |s| s[:km] }
+    compact_elapsed = compact.map { |s| s[:elapsed] }
+    assert_equal padded.map { |s| s[:km] }, compact_km
+    assert_equal padded.map { |s| s[:elapsed] }, compact_elapsed
+  end
+
+  def test_track_splits_compact_pace_over_one_hour_gains_an_hour_field
+    # A pace slower than an hour per km: the padded format keeps counting
+    # minutes (66:33), the compact one rolls into hours like a clocktime.
+    points = build_track(num_points: 20, pace_sec_per_km: 4000)
+    assert_equal '66:33', @calc.track_splits(points, 1.0).first[:pace]
+    assert_equal '1:06:33', @calc.track_splits(points, 1.0, compact: true).first[:pace]
+  end
+
+  def test_track_splits_compact_still_validates_split_km
+    points = build_track(num_points: 5)
+    assert_raises(ArgumentError) { @calc.track_splits(points, 0, compact: true) }
+    assert_raises(ArgumentError) { @calc.track_splits(points, -1, compact: true) }
+  end
+
+  def test_track_splits_compact_still_requires_time
+    points = [{ lat: 0.0, lon: 0.0 }, { lat: 0.001, lon: 0.0 }]
+    assert_raises(ArgumentError) { @calc.track_splits(points, 1.0, compact: true) }
+  end
+
+  def test_track_splits_compact_empty_track_returns_empty
+    assert_equal [], @calc.track_splits([], 1.0, compact: true)
+  end
+
+  # A track whose clock steps backwards — watch resync, paused device, merged
+  # segments — makes a split elapsed time negative. Bad data, not a caller
+  # error: both formats report it, neither raises.
+  def backwards_clock_track
+    [
+      { lat: 0.0, lon: 0.0, time: Time.at(0) },
+      { lat: 0.009, lon: 0.0, time: Time.at(300) },
+      { lat: 0.018, lon: 0.0, time: Time.at(260) },
+      { lat: 0.027, lon: 0.0, time: Time.at(700) }
+    ]
+  end
+
+  def test_track_splits_negative_split_does_not_raise_in_either_mode
+    points = backwards_clock_track
+    padded = @calc.track_splits(points, 1.0)
+    compact = @calc.track_splits(points, 1.0, compact: true)
+    assert_equal '-00:40', padded[1][:pace]
+    assert_equal '-0:40', compact[1][:pace]
+  end
+
+  def test_track_splits_negative_split_leaves_other_splits_untouched
+    points = backwards_clock_track
+    padded = @calc.track_splits(points, 1.0)
+    compact = @calc.track_splits(points, 1.0, compact: true)
+    padded_paces = padded.map { |s| s[:pace] }
+    compact_paces = compact.map { |s| s[:pace] }
+    compact_elapsed = compact.map { |s| s[:elapsed] }
+    assert_equal %w[05:00 -00:40 07:19 07:22], padded_paces
+    assert_equal %w[5:00 -0:40 7:19 7:22], compact_paces
+    assert_equal padded.map { |s| s[:elapsed] }, compact_elapsed
+  end
+
+  def test_track_splits_compact_is_a_keyword_not_a_third_positional_arg
+    points = build_track(num_points: 5)
+    assert_raises(ArgumentError) { @calc.track_splits(points, 1.0, true) }
+  end
 end
