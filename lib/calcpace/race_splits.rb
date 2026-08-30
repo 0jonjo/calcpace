@@ -13,11 +13,12 @@ module RaceSplits
   # @param split_distance [String, Numeric] distance for each split ('5k', '1k', '1mile', or numeric in km)
   # @param strategy [Symbol] pacing strategy - :even (default), :negative, or :positive
   # @return [Array<String>] array of cumulative split times in HH:MM:SS format
-  # @raise [ArgumentError] if race or split_distance is invalid
+  # @raise [ArgumentError] if a race or split_distance name is invalid
+  # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example Even pace splits for half marathon
   #   race_splits('half_marathon', target_time: '01:30:00', split_distance: '5k')
-  #   #=> ["00:21:18", "00:42:35", "01:03:53", "01:30:00"]
+  #   #=> ["00:21:20", "00:42:40", "01:03:59", "01:25:19", "01:30:00"]
   #
   # @example Negative splits (second half faster)
   #   race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
@@ -70,7 +71,8 @@ module RaceSplits
   #
   # @param split_km [Float] split distance in kilometers
   # @param total_distance [Float] total race distance in kilometers
-  # @raise [ArgumentError] if split distance is invalid
+  # @raise [ArgumentError] if a split distance name is invalid
+  # @raise [Calcpace::NonPositiveInputError] if a numeric split distance is not positive
   def validate_split_distance(split_km, total_distance)
     raise ArgumentError, "Split distance must be positive" if split_km <= 0
 

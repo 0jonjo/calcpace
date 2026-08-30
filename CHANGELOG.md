@@ -50,6 +50,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Before this release those calls raised `ArgumentError: Unknown race: 0`. The
   input was an error either way; only the class and the message changed.
 
+### Breaking
+- **A non-positive distance now raises `Calcpace::NonPositiveInputError`
+  instead of `ArgumentError`.** Calls like `race_time(300, 0)` or
+  `race_splits('0', ...)` used to fail with `ArgumentError: Unknown race: 0`,
+  because `0` was not a race name; now `0` is read as a distance and rejected
+  as one. `Calcpace::NonPositiveInputError` inherits from `Calcpace::Error`,
+  **not** from `ArgumentError`, so a caller that wraps this library in
+  `rescue ArgumentError` — a form field arriving as `"0"`, for example — will
+  see the exception escape instead of being caught.
+  The alternative was to make this one path raise `ArgumentError` for
+  consistency with the old behaviour, which would have made the library
+  inconsistent with itself: every other non-positive input in the gem already
+  raises `NonPositiveInputError`. Wrapping in `rescue Calcpace::Error,
+  ArgumentError` handles both this and any future version.
+
 ### Changed
 - The "from and to must be different distances" guard in `predict_time` and
   `predict_time_cameron` no longer compares distances with `==`. Two distances
@@ -102,10 +117,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `PaceCalculator`, `RacePredictor` and `CameronPredictor`, and their
   counterparts in the README, had drifted from what the code returns — the
   worst of them by more than six minutes (`predict_time_cameron_clock` was
-  documented as `'00:02:32'` where it returns `'00:04:15'`). Every example
-  in this release, new and corrected, was run in the console and pasted from
-  its real output. Two `@example` lines also used `:5k`, which is not valid
-  Ruby syntax, and now use `'5k'`.
+  documented as `'00:02:32'` where it returns `'00:04:15'`). Two `@example`
+  lines also used `:5k`, which is not valid Ruby syntax, and now use `'5k'`.
+- An adversarial review of this release found three more that the first pass
+  had missed, including the README block for `equivalent_performance` — which
+  contradicted the docstring corrected in this very release — and the main
+  age-grading example, wrong in four of its eight fields. Every example was
+  then executed and compared line by line, README and `@example` alike. The
+  lesson was acted on rather than recorded: `test_documented_examples.rb` now
+  executes every single-line example in the README and in the docstrings and
+  compares it with what the code returns, so a drifted example fails the suite
+  instead of reaching a reader. It pins two numbers — how many examples it
+  finds and how many it actually compares — because a scanner that silently
+  matches nothing would pass forever.
 
 ## [1.14.0] - 2026-08-29
 

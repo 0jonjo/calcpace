@@ -28,7 +28,8 @@ module PaceCalculator
   # @param race [Numeric, String, Symbol] distance in kilometers (7.79, '7.79') or a
   #   standard race name ('5k', '10k', 'half_marathon', 'marathon', '100k', ...)
   # @return [Float] total time in seconds
-  # @raise [ArgumentError] if race distance is not recognized
+  # @raise [ArgumentError] if a race name is not recognized
+  # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example
   #   race_time(300, '5k')          #=> 1500.0 (5:00/km pace for 5K = 25:00)

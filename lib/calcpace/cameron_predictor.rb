@@ -29,7 +29,8 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted time in seconds
-  # @raise [ArgumentError] if races are invalid or distances are the same
+  # @raise [ArgumentError] if a race name is invalid or the distances are the same
+  # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example Predict marathon time from 10K
   #   predict_time_cameron('10k', '00:42:00', 'marathon')

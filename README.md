@@ -155,7 +155,7 @@ calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
 calc.predict_time_clock('5k', '00:20:00', 'marathon')   # => "03:11:49"
 calc.predict_pace_clock('5k', '00:20:00', 'marathon')   # => "00:04:32"
 calc.equivalent_performance('10k', '00:42:00', '5k')
-# => { time: 1209.0, time_clock: "00:20:09", pace: 241.8, pace_clock: "00:04:02" }
+# => { time: 1208.67, time_clock: "00:20:08", pace: 241.73, pace_clock: "00:04:01" }
 ```
 
 **Cameron formula** (exponential correction — tends to be more conservative from short distances):
@@ -247,13 +247,13 @@ age factors and open standards.
 result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
 # numeric distances also accepted in miles: calc.age_grade(6.21371, '00:45:00', age: 55, sex: :male, distance_unit: :mi)
 # => {
-#      age_grade_percent: 64.6,
+#      age_grade_percent: 69.0,
 #      category: "Local Class",
-#      age_graded_time_seconds: 2376.0,
-#      age_graded_time_clock: "00:39:36",
+#      age_graded_time_seconds: 2278.26,
+#      age_graded_time_clock: "00:37:58",
 #      open_standard_seconds: 1571.0,
 #      open_standard_clock: "00:26:11",
-#      factor: 0.88,
+#      factor: 0.8438,
 #      table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
 #    }
 
