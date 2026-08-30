@@ -80,3 +80,11 @@ Naming/MethodParameterName:
   AllowedNames:
     - _
     - e
+
+# The documented-examples test evaluates snippets scraped from our own README
+# and docstrings — that is the entire point of the file, and the cop's required
+# comment format cannot be satisfied without it then reporting the disable as
+# redundant.
+Style/DocumentDynamicEvalDefinition:
+  Exclude:
+    - 'test/calcpace/test_documented_examples.rb'

@@ -245,4 +245,82 @@ class TestRacePredictor < CalcpaceTest
     assert_in_delta 2596, result[:adjusted_time], 10
     assert_equal 3.76, result[:penalty_percent]
   end
+
+  # --- free distances (v1.15.0) ---
+  # The four combinations of name and number, on both ends
+
+  def test_predict_time_from_a_numeric_distance_to_a_race_name
+    # Alagoas Abel: 7.79 km in 26:59 -> half marathon
+    result = @calc.predict_time(7.79, '00:26:59', 'half_marathon')
+
+    assert_in_delta 4654.81, result, 0.01
+  end
+
+  def test_predict_time_from_a_race_name_to_a_numeric_distance
+    result = @calc.predict_time('10k', '00:42:00', 15.0)
+
+    assert_in_delta 3873.09, result, 0.01
+  end
+
+  def test_predict_time_between_two_numeric_distances
+    result = @calc.predict_time(7.79, 1619, 15.0)
+
+    assert_in_delta 3242.45, result, 0.01
+  end
+
+  def test_predict_time_between_two_race_names_is_unchanged
+    assert_in_delta 2501, @calc.predict_time('5k', '00:20:00', '10k'), 10
+  end
+
+  def test_predict_time_accepts_numeric_string_distances
+    assert_equal @calc.predict_time(7.79, 1619, 15.0), @calc.predict_time('7.79', 1619, '15')
+  end
+
+  def test_numeric_distance_predicts_the_same_as_the_race_name_it_matches
+    assert_equal @calc.predict_time('10k', 2520, 'marathon'), @calc.predict_time(10.0, 2520, 42.195)
+  end
+
+  def test_predict_pace_and_clock_accept_numeric_distances
+    seconds = @calc.predict_time(7.79, 1619, 15.0)
+
+    assert_in_delta seconds / 15.0, @calc.predict_pace(7.79, 1619, 15.0), 0.001
+    assert_equal @calc.convert_to_clocktime(seconds), @calc.predict_time_clock(7.79, 1619, 15.0)
+  end
+
+  # --- the same-distance guard, now that distances can be floats ---
+
+  def test_predict_time_rejects_the_same_numeric_distance
+    error = assert_raises(ArgumentError) { @calc.predict_time(7.79, 1619, 7.79) }
+
+    assert_match(/must be different/, error.message)
+  end
+
+  def test_predict_time_rejects_a_numeric_distance_equal_to_the_named_race
+    assert_raises(ArgumentError) { @calc.predict_time(10.0, 2520, '10k') }
+    assert_raises(ArgumentError) { @calc.predict_time('10k', 2520, 10) }
+  end
+
+  def test_predict_time_rejects_distances_apart_only_by_float_noise
+    # The guard must not be defeated by representation noise
+    assert_raises(ArgumentError) { @calc.predict_time(10.0, 2520, 10.0 + 1e-12) }
+    assert_raises(ArgumentError) { @calc.predict_time(42.195, 10_800, 42.195 * (1 + 1e-11)) }
+  end
+
+  def test_predict_time_accepts_genuinely_close_distances
+    # 200 m apart is a real difference, not noise: predict, do not raise
+    result = @calc.predict_time(10.0, 2520, 10.2)
+
+    assert_operator result, :>, 2520
+    assert_in_delta 2520 * ((10.2 / 10.0)**1.06), result, 0.001
+  end
+
+  def test_predict_time_rejects_non_positive_numeric_distances
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.predict_time(0, 1619, '10k') }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.predict_time('10k', 2520, -5) }
+  end
+
+  def test_predict_time_still_rejects_unknown_race_names_on_both_ends
+    assert_error_with_message(ArgumentError, 'Unknown race') { @calc.predict_time('7.79k', 1619, '10k') }
+    assert_error_with_message(ArgumentError, 'Unknown race') { @calc.predict_time('10k', 2520, 'ultra') }
+  end
 end

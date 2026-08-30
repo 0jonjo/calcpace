@@ -156,4 +156,37 @@ class TestAgeGrading < CalcpaceTest
       @calc.age_grade(21.0975, '01:30:00', age: 40, sex: :male, distance_unit: :furlong)
     end
   end
+
+  # --- tolerance widened to 2% in v1.15.0, to match the site's race_key ---
+
+  def test_age_grade_accepts_a_distance_within_two_percent_of_the_standard
+    # A GPS 5K rarely reads exactly 5.000 km: 5.0374 is a real Strava reading,
+    # and 2% is the same window the site uses to call a run "a 5K"
+    assert_equal @calc.age_grade_percent(5.0, '00:25:00', age: 40, sex: :male),
+                 @calc.age_grade_percent(5.0374, '00:25:00', age: 40, sex: :male)
+  end
+
+  def test_age_grade_tolerance_borders_on_both_sides
+    [4.91, 5.09, 9.81, 10.19].each do |distance|
+      assert @calc.age_grade_percent(distance, '00:45:00', age: 40, sex: :male),
+             "#{distance} km is inside the 2% window and should be graded"
+    end
+
+    [4.89, 5.11, 9.79, 10.21].each do |distance|
+      assert_raises(ArgumentError, "#{distance} km is outside the 2% window") do
+        @calc.age_grade(distance, '00:45:00', age: 40, sex: :male)
+      end
+    end
+  end
+
+  def test_age_grade_still_rejects_a_non_standard_distance
+    # 7.79 km is 22% off a 10K. The WMA publishes a factor per specific
+    # distance, so there is no honest number to return here: interpolating one
+    # would invent a value with the look of an official standard
+    error = assert_raises(ArgumentError) do
+      @calc.age_grade(7.79, '00:26:59', age: 36, sex: :male)
+    end
+
+    assert_match(/Unsupported distance/, error.message)
+  end
 end

@@ -145,4 +145,46 @@ class TestPaceCalculator < CalcpaceTest
     assert pace < 240, 'Should be faster than 4:00/km'
     assert_match(/00:03:\d{2}/, time_string)
   end
+
+  # --- free distances (v1.15.0) ---
+
+  def test_race_time_accepts_a_numeric_distance
+    # The everyday race with no standard name: 7.79 km at 5:00/km
+    assert_in_delta 2337.0, @calc.race_time(300, 7.79), 0.001
+  end
+
+  def test_race_time_accepts_an_integer_distance
+    assert_in_delta 3000.0, @calc.race_time(300, 10), 0.001
+  end
+
+  def test_race_time_accepts_a_numeric_string_distance
+    # Same convention TrainingZones#training_paces_from_race and
+    # FitnessPredictor already use: a numeric string is a distance, not a name
+    assert_equal @calc.race_time(300, 7.79), @calc.race_time(300, '7.79')
+  end
+
+  def test_race_pace_accepts_a_numeric_distance
+    assert_in_delta 231.065, @calc.race_pace(1800, 7.79), 0.001
+  end
+
+  def test_race_pace_clock_accepts_a_numeric_distance
+    assert_equal '00:03:51', @calc.race_pace_clock('00:30:00', 7.79)
+  end
+
+  def test_numeric_distance_must_be_positive
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.race_time(300, 0) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.race_time(300, -7.79) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.race_pace(1800, '0') }
+  end
+
+  def test_non_numeric_race_names_still_raise_unknown_race
+    error = assert_raises(ArgumentError) { @calc.race_time(300, '7.79k') }
+
+    assert_includes error.message, 'Unknown race'
+  end
+
+  def test_numeric_distances_are_not_added_to_the_race_list
+    assert_equal 8, @calc.list_races.size
+    refute_includes @calc.list_races.keys, '7.79'
+  end
 end

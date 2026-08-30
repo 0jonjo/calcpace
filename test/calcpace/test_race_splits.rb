@@ -214,4 +214,21 @@ class TestRaceSplits < CalcpaceTest
     assert_equal '01:00:00', result[0] # First 10k should be 1 hour
     assert_equal '10:00:00', result[9] # Finish
   end
+
+  # --- free distances (v1.15.0) ---
+
+  def test_race_splits_accepts_a_numeric_race_distance
+    result = @calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
+
+    refute_empty result
+    assert_equal '00:26:59', result.last
+  end
+
+  def test_race_splits_still_rejects_a_zero_split_distance_string
+    error = assert_raises(ArgumentError) do
+      @calc.race_splits('10k', target_time: '00:40:00', split_distance: '0')
+    end
+
+    assert_match(/must be positive/, error.message)
+  end
 end

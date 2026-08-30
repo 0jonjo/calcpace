@@ -24,27 +24,26 @@ module CameronPredictor
 
   # Predicts race time using the Cameron formula
   #
-  # @param from_race [String, Symbol] known race distance ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers (7.79,
+  #   '7.79') or a standard race name ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted time in seconds
-  # @raise [ArgumentError] if races are invalid or distances are the same
+  # @raise [ArgumentError] if a race name is invalid or the distances are the same
+  # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example Predict marathon time from 10K
   #   predict_time_cameron('10k', '00:42:00', 'marathon')
-  #   #=> ~10,666 seconds (approximately 2:57:46)
+  #   #=> ~10,654 seconds (approximately 2:57:34)
   #
   # @example Predict 10K time from 5K
   #   predict_time_cameron('5k', '00:20:00', '10k')
-  #   #=> ~2,544 seconds (approximately 42:24)
+  #   #=> ~2,546 seconds (approximately 42:26)
   def predict_time_cameron(from_race, from_time, to_race)
     from_distance = race_distance(from_race)
     to_distance   = race_distance(to_race)
 
-    if from_distance == to_distance
-      raise ArgumentError,
-            "From and to races must be different distances (both are #{from_distance}km)"
-    end
+    ensure_different_distances!(from_distance, to_distance)
 
     time_seconds = from_time.is_a?(String) ? convert_to_seconds(from_time) : from_time
     check_positive(time_seconds, 'Time')
@@ -56,23 +55,23 @@ module CameronPredictor
 
   # Predicts race time using the Cameron formula, returned as a clock time string
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted time in HH:MM:SS format
   #
   # @example
   #   predict_time_cameron_clock('10k', '00:42:00', 'marathon')
-  #   #=> '02:57:46'
+  #   #=> '02:57:34'
   def predict_time_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_time_cameron(from_race, from_time, to_race))
   end
 
   # Predicts pace per kilometer using the Cameron formula
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted pace in seconds per kilometer
   #
   # @example
@@ -84,23 +83,23 @@ module CameronPredictor
 
   # Predicts pace per kilometer using the Cameron formula, returned as a clock time string
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted pace in HH:MM:SS format
   #
   # @example
   #   predict_pace_cameron_clock('5k', '00:20:00', 'marathon')
-  #   #=> '00:02:32'
+  #   #=> '00:04:15'
   def predict_pace_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_pace_cameron(from_race, from_time, to_race))
   end
 
   # Predicts race time adjusted for environmental conditions using Cameron formula
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @param options [Hash] environmental options (temperature, altitude, etc.)
   # @return [Hash] hash with adjusted prediction and penalty details
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
