@@ -19,27 +19,25 @@ module RacePredictor
   # - D2 = target distance
   # - 1.06 = endurance/fatigue factor (longer races require proportionally more time)
   #
-  # @param from_race [String, Symbol] known race distance ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers (7.79,
+  #   '7.79') or a standard race name ('5k', '10k', 'half_marathon', 'marathon', '100k', etc.)
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted time in seconds
   # @raise [ArgumentError] if races are invalid or distances are the same
   #
   # @example Predict marathon time from 5K
   #   predict_time('5k', '00:20:00', 'marathon')
-  #   #=> 11123.4 (approximately 3:05:23)
+  #   #=> 11509.32 (approximately 3:11:49)
   #
   # @example Predict 10K time from half marathon
   #   predict_time('half_marathon', '01:30:00', '10k')
-  #   #=> 2565.8 (approximately 42:46)
+  #   #=> 2447.42 (approximately 40:47)
   def predict_time(from_race, from_time, to_race)
     from_distance = race_distance(from_race)
     to_distance = race_distance(to_race)
 
-    if from_distance == to_distance
-      raise ArgumentError,
-            "From and to races must be different distances (both are #{from_distance}km)"
-    end
+    ensure_different_distances!(from_distance, to_distance)
 
     time_seconds = from_time.is_a?(String) ? convert_to_seconds(from_time) : from_time
     check_positive(time_seconds, 'Time')
@@ -50,14 +48,14 @@ module RacePredictor
 
   # Predicts race time and returns it as a clock time string
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted time in HH:MM:SS format
   #
   # @example
   #   predict_time_clock('5k', '00:20:00', 'marathon')
-  #   #=> '03:05:23'
+  #   #=> '03:11:49'
   def predict_time_clock(from_race, from_time, to_race)
     predicted_seconds = predict_time(from_race, from_time, to_race)
     convert_to_clocktime(predicted_seconds)
@@ -65,14 +63,14 @@ module RacePredictor
 
   # Predicts the pace per kilometer for a target race
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted pace in seconds per kilometer
   #
   # @example
   #   predict_pace('5k', '00:20:00', 'marathon')
-  #   #=> 263.6 (approximately 4:24/km)
+  #   #=> 272.77 (approximately 4:32/km)
   def predict_pace(from_race, from_time, to_race)
     predicted_seconds = predict_time(from_race, from_time, to_race)
     to_distance = race_distance(to_race)
@@ -81,14 +79,14 @@ module RacePredictor
 
   # Predicts the pace per kilometer and returns it as a clock time string
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted pace in MM:SS format
   #
   # @example
   #   predict_pace_clock('5k', '00:20:00', 'marathon')
-  #   #=> '00:04:24' (4:24/km)
+  #   #=> '00:04:32' (4:32/km)
   def predict_pace_clock(from_race, from_time, to_race)
     pace_seconds = predict_pace(from_race, from_time, to_race)
     convert_to_clocktime(pace_seconds)
@@ -99,18 +97,18 @@ module RacePredictor
   # This is useful for comparing performances across different race distances.
   # For example, "My 10K time is equivalent to what 5K time?"
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance for comparison
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Hash] hash with :time (seconds), :time_clock (HH:MM:SS), :pace (/km), :pace_clock
   #
   # @example
   #   equivalent_performance('10k', '00:42:00', '5k')
   #   #=> {
-  #         time: 1228.5,
-  #         time_clock: "00:20:28",
-  #         pace: 245.7,
-  #         pace_clock: "00:04:06"
+  #         time: 1208.67,
+  #         time_clock: "00:20:08",
+  #         pace: 241.73,
+  #         pace_clock: "00:04:01"
   #       }
   def equivalent_performance(from_race, from_time, to_race)
     predicted_time = predict_time(from_race, from_time, to_race)
@@ -126,9 +124,9 @@ module RacePredictor
 
   # Predicts race time adjusted for environmental conditions
   #
-  # @param from_race [String, Symbol] known race distance
+  # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
-  # @param to_race [String, Symbol] target race distance to predict
+  # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @param options [Hash] environmental options:
   #   - :temperature [Numeric]
   #   - :temperature_unit [Symbol, String] :c or :f
@@ -137,7 +135,7 @@ module RacePredictor
   #
   # @example Predict marathon time from 5K adjusted for heat (25C)
   #   predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)
-  #   #=> { adjusted_time: 12213.4, penalty_percent: 6.0, ... }
+  #   #=> { adjusted_time: 13140.19, penalty_percent: 14.17, ... }
   def predict_time_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)

@@ -163,4 +163,35 @@ class TestCameronPredictor < CalcpaceTest
     assert_in_delta 2594.4, result[:adjusted_time], 10
     assert_equal 1.98, result[:penalty_percent]
   end
+
+  # --- free distances (v1.15.0) ---
+
+  def test_predict_time_cameron_accepts_a_free_distance
+    # Alagoas Abel: 7.79 km in 26:59 -> half marathon
+    result = @calc.predict_time_cameron(7.79, '00:26:59', 'half_marathon')
+
+    assert_in_delta 4424.99, result, 0.01
+  end
+
+  def test_predict_time_cameron_numeric_distance_matches_the_named_race
+    assert_equal @calc.predict_time_cameron('10k', '00:42:00', 'marathon'),
+                 @calc.predict_time_cameron(10.0, '00:42:00', 42.195)
+  end
+
+  def test_predict_pace_cameron_accepts_a_free_distance
+    seconds = @calc.predict_time_cameron(7.79, 1619, 15.0)
+
+    assert_in_delta seconds / 15.0, @calc.predict_pace_cameron(7.79, 1619, 15.0), 0.001
+  end
+
+  def test_predict_time_cameron_rejects_the_same_numeric_distance
+    assert_raises(ArgumentError) { @calc.predict_time_cameron(7.79, 1619, 7.79) }
+    assert_raises(ArgumentError) { @calc.predict_time_cameron(10.0, 2520, '10k') }
+    assert_raises(ArgumentError) { @calc.predict_time_cameron(10.0, 2520, 10.0 + 1e-12) }
+  end
+
+  def test_predict_time_cameron_rejects_non_positive_numeric_distances
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.predict_time_cameron(0, 1619, '10k') }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.predict_time_cameron('10k', 2520, -5) }
+  end
 end

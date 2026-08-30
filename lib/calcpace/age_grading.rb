@@ -47,6 +47,15 @@ module AgeGrading
 
   SUPPORTED_DISTANCES_KM = DISTANCE_TO_METERS.keys.freeze
 
+  # How far a distance may sit from a standard and still be graded as it. 2% is
+  # the same window calcpace.app uses to decide a run "is a 5K", so the gem and
+  # the site never disagree about the same run. It stays a matching tolerance,
+  # not an interpolation: a distance outside it has no WMA factor and is refused
+  STANDARD_DISTANCE_TOLERANCE_RATIO = 0.02
+
+  # Floor for the window above, so a future shorter standard still matches
+  MINIMUM_DISTANCE_TOLERANCE_KM = 0.001
+
   # Returns a full age-grading report for a race performance
   #
   # @param distance [Numeric, String, Symbol] race distance in kilometres
@@ -145,10 +154,11 @@ module AgeGrading
     end
   end
 
-  # Runners write rounded distances (3.1 mi, 13.1 mi, 26.2 mi), so the match
-  # window is relative — 0.5% of the standard distance, never below 1 metre
+  # Runners write rounded distances (3.1 mi, 13.1 mi, 26.2 mi) and GPS watches
+  # rarely read a 5K as exactly 5.000 km, so the match window is relative
   def standard_distance?(distance, standard)
-    (distance - standard).abs <= [0.001, standard * 0.005].max
+    (distance - standard).abs <= [MINIMUM_DISTANCE_TOLERANCE_KM,
+                                  standard * STANDARD_DISTANCE_TOLERANCE_RATIO].max
   end
 
   def parse_time_seconds(time)

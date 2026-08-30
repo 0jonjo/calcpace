@@ -22,7 +22,7 @@ calc = Calcpace.new
 ```ruby
 calc.velocity(3625, 12275)          # => 3.386  (distance / time)
 calc.pace(3665, 12)                 # => 305.4  (time / distance)
-calc.time(210, 12)                  # => 2520.0 (pace × distance)
+calc.time(210, 12)                  # => 2520   (pace × distance)
 calc.distance(9660, 120)            # => 80.5   (velocity × time)
 
 # Clocktime input/output (HH:MM:SS or MM:SS)
@@ -109,11 +109,23 @@ calc.convert_pace('05:00', :km_to_mi, compact: true)  # => "8:02"
 
 ### Race Pace & Time
 
+Every method that takes a race accepts either a standard race name or a plain
+distance in kilometers — most races are not a 5K or a marathon.
+
 ```ruby
 calc.race_time_clock('05:00', 'marathon')          # => "03:30:58"
 calc.race_pace_clock('04:00:00', 'marathon')       # => "00:05:41"
 calc.list_races  # => { '5k' => 5.0, '10k' => 10.0, 'half_marathon' => 21.0975, 'marathon' => 42.195, '100k' => 100.0, ... }
+
+# Any distance, named or not — 7.79 km and '7.79' mean the same thing
+calc.race_time_clock('05:00', 7.79)                # => "00:38:57"
+calc.race_time_clock('05:00', '7.79')              # => "00:38:57"
+calc.race_pace_clock('00:26:59', 7.79)             # => "00:03:27"
 ```
+
+A distance must be positive (`Calcpace::NonPositiveInputError` otherwise), and
+anything that is neither a number nor a known race name still raises
+`ArgumentError` — `'7.79k'` is a typo, not a distance.
 
 ---
 
@@ -127,6 +139,10 @@ calc.race_splits('half_marathon', target_time: '01:30:00', split_distance: '5k')
 # Strategies: :even (default), :negative (second half faster), :positive (first half faster)
 calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
 # => ["00:20:48", "00:40:00"]
+
+# The race may be a plain distance too; the last split is always the finish
+calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
+# => ["00:03:28", "00:06:56", "00:10:23", "00:13:51", "00:17:19", "00:20:47", "00:24:15", "00:26:59"]
 ```
 
 ---
@@ -145,9 +161,38 @@ calc.equivalent_performance('10k', '00:42:00', '5k')
 **Cameron formula** (exponential correction — tends to be more conservative from short distances):
 
 ```ruby
-calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "02:57:46"
-calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')  # => "00:04:13"
+calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "02:57:34"
+calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')  # => "00:04:12"
 ```
+
+**Any distance, on either end.** Both formulas are arithmetic on two distances,
+so neither end has to be a standard race:
+
+```ruby
+# From a 7.79 km club race in 26:59
+calc.predict_time_clock(7.79, '00:26:59', 'half_marathon')          # => "01:17:34"
+calc.predict_time_cameron_clock(7.79, '00:26:59', 'half_marathon')  # => "01:13:44"
+
+# To an unnamed distance, and between two of them
+calc.predict_time_clock('10k', '00:42:00', 15)    # => "01:04:33"
+calc.predict_time_clock(7.79, '00:26:59', 15)     # => "00:54:02"
+
+calc.equivalent_performance(7.79, '00:26:59', '10k')
+# => { time: 2109.682710043339, time_clock: "00:35:09", pace: 210.96827100433387, pace_clock: "00:03:30" }
+```
+
+Predicting a distance from itself has no answer, so it raises — for a name, a
+number, or one of each:
+
+```ruby
+calc.predict_time(10.0, 2520, '10k')
+# => ArgumentError: From and to races must be different distances (both are 10.0km)
+```
+
+Both formulas were fitted around race distances and degrade as the jump grows:
+a marathon predicted from a 1 km time is arithmetic, not a forecast. The gem
+computes what you ask for and does not second-guess the gap — that judgement is
+the caller's, and it always was, standard race names included.
 
 ---
 
@@ -212,11 +257,29 @@ result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
 #      table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
 #    }
 
-calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 74.1
-calc.age_grade_label(74.1)                                      # => "Regional Class"
+calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 65.2
+calc.age_grade_label(65.2)                                      # => "Local Class"
 ```
 
 Supported distances: 5K, 10K, half marathon, marathon.
+
+A numeric distance within **2%** of one of those is graded as that standard —
+a GPS watch rarely reads a 5K as exactly 5.000 km:
+
+```ruby
+calc.age_grade_percent(5.0,    '00:25:00', age: 40, sex: :male) # => 51.9
+calc.age_grade_percent(5.0374, '00:25:00', age: 40, sex: :male) # => 51.9
+
+calc.age_grade(7.79, '00:26:59', age: 36, sex: :male)
+# => ArgumentError: Unsupported distance 7.79km. Supported: 5.0, 10.0, 21.0975, 42.195 km
+```
+
+That refusal is deliberate, and it is where age grading parts ways with the
+predictors above. A prediction is a formula and works at any distance; an age
+grade is a lookup in the WMA table, which publishes a factor per *specific*
+distance. There is no world standard for 7.79 km, so there is no honest
+percentage to return — interpolating one would produce a number with the look
+of an official standard and none of the authority.
 
 Age factors are based on WMA 2023 one-year age grading tables:
 https://world-masters-athletics.org/documents/competition-rules/
@@ -238,7 +301,7 @@ Estimate aerobic fitness from a race result using the **Daniels & Gilbert formul
 
 ```ruby
 calc.estimate_vo2max(10.0, '00:40:00')   # => 51.9 ml/kg/min
-calc.estimate_vo2max(42.195, '03:30:00') # => 44.8
+calc.estimate_vo2max(42.195, '03:30:00') # => 44.6
 calc.estimate_vo2max(5.0, 2400)          # also accepts total seconds
 calc.estimate_vo2max(6.21371, '00:40:00', distance_unit: :mi)  # => 51.9 (miles input)
 

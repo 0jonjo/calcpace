@@ -7,6 +7,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-08-30
+
+### Added
+- Every method that takes a race now accepts a **plain distance in kilometers**,
+  not only one of the eight standard race names. Most races are not a 5K or a
+  marathon, and a formula does not care what a distance is called:
+
+  ```ruby
+  calc.race_time_clock('05:00', 7.79)                        # => "00:38:57"
+  calc.race_pace_clock('00:26:59', 7.79)                     # => "00:03:27"
+  calc.predict_time_clock(7.79, '00:26:59', 'half_marathon') # => "01:17:34"
+  calc.predict_time_clock('10k', '00:42:00', 15)             # => "01:04:33"
+  calc.predict_time_clock(7.79, '00:26:59', 15)              # => "00:54:02"
+  calc.predict_time_cameron_clock(7.79, '00:26:59', 'half_marathon') # => "01:13:44"
+  calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
+  # => ["00:03:28", "00:06:56", "00:10:23", "00:13:51", "00:17:19", "00:20:47", "00:24:15", "00:26:59"]
+  ```
+
+  Both ends of a prediction follow the same rule, so all four combinations work:
+  name to name, name to number, number to name, number to number. The methods
+  that reach a distance through `race_distance` inherit it: `race_time`,
+  `race_pace`, their `_clock` variants, `predict_time`, `predict_pace`,
+  `equivalent_performance`, the Cameron equivalents, the `_adjusted` variants,
+  `race_splits`, and `race_times_from_vo2max`.
+
+  A numeric **string** counts as a distance: `'7.79'` and `7.79` mean the same
+  thing. This is not a new convention — `training_paces_from_race` and
+  `predict_time_from_vo2max` have read numeric strings as distances since they
+  were written, and `race_distance` was the one place that disagreed. A string
+  that is not a number is still a race name, so `'7.79k'` remains
+  `ArgumentError: Unknown race`. Only `Numeric` and `String` are read as
+  distances; a Symbol is always a name, as in the two methods above.
+
+  A numeric distance must be positive, and reports itself the way every other
+  distance in the gem does:
+
+  ```ruby
+  calc.race_time(300, 0) # => Calcpace::NonPositiveInputError: Distance must be a positive number
+  ```
+
+  Before this release those calls raised `ArgumentError: Unknown race: 0`. The
+  input was an error either way; only the class and the message changed.
+
+### Changed
+- The "from and to must be different distances" guard in `predict_time` and
+  `predict_time_cameron` no longer compares distances with `==`. Two distances
+  now count as the same race when they differ by less than
+  `PaceCalculator::SAME_DISTANCE_TOLERANCE_RATIO` (1e-9, relative), so a
+  distance that only differs by floating-point noise still raises instead of
+  returning a prediction of the same time back:
+
+  ```ruby
+  calc.predict_time(10.0, 2520, '10k')
+  # => ArgumentError: From and to races must be different distances (both are 10.0km)
+  ```
+
+  The window is deliberately narrow: it absorbs representation noise and
+  nothing else. `predict_time(10.0, 2520, 10.2)` is a legitimate 200 m
+  extrapolation and still answers.
+
+- Age grading matches a numeric distance to a standard within **2%**, up from
+  0.5% (`AgeGrading::STANDARD_DISTANCE_TOLERANCE_RATIO`, previously an
+  unnamed literal). GPS rarely reads a 5K as exactly 5.000 km, and 2% is the
+  window calcpace.app already uses to decide a run "is a 5K" — the two used to
+  disagree about the same run:
+
+  ```ruby
+  calc.age_grade_percent(5.0,    '00:25:00', age: 40, sex: :male) # => 51.9
+  calc.age_grade_percent(5.0374, '00:25:00', age: 40, sex: :male) # => 51.9
+  ```
+
+  Nothing else about age grading changed, on purpose. A distance outside the
+  window still raises, and that is the intended answer rather than a missing
+  feature: the WMA 2023 tables publish a factor per *specific* distance, so
+  there is no standard for 7.79 km to compare against, and interpolating one
+  would produce a number with the look of an official standard and none of the
+  authority.
+
+  ```ruby
+  calc.age_grade(7.79, '00:26:59', age: 36, sex: :male)
+  # => ArgumentError: Unsupported distance 7.79km. Supported: 5.0, 10.0, 21.0975, 42.195 km
+  ```
+
+  Riegel and Cameron both degrade as the jump between distances grows — a
+  marathon predicted from a 1 km time is arithmetic, not a forecast. This
+  release adds no guard against that: the gem never warned about it for the
+  standard race names either, and inventing a threshold now would be a new
+  opinion, not a fix. The note is here and in the README so the caller can
+  weigh it.
+
+### Fixed
+- Documentation only, no behavior change: several `@example` values in
+  `PaceCalculator`, `RacePredictor` and `CameronPredictor`, and their
+  counterparts in the README, had drifted from what the code returns — the
+  worst of them by more than six minutes (`predict_time_cameron_clock` was
+  documented as `'00:02:32'` where it returns `'00:04:15'`). Every example
+  in this release, new and corrected, was run in the console and pasted from
+  its real output. Two `@example` lines also used `:5k`, which is not valid
+  Ruby syntax, and now use `'5k'`.
+
 ## [1.14.0] - 2026-08-29
 
 ### Added
@@ -381,7 +481,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/0jonjo/calcpace/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/0jonjo/calcpace/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/0jonjo/calcpace/compare/v1.12.1...v1.13.0
 [1.12.0]: https://github.com/0jonjo/calcpace/compare/v1.11.0...v1.12.0
