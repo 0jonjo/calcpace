@@ -440,9 +440,9 @@ calc.time_in_zones(heartrate: [120, 140], time: [0, 60], zones: calc.hr_zones_fr
 ```
 
 Five rows always come back, in zone order, zeros included — `seconds` whole, `share`
-a fraction of the counted time with three decimals. The shares add up to **exactly**
-1.0: they are rounded together, largest remainder first, so a bar chart drawn from
-them fills its track.
+a fraction of the counted time with three decimals. The shares are whole thousandths
+that add up to 1000 — rounded together, largest remainder first — so a bar chart
+drawn from them fills its track (the Float sum may sit one ulp from 1.0).
 
 **A sample lasts until the next one** (`time[i + 1] - time[i]`), and the last sample,
 which has no next, is given the previous delta so a series does not lose its final

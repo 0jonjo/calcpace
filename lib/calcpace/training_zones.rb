@@ -212,8 +212,9 @@ module TrainingZones
   # @param time [Array<Numeric>] seconds since the start, non-decreasing, same length
   # @param zones [Array<HrZone>] the five zones from #hr_zones or #hr_zones_from_max
   # @return [Array<TimeInZone>] one row per zone in zone order, zeros included;
-  #   seconds are Integer, shares Float with 3 decimals summing to exactly 1.0
-  #   over the counted time (all zero when nothing was counted)
+  #   seconds are Integer, shares Float with 3 decimals that are whole
+  #   thousandths adding up to 1000 over the counted time (all zero when
+  #   nothing was counted)
   # @raise [Calcpace::Error] if either series is not an Array, if they differ in
   #   length, if time holds a non-numeric entry or goes backwards, if a heart
   #   rate is neither nil nor Numeric, or if zones is empty

@@ -37,7 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   A sample with a nil or non-positive heart rate contributes nothing — its
   duration is dropped, never reassigned to a neighbour. Shares are rounded
-  together, largest remainder first, so the five of them add up to exactly 1.0.
+  together, largest remainder first, so the five of them are whole thousandths
+  adding up to 1000 — a bar chart fills its track.
 
 - `hr_zone_for(bpm, zones)` — the zone lookup `time_in_zones` uses, exposed on
   its own. Returns the `HrZone`, or nil when the reading is nil or not positive.

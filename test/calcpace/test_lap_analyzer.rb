@@ -157,10 +157,13 @@ class TestLapAnalyzer < CalcpaceTest
     assert_equal 450, structure.rest_pace
   end
 
+  # The cool-down runs at 4:00/km here, inside the pace tolerance, so only its
+  # length rules it out — the test would still pass without the distance rule
+  # if the pace were slow as well.
   def test_interval_structure_rejects_a_cool_down_that_is_too_long_to_be_a_rep
-    # 6 × 1 km at 4:12, 400 m jogs at 6:30, 1.5 km cool-down at 5:30
+    # 6 × 1 km at 4:12, 400 m jogs at 6:30, 1.5 km cool-down at 4:00
     laps = ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
-           [{ distance: 1.5, elapsed: 495 }]
+           [{ distance: 1.5, elapsed: 360 }]
 
     assert_equal 6, @calc.interval_structure(laps).reps
   end
@@ -302,7 +305,7 @@ class TestLapAnalyzer < CalcpaceTest
     end
   end
 
-  def test_interval_structure_accepts_a_distance_at_the_sanity_floor
+  def test_interval_structure_accepts_a_distance_at_the_sanity_ceiling
     laps = [{ distance: 100, elapsed: 36_000 }, { distance: 1.0, elapsed: 252 }]
 
     assert_nil @calc.interval_structure(laps) # legal input, just not a workout
