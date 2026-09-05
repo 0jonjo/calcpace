@@ -33,6 +33,10 @@ module TrainingZones
   # One heart-rate training zone (1 = recovery … 5 = maximal)
   HrZone = Struct.new(:zone, :min_bpm, :max_bpm)
 
+  # Time spent in one heart-rate zone: the zone number, whole seconds, and the
+  # fraction of the counted time that fell in it
+  TimeInZone = Struct.new(:zone, :seconds, :share)
+
   # Derives training pace bands from a VO2max value
   #
   # @param vo2max [Numeric] VO2max in ml/kg/min (must be > 0)
@@ -144,7 +148,88 @@ module TrainingZones
     build_hr_zones(HR_ZONE_BOUNDARIES.map { |pct| (pct * max).round })
   end
 
+  # Splits a recorded heart-rate series into the time spent in each zone
+  #
+  # Format-agnostic on purpose: two plain arrays and the zones to sort them
+  # into. A Strava `heartrate`/`time` stream pair fits without translation, and
+  # so does the same pair read out of a FIT file.
+  #
+  # A sample lasts until the next one — <tt>time[i + 1] - time[i]</tt> — and the
+  # last sample, which has no next, is given the previous delta so that a series
+  # does not lose its final seconds. A single sample therefore lasts 0 s. A
+  # sample with a nil or non-positive heart rate contributes nothing at all: its
+  # duration is dropped, never handed to a neighbour, because a dropout says
+  # nothing about which zone the runner was in.
+  #
+  # Readings outside the zones are clamped — below zone 1 counts as zone 1 and
+  # above zone 5 as zone 5. An hr_max that is a few beats wrong is the most
+  # common thing an athlete carries around, and clamping keeps that a distortion
+  # of the split instead of making minutes of a run vanish. On a boundary the
+  # higher zone wins, the way a watch reads it.
+  #
+  # @param heartrate [Array<Numeric, nil>] heart rate in bpm, one entry per sample
+  # @param time [Array<Numeric>] seconds since the start, non-decreasing, same length
+  # @param zones [Array<HrZone>] the five zones from #hr_zones or #hr_zones_from_max
+  # @return [Array<TimeInZone>] one row per zone in zone order, zeros included;
+  #   seconds are Integer, shares Float rounded to 3 decimals and summing to 1.0
+  #   over the counted time (all zero when nothing was counted)
+  # @raise [Calcpace::Error] if the two series differ in length, if time goes
+  #   backwards, or if zones is empty
+  #
+  # @example four minutes of a run against zones for a 190 bpm maximum
+  #   zones = calc.hr_zones_from_max(hr_max: 190)
+  #   in_zones = calc.time_in_zones(heartrate: [120, 120, 140, 140, 160],
+  #                                 time: [0, 60, 120, 180, 240],
+  #                                 zones: zones)
+  #   in_zones.map(&:seconds) #=> [0, 120, 120, 60, 0]
+  #   in_zones.map(&:share)   #=> [0.0, 0.4, 0.4, 0.2, 0.0]
+  #   in_zones[1].zone        #=> 2
+  def time_in_zones(heartrate:, time:, zones:)
+    check_hr_series(heartrate, time, zones)
+
+    totals = zone_seconds(heartrate, time, zones)
+    counted = totals.sum
+
+    zones.each_with_index.map do |zone, index|
+      TimeInZone.new(zone: zone.zone, seconds: totals[index].round,
+                     share: counted.positive? ? (totals[index] / counted).round(3) : 0.0)
+    end
+  end
+
   private
+
+  # @return [Array<Float>] seconds accumulated in each zone, in zone order
+  def zone_seconds(heartrate, time, zones)
+    totals = Array.new(zones.size, 0.0)
+
+    heartrate.each_with_index do |bpm, index|
+      next unless bpm.is_a?(Numeric) && bpm.positive?
+
+      totals[hr_zone_index(bpm, zones)] += sample_duration(time, index)
+    end
+
+    totals
+  end
+
+  # The last sample has no successor, so it inherits the previous delta
+  def sample_duration(time, index)
+    last = time.size - 1
+    return 0.0 if last.zero?
+
+    from = index == last ? last - 1 : index
+    (time[from + 1] - time[from]).to_f
+  end
+
+  # The highest zone the reading reaches, clamped to zone 1 below the bottom
+  def hr_zone_index(bpm, zones)
+    zones.rindex { |zone| bpm >= zone.min_bpm } || 0
+  end
+
+  def check_hr_series(heartrate, time, zones)
+    raise Calcpace::Error, 'Heart rate and time series must have the same length' if heartrate.size != time.size
+    raise Calcpace::Error, 'At least one heart-rate zone is required' if zones.nil? || zones.empty?
+    raise Calcpace::Error, 'Time series must be non-decreasing' if time.each_cons(2).any? { |a, b| b < a }
+  end
 
   # Turns six ascending bpm boundary points into five contiguous HrZone structs
   def build_hr_zones(points)

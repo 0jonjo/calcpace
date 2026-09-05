@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-09-05
+
+### Added
+- `time_in_zones(heartrate:, time:, zones:)` — splits a recorded heart-rate
+  series into the seconds spent in each of the five zones returned by `hr_zones`
+  or `hr_zones_from_max`, plus each zone's share of the counted time. Inputs are
+  two plain arrays, so a Strava `heartrate`/`time` stream pair fits without
+  translation and so does the same pair read out of a FIT file.
+
+  A sample lasts until the next one, and the last sample inherits the previous
+  delta so a series does not lose its final seconds. A sample with a nil or
+  non-positive heart rate contributes nothing — its duration is dropped, never
+  reassigned to a neighbour. Readings below zone 1 count as zone 1 and readings
+  above zone 5 as zone 5: an `hr_max` that is a few beats wrong should distort
+  the split, not make minutes of a run disappear.
+
+  ```ruby
+  zones = calc.hr_zones_from_max(hr_max: 190)
+
+  in_zones = calc.time_in_zones(
+    heartrate: [120, 120, 140, 140, 160],
+    time:      [0, 60, 120, 180, 240],
+    zones:     zones
+  )
+
+  in_zones.map(&:seconds)  # => [0, 120, 120, 60, 0]
+  in_zones.map(&:share)    # => [0.0, 0.4, 0.4, 0.2, 0.0]
+  ```
+
+- `interval_structure(laps, unit: :km)` — new `LapAnalyzer` module. Detects a
+  structured interval session in a watch's laps by **contrast**, never by a
+  label: a lap is work when it covers at least 0.1 km and is at least 15% faster
+  than every lap touching it. What comes before the first work lap is warm-up,
+  what follows the last is cool-down, and what sits between two work laps is
+  rest.
+
+  ```ruby
+  laps = [{ distance: 2.0, elapsed: 720 }] +
+         ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
+         [{ distance: 1.5, elapsed: 540 }]
+
+  calc.interval_structure(laps)
+  # => #<struct reps=6, work_distance=1.0, work_pace=252, rest_pace=390, rest_duration=156>
+  ```
+
+  It returns `nil` when the laps describe no structure — fewer than two work
+  laps, or work laps more than ±25% away from their median distance, which is a
+  fartlek or a hilly run rather than a set. Most runs are not intervals, and
+  inventing reps out of ordinary pace variation would make every easy run look
+  like a workout. A distance of `0` is a legal standing recovery, and makes
+  `rest_pace` nil rather than infinite. `unit: :mi` converts both paces;
+  distances stay in kilometres.
+
 ## [1.16.0] - 2026-09-05
 
 ### Added

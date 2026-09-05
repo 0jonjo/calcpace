@@ -415,6 +415,104 @@ natively (not converted from the km bands), so they can differ by ±1 s from
 All mile factors derive from the exact international mile (1609.344 m), so distances,
 pace bands, and age-grading tolerances agree to the metre.
 
+#### Time in heart-rate zones
+
+`time_in_zones` splits a recorded heart-rate series into the time spent in each zone.
+It takes two plain arrays and the zones, so a Strava `heartrate`/`time` stream pair
+fits without translation, and so does the same pair read out of a FIT file:
+
+```ruby
+zones = calc.hr_zones_from_max(hr_max: 190)
+
+in_zones = calc.time_in_zones(
+  heartrate: [120, 120, 140, 140, 160],
+  time:      [0, 60, 120, 180, 240],
+  zones:     zones
+)
+
+in_zones.map(&:seconds)  # => [0, 120, 120, 60, 0]
+in_zones.map(&:share)    # => [0.0, 0.4, 0.4, 0.2, 0.0]
+in_zones[1].zone         # => 2
+```
+
+Five rows always come back, in zone order, zeros included — `seconds` whole,
+`share` a fraction of the counted time rounded to three decimals.
+
+A sample lasts until the next one (`time[i + 1] - time[i]`), and the last sample,
+which has no next, is given the previous delta so a series does not lose its final
+seconds; a single sample lasts 0 s. A sample with a nil or non-positive heart rate
+contributes nothing: its duration is **dropped, not reassigned**, because a dropout
+says nothing about which zone the runner was in — so the counted time can be less
+than the wall clock, and the shares are shares of what was counted.
+
+Readings outside the zones are clamped: below zone 1 counts as zone 1, above zone 5
+counts as zone 5. An `hr_max` that is a few beats wrong is the most common thing an
+athlete carries around, and clamping keeps that a distortion of the split instead of
+making minutes of a run disappear. On a boundary the higher zone wins.
+
+Mismatched array lengths, or a `time` that goes backwards, raise `Calcpace::Error`.
+Empty arrays return the five zero rows.
+
+---
+
+### Lap Analysis
+
+A watch records laps; it does not record intent. `interval_structure` reads the shape
+of a session out of the laps themselves, by **contrast** — never by a label:
+
+```ruby
+# Warm-up, 6 x (1 km hard / 400 m jog), cool-down
+laps = [{ distance: 2.0, elapsed: 720 }] +
+       ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
+       [{ distance: 1.5, elapsed: 540 }]
+
+structure = calc.interval_structure(laps)
+# => #<struct reps=6, work_distance=1.0, work_pace=252, rest_pace=390, rest_duration=156>
+
+structure.reps           # => 6
+structure.work_distance  # => 1.0   (km, median rep)
+structure.work_pace      # => 252   (seconds per km, distance-weighted)
+structure.rest_pace      # => 390
+structure.rest_duration  # => 156   (mean rest lap, seconds)
+
+calc.interval_structure(laps, unit: :mi).work_pace  # => 406
+calc.interval_structure(laps, unit: :mi).rest_pace  # => 628
+```
+
+Laps are plain hashes of a distance in kilometres and an elapsed time in seconds —
+what a Strava lap, a FIT lap and a hand-written array all reduce to. Distance `0` is
+legal: it is a standing recovery, and it means an infinite pace.
+
+A lap counts as **work** when it covers at least 0.1 km and is at least 15% faster
+than every lap touching it (both neighbours in the middle of the session, one at the
+ends). Everything before the first work lap is warm-up, everything after the last is
+cool-down, and a lap between two work laps is rest. Two work laps can never touch —
+each would have to be 0.85 of the other — so every pair of reps has a recovery
+between it.
+
+`unit:` converts both paces to seconds per mile; distances stay in kilometres.
+
+The method returns **nil** when the laps describe no structure, and most runs do not:
+
+```ruby
+# A steady 10 km, ten laps of 1 km within five seconds of each other
+steady = [300, 298, 302, 296, 304, 300, 299, 301, 305, 295].map do |elapsed|
+  { distance: 1.0, elapsed: elapsed }
+end
+
+calc.interval_structure(steady)  # => nil
+```
+
+Nil is returned when there are fewer than two work laps, or when the work laps
+disagree about distance — more than ±25% from their median makes it a fartlek or a
+hilly run, which has fast laps but no set to report. Inventing reps out of ordinary
+pace variation would make every easy run look like a workout.
+
+`rest_pace` is nil when the recoveries covered no distance at all; a standing
+recovery has a duration but no pace, and reporting infinity would be worse than
+reporting nothing. A lap missing `:distance` or `:elapsed`, a negative distance, or a
+non-positive elapsed time raises `Calcpace::Error`; an empty array returns nil.
+
 ---
 
 ### Stride & Cadence
