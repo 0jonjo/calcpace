@@ -3,3 +3,5 @@ coverage/
 calcpace-*.gem
 !calcpace.gemspec
 improvements_plan.md
+
+.claude/
