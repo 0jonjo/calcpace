@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-09-05
+
+### Added
+- `time_in_zones(heartrate:, time:, zones:)` — splits a recorded heart-rate
+  series into the seconds spent in each of the five zones returned by `hr_zones`
+  or `hr_zones_from_max`, plus each zone's share of the counted time. Inputs are
+  two plain arrays, so a Strava `heartrate`/`time` stream pair fits without
+  translation and so does the same pair read out of a FIT file.
+
+  ```ruby
+  zones = calc.hr_zones_from_max(hr_max: 190)
+
+  in_zones = calc.time_in_zones(
+    heartrate: [120, 120, 140, 140, 160],
+    time:      [0, 60, 120, 180, 240],
+    zones:     zones
+  )
+
+  in_zones.map(&:seconds)  # => [0, 120, 120, 60, 0]
+  in_zones.map(&:share)    # => [0.0, 0.4, 0.4, 0.2, 0.0]
+  ```
+
+  A sample lasts until the next one, and the last sample inherits the previous
+  delta so a series does not lose its final seconds. **A pause is a gap in
+  `time`, and the whole gap is booked to the sample before it** — there is no
+  `max_gap` to guess a cut-off with, so a caller holding Strava's `moving`
+  stream should nil the heart rate of every paused sample first.
+
+  A sample with a nil or non-positive heart rate contributes nothing — its
+  duration is dropped, never reassigned to a neighbour. Shares are rounded
+  together, largest remainder first, so the five of them are whole thousandths
+  adding up to 1000 — a bar chart fills its track.
+
+- `hr_zone_for(bpm, zones)` — the zone lookup `time_in_zones` uses, exposed on
+  its own. Returns the `HrZone`, or nil when the reading is nil or not positive.
+
+  ```ruby
+  calc.hr_zone_for(150, calc.hr_zones_from_max(hr_max: 190)).zone  # => 3
+  calc.hr_zone_for(114, calc.hr_zones_from_max(hr_max: 190)).zone  # => 2
+  calc.hr_zone_for(205, calc.hr_zones_from_max(hr_max: 190)).zone  # => 5
+  ```
+
+  **Note for calcpace.app:** the site's own lookup walks the zones with
+  `between?`, which differs from this one in two places. Zones are contiguous,
+  so their bounds are shared: `between?` gives 114 bpm to Z1, while
+  `hr_zone_for` gives it to Z2, the way a watch reads it. And a reading above
+  `hr_max` returns nil from `between?` but Z5 here — a reading above the maximum
+  means the maximum is wrong, not that the beat did not happen. Consumers should
+  migrate to `hr_zone_for` so that a zone split and a live zone badge cannot
+  disagree about the same beat.
+
+- `interval_structure(laps, unit: :km)` — new `LapAnalyzer` module. Detects a
+  structured interval session in a watch's laps by **contrast**, never by a
+  label: a lap is work when it covers at least 0.1 km and is at least 15% faster
+  than every lap touching it. What comes before the first work lap is warm-up,
+  what follows the last is cool-down, and what sits between two work laps is
+  rest.
+
+  ```ruby
+  laps = [{ distance: 2.0, elapsed: 720 }] +
+         ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
+         [{ distance: 1.5, elapsed: 495 }]
+
+  calc.interval_structure(laps)
+  # => #<struct reps=6, work_distance=1.0, ... rest_duration=156>
+  ```
+
+  A warm-up or a cool-down has only one neighbour, so contrast alone would be a
+  free pass — a 5:30/km cool-down beats the 6:30/km jog it touches and walks in
+  as an extra rep. An edge lap is therefore admitted only if it also agrees with
+  the reps found in the interior: within ±25% of their median distance and no
+  more than 10% slower than their pace.
+
+  It returns `nil` when the laps describe no structure — fewer than two work
+  laps, work laps more than ±25% away from their median distance (a fartlek or a
+  hilly run), or no work lap that ever beat a *finite* pace. That last rule
+  matters because a standing lap has an infinite pace and everything is 15%
+  faster than infinity: without it, an easy run with two red-light lap presses
+  would come back as three reps. Most runs are not intervals, and inventing reps
+  out of ordinary pace variation would make every easy run look like a workout.
+
+  A distance of `0` is a legal standing recovery, and makes `rest_pace` nil
+  rather than infinite. A lap over 100 km is rejected: it is a caller who passed
+  metres. `unit: :mi` converts both paces; distances stay in kilometres.
+
 ## [1.16.0] - 2026-09-05
 
 ### Added
@@ -515,7 +600,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/0jonjo/calcpace/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/0jonjo/calcpace/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/0jonjo/calcpace/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/0jonjo/calcpace/compare/v1.13.0...v1.14.0

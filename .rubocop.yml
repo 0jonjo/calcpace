@@ -69,6 +69,10 @@ Metrics/ModuleLength:
   Exclude:
     - 'lib/calcpace/race_splits.rb'
     - 'lib/calcpace/track_calculator.rb'
+    # Training zones now cover paces, heart-rate bands and time in those bands.
+    # Splitting them would put hr_zones and time_in_zones in different files,
+    # which is worse than a long module: one produces exactly what the other reads.
+    - 'lib/calcpace/training_zones.rb'
 
 # Allow both single and double quotes for strings
 Style/StringLiteralsInInterpolation:

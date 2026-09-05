@@ -415,6 +415,155 @@ natively (not converted from the km bands), so they can differ by ±1 s from
 All mile factors derive from the exact international mile (1609.344 m), so distances,
 pace bands, and age-grading tolerances agree to the metre.
 
+#### Time in heart-rate zones
+
+`time_in_zones` splits a recorded heart-rate series into the time spent in each zone.
+It takes two plain arrays and the zones, so a Strava `heartrate`/`time` stream pair
+fits without translation, and so does the same pair read out of a FIT file:
+
+```ruby
+zones = calc.hr_zones_from_max(hr_max: 190)
+
+in_zones = calc.time_in_zones(
+  heartrate: [120, 120, 140, 140, 160],
+  time:      [0, 60, 120, 180, 240],
+  zones:     zones
+)
+
+in_zones.map(&:seconds)  # => [0, 120, 120, 60, 0]
+in_zones.map(&:share)    # => [0.0, 0.4, 0.4, 0.2, 0.0]
+in_zones[1].zone         # => 2
+
+# The same call in one line, if you would rather not name the zones
+calc.time_in_zones(heartrate: [120, 140], time: [0, 60], zones: calc.hr_zones_from_max(hr_max: 190)).map(&:seconds)  # => [0, 60, 60, 0, 0]
+calc.time_in_zones(heartrate: [120, 140], time: [0, 60], zones: calc.hr_zones_from_max(hr_max: 190)).map(&:share)    # => [0.0, 0.5, 0.5, 0.0, 0.0]
+```
+
+Five rows always come back, in zone order, zeros included — `seconds` whole, `share`
+a fraction of the counted time with three decimals. The shares are whole thousandths
+that add up to 1000 — rounded together, largest remainder first — so a bar chart
+drawn from them fills its track (the Float sum may sit one ulp from 1.0).
+
+**A sample lasts until the next one** (`time[i + 1] - time[i]`), and the last sample,
+which has no next, is given the previous delta so a series does not lose its final
+seconds; a single sample lasts 0 s.
+
+That rule has a consequence worth knowing before trusting the numbers. **A pause is a
+gap in `time`, and the whole gap is booked to the sample before it** — stop five
+minutes at a café and those five minutes land in whatever zone the last beat before
+the pause was in. There is no `max_gap` here to guess a cut-off with. If you have
+Strava's `moving` stream, nil the heart rate of every paused sample before calling,
+which hands them to the next rule.
+
+A sample with a nil or non-positive heart rate contributes nothing: its duration is
+**dropped, not reassigned**, because a dropout says nothing about which zone the
+runner was in — so the counted time can be less than the wall clock, and the shares
+are shares of what was counted.
+
+Mismatched array lengths, a series that is not an array, a nil inside `time`, a
+`time` that goes backwards, or a heart rate that is neither nil nor a number all
+raise `Calcpace::Error`. Empty arrays return the five zero rows.
+
+#### Which zone is this beat in?
+
+`hr_zone_for` is the lookup `time_in_zones` uses, exposed on its own:
+
+```ruby
+calc.hr_zone_for(150, calc.hr_zones_from_max(hr_max: 190)).zone  # => 3
+calc.hr_zone_for(114, calc.hr_zones_from_max(hr_max: 190)).zone  # => 2
+calc.hr_zone_for(205, calc.hr_zones_from_max(hr_max: 190)).zone  # => 5
+```
+
+It returns the `HrZone`, or nil when the reading is nil or not positive — a sensor
+dropout. Two rules are worth stating because a hand-rolled `between?` lookup gets
+both wrong:
+
+- **On a shared boundary the higher zone wins.** Zones are contiguous, so 114 bpm is
+  both the top of Z1 and the bottom of Z2; it counts as Z2, the way a watch reads it.
+- **Readings outside the range are clamped**, below Z1 to Z1 and above Z5 to Z5. A
+  reading above `hr_max` means the `hr_max` is wrong, not that the beat did not
+  happen — and an `hr_max` a few beats off is the most common thing an athlete
+  carries around. Clamping keeps that a distortion of the split instead of making
+  minutes of a run disappear.
+
+---
+
+### Lap Analysis
+
+A watch records laps; it does not record intent. `interval_structure` reads the shape
+of a session out of the laps themselves, by **contrast** — never by a label:
+
+```ruby
+# Warm-up, 6 x (1 km hard / 400 m jog), cool-down
+laps = [{ distance: 2.0, elapsed: 720 }] +
+       ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
+       [{ distance: 1.5, elapsed: 495 }]
+
+structure = calc.interval_structure(laps)
+# => #<struct reps=6, work_distance=1.0, ... rest_duration=156>
+
+structure.reps           # => 6
+structure.work_distance  # => 1.0   (km, median rep)
+structure.work_pace      # => 252   (seconds per km, distance-weighted)
+structure.rest_pace      # => 390
+structure.rest_duration  # => 156   (mean rest lap, seconds)
+```
+
+`to_a` gives all five at once, which is short enough to show whole. This is the
+smallest session that has a structure — two reps and the jog between them:
+
+```ruby
+calc.interval_structure([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }, { distance: 1.0, elapsed: 252 }]).to_a  # => [2, 1.0, 252, 390, 156]
+
+# unit: converts both paces; distances stay in kilometres
+calc.interval_structure([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }, { distance: 1.0, elapsed: 252 }], unit: :mi).to_a  # => [2, 1.0, 406, 628, 156]
+```
+
+Laps are plain hashes of a distance in kilometres and an elapsed time in seconds —
+what a Strava lap, a FIT lap and a hand-written array all reduce to. Distance `0` is
+legal: it is a standing recovery, and it means an infinite pace.
+
+A lap counts as **work** when it covers at least 0.1 km and is at least 15% faster
+than every lap touching it. Everything before the first work lap is warm-up,
+everything after the last is cool-down, and a lap between two work laps is rest. Two
+work laps can never touch — each would have to be 0.85 of the other — so every pair
+of reps has a recovery between it.
+
+An **edge lap** — the first or the last — has only one neighbour, so contrast alone
+is a free pass: a 5:30/km cool-down beats the 6:30/km jog it happens to touch and
+walks in as an extra rep. So an edge lap is admitted only if it also agrees with the
+reps found in the middle: within ±25% of their median distance, and no more than 10%
+slower than their pace. When the interior found nothing there is nothing to agree
+with, and the plain contrast rule stands — which is why the three-lap example above
+still reads as two reps.
+
+The method returns **nil** when the laps describe no structure, and most runs do not:
+
+```ruby
+# A steady 10 km, ten laps of 1 km within five seconds of each other
+steady = [300, 298, 302, 296, 304, 300, 299, 301, 305, 295].map do |elapsed|
+  { distance: 1.0, elapsed: elapsed }
+end
+
+calc.interval_structure(steady)  # => nil
+
+# An easy 3 km with two red lights: fast next to a pause is not a rep
+calc.interval_structure([{ distance: 1.0, elapsed: 300 }, { distance: 0.0, elapsed: 45 }, { distance: 1.0, elapsed: 300 }])  # => nil
+```
+
+Nil is returned when there are fewer than two work laps, when the work laps disagree
+about distance — more than ±25% from their median makes it a fartlek or a hilly run,
+which has fast laps but no set to report — or when **no work lap ever beat a finite
+pace**. That last rule is what the red-light example trips: a zero-distance lap has
+an infinite pace and everything is 15% faster than infinity, so without it every easy
+run with a paused lap would come back as a set of reps.
+
+`rest_pace` is nil when the recoveries covered no distance at all; a standing
+recovery has a duration but no pace, and reporting infinity would be worse than
+reporting nothing. A lap missing `:distance` or `:elapsed`, a negative distance, a
+distance over 100 km (a caller who passed metres), or a non-positive elapsed time
+raises `Calcpace::Error`; an empty array returns nil.
+
 ---
 
 ### Stride & Cadence

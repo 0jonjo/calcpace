@@ -18,8 +18,14 @@ require_relative '../test_helper'
 class TestDocumentedExamples < CalcpaceTest
   ROOT = File.expand_path('../..', __dir__)
 
+  # What may follow the closing paren of the call: a simple reader chain such as
+  # `.reps`, `.map(&:seconds)`, `[:threshold].fast_clock` or `.last.max_bpm`.
+  # Without this the scanner only saw calls whose result was documented raw,
+  # which left every example of a Struct-returning method unchecked.
+  CHAIN = /(?:\.[a-z_0-9?!]+(?:\([^()]*\))?|\[[^\[\]]+\])*/
+
   # `calc.race_time(300, '5k') # => 1500` and its `#=>` docstring cousin.
-  EXAMPLE = /^\s*#?\s*(?:calc|calculator)\.([a-z_0-9?]+\(.*?\))\s*#\s*=>\s*(.+?)\s*$/
+  EXAMPLE = /^\s*#?\s*(?:calc|calculator)\.([a-z_0-9?]+\(.*?\)#{CHAIN})\s*#\s*=>\s*(.+?)\s*$/
 
   # Values a comment can carry that are not a Ruby literal to compare against.
   UNCOMPARABLE = /\A(?:\{|\[?#|.*\.\.\.)/
@@ -43,16 +49,16 @@ class TestDocumentedExamples < CalcpaceTest
   # would one that finds examples and then skips every one of them. Both numbers
   # are pinned: how many were found, and how many were actually compared.
   def test_the_scanner_finds_and_compares_a_known_number_of_examples
-    assert_operator documented_examples.size, :>=, 65,
+    assert_operator documented_examples.size, :>=, 85,
                     'the example scanner stopped finding examples — check EXAMPLE before trusting a green run'
 
     compared = documented_examples.count do |_file, _line, call, documented|
       evaluate(call) != :uncomparable && parse_expected(documented) != :uncomparable
     end
 
-    # 53 at the time of writing. The gap is deliberate: multi-line hash results
-    # and examples that document a raise are not comparable this way.
-    assert_operator compared, :>=, 50,
+    # 71 of 91 at the time of writing. The gap is deliberate: multi-line hash
+    # results and examples that document a raise are not comparable this way.
+    assert_operator compared, :>=, 65,
                     "only #{compared} of #{documented_examples.size} examples were compared — " \
                     'this file is passing without checking what it claims to check'
   end
@@ -78,9 +84,14 @@ class TestDocumentedExamples < CalcpaceTest
 
   # The documented call, sent to a real Calcpace instance. What gets evaluated
   # is a method call scraped from our own README and docstrings — never user
-  # input — so `race_time(300, '5k')` becomes `self.race_time(300, '5k')`.
+  # input — so `race_time(300, '5k')` becomes `calc.race_time(300, '5k')`.
+  #
+  # `calc` is a local here rather than the receiver of an instance_eval so that
+  # an example may compose two calls the way a reader would write it, as
+  # `time_in_zones(..., zones: calc.hr_zones_from_max(hr_max: 190))` does.
   def evaluate(call)
-    @calc.instance_eval("self.#{call}", __FILE__, __LINE__)
+    calc = @calc
+    eval("calc.#{call}", binding, __FILE__, __LINE__) # rubocop:disable Security/Eval
   rescue StandardError, SyntaxError
     # An example that documents a raise, or one whose arguments are illustrative
     # rather than runnable, is not this test's business.

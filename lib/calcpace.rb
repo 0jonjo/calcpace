@@ -9,6 +9,7 @@ require_relative 'calcpace/converter'
 require_relative 'calcpace/converter_chain'
 require_relative 'calcpace/errors'
 require_relative 'calcpace/fitness_predictor'
+require_relative 'calcpace/lap_analyzer'
 require_relative 'calcpace/pace_calculator'
 require_relative 'calcpace/pace_converter'
 require_relative 'calcpace/race_predictor'
@@ -48,6 +49,7 @@ class Calcpace
   include Converter
   include ConverterChain
   include FitnessPredictor
+  include LapAnalyzer
   include PaceCalculator
   include PaceConverter
   include RacePredictor

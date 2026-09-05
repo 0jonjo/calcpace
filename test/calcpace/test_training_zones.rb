@@ -262,4 +262,240 @@ class TestTrainingZones < CalcpaceTest
 
     assert_equal km[:threshold].fast_seconds, mi[:threshold].fast_seconds
   end
+
+  # --- time_in_zones ---
+  # Zones for hr_max 190: Z1 95–114, Z2 114–133, Z3 133–152, Z4 152–171, Z5 171–190
+  def max_190_zones
+    @calc.hr_zones_from_max(hr_max: 190)
+  end
+
+  def test_time_in_zones_documented_example
+    in_zones = @calc.time_in_zones(heartrate: [120, 120, 140, 140, 160],
+                                   time: [0, 60, 120, 180, 240],
+                                   zones: max_190_zones)
+
+    assert_equal [0, 120, 120, 60, 0], in_zones.map(&:seconds)
+    assert_equal [0.0, 0.4, 0.4, 0.2, 0.0], in_zones.map(&:share)
+  end
+
+  def test_time_in_zones_returns_five_rows_in_zone_order
+    in_zones = @calc.time_in_zones(heartrate: [160, 160], time: [0, 60], zones: max_190_zones)
+
+    assert_equal 5, in_zones.size
+    assert_equal [1, 2, 3, 4, 5], in_zones.map(&:zone)
+  end
+
+  def test_time_in_zones_returns_integer_seconds_and_float_shares
+    in_zones = @calc.time_in_zones(heartrate: [120, 140], time: [0, 45], zones: max_190_zones)
+
+    in_zones.each do |row|
+      assert_kind_of Integer, row.seconds
+      assert_kind_of Float, row.share
+      assert_equal row.share.round(3), row.share
+    end
+  end
+
+  # Rounded independently the five shares miss 1.0 by a thousandth or two, and a
+  # bar chart drawn from them does not fill its track. Largest-remainder rounding
+  # hands the residue to the zone that lost the most to rounding.
+  def test_time_in_zones_shares_sum_to_exactly_one
+    in_zones = @calc.time_in_zones(heartrate: [100, 125, 145, 165, 180],
+                                   time: [0, 37, 71, 113, 150],
+                                   zones: max_190_zones)
+
+    assert_equal 1.0, in_zones.sum(&:share)
+  end
+
+  def test_time_in_zones_shares_sum_to_exactly_one_when_split_three_ways
+    in_zones = @calc.time_in_zones(heartrate: [125, 145, 165], time: [0, 60, 120],
+                                   zones: max_190_zones)
+
+    assert_equal 1.0, in_zones.sum(&:share)
+    assert_equal [0.0, 0.334, 0.333, 0.333, 0.0], in_zones.map(&:share)
+  end
+
+  def test_time_in_zones_leaves_shares_that_already_add_up_alone
+    in_zones = @calc.time_in_zones(heartrate: [120, 120, 140, 140, 160],
+                                   time: [0, 60, 120, 180, 240],
+                                   zones: max_190_zones)
+
+    assert_equal [0.0, 0.4, 0.4, 0.2, 0.0], in_zones.map(&:share)
+    assert_equal 1.0, in_zones.sum(&:share)
+  end
+
+  # A sample lasts until the next one, so the last has no next: it inherits the
+  # previous delta instead of being dropped.
+  def test_time_in_zones_gives_the_last_sample_the_previous_delta
+    in_zones = @calc.time_in_zones(heartrate: [150, 150], time: [0, 30], zones: max_190_zones)
+
+    assert_equal 60, in_zones[2].seconds
+    assert_equal 60, in_zones.sum(&:seconds)
+  end
+
+  def test_time_in_zones_counts_a_single_sample_as_zero_seconds
+    in_zones = @calc.time_in_zones(heartrate: [150], time: [0], zones: max_190_zones)
+
+    assert_equal [0, 0, 0, 0, 0], in_zones.map(&:seconds)
+    assert_equal [0.0, 0.0, 0.0, 0.0, 0.0], in_zones.map(&:share)
+  end
+
+  def test_time_in_zones_returns_zero_rows_for_empty_series
+    in_zones = @calc.time_in_zones(heartrate: [], time: [], zones: max_190_zones)
+
+    assert_equal 5, in_zones.size
+    assert_equal [0, 0, 0, 0, 0], in_zones.map(&:seconds)
+    assert_equal [0.0, 0.0, 0.0, 0.0, 0.0], in_zones.map(&:share)
+  end
+
+  def test_time_in_zones_drops_samples_without_a_heart_rate
+    in_zones = @calc.time_in_zones(heartrate: [120, nil, 120], time: [0, 60, 120], zones: max_190_zones)
+
+    # The 60 s of the nil sample are dropped, not handed to a neighbour
+    assert_equal 120, in_zones[1].seconds
+    assert_equal 120, in_zones.sum(&:seconds)
+  end
+
+  def test_time_in_zones_drops_samples_with_a_non_positive_heart_rate
+    in_zones = @calc.time_in_zones(heartrate: [120, 0, -5], time: [0, 60, 120], zones: max_190_zones)
+
+    assert_equal 60, in_zones.sum(&:seconds)
+    assert_equal 60, in_zones[1].seconds
+  end
+
+  def test_time_in_zones_gives_every_share_zero_when_nothing_is_counted
+    in_zones = @calc.time_in_zones(heartrate: [nil, nil], time: [0, 60], zones: max_190_zones)
+
+    assert_equal [0.0, 0.0, 0.0, 0.0, 0.0], in_zones.map(&:share)
+  end
+
+  def test_time_in_zones_counts_a_reading_below_zone_one_as_zone_one
+    in_zones = @calc.time_in_zones(heartrate: [80, 80], time: [0, 60], zones: max_190_zones)
+
+    assert_equal 120, in_zones[0].seconds
+    assert_equal 1.0, in_zones[0].share
+  end
+
+  def test_time_in_zones_counts_a_reading_above_zone_five_as_zone_five
+    in_zones = @calc.time_in_zones(heartrate: [205, 205], time: [0, 60], zones: max_190_zones)
+
+    assert_equal 120, in_zones[4].seconds
+    assert_equal 1.0, in_zones[4].share
+  end
+
+  def test_time_in_zones_puts_a_boundary_reading_in_the_higher_zone
+    in_zones = @calc.time_in_zones(heartrate: [114, 114], time: [0, 60], zones: max_190_zones)
+
+    assert_equal 120, in_zones[1].seconds
+  end
+
+  def test_time_in_zones_works_with_karvonen_zones_too
+    in_zones = @calc.time_in_zones(heartrate: [150, 150], time: [0, 60],
+                                   zones: @calc.hr_zones(hr_max: 190, hr_rest: 55))
+
+    # Karvonen Z3 for 190/55 is 150–163
+    assert_equal 120, in_zones[2].seconds
+  end
+
+  def test_time_in_zones_rejects_series_of_different_lengths
+    assert_error_with_message(Calcpace::Error, 'same length') do
+      @calc.time_in_zones(heartrate: [120, 130], time: [0, 60, 120], zones: max_190_zones)
+    end
+  end
+
+  def test_time_in_zones_rejects_time_that_goes_backwards
+    assert_error_with_message(Calcpace::Error, 'non-decreasing') do
+      @calc.time_in_zones(heartrate: [120, 130, 140], time: [0, 120, 60], zones: max_190_zones)
+    end
+  end
+
+  def test_time_in_zones_accepts_a_repeated_timestamp
+    in_zones = @calc.time_in_zones(heartrate: [120, 120, 140], time: [0, 0, 60], zones: max_190_zones)
+
+    assert_equal 60, in_zones[1].seconds
+    assert_equal 60, in_zones[2].seconds
+  end
+
+  def test_time_in_zones_rejects_empty_zones
+    assert_error_with_message(Calcpace::Error, 'zone') do
+      @calc.time_in_zones(heartrate: [120], time: [0], zones: [])
+    end
+  end
+
+  def test_time_in_zones_rejects_a_missing_heartrate_series
+    assert_raises(Calcpace::Error) { @calc.time_in_zones(heartrate: nil, time: [0], zones: max_190_zones) }
+  end
+
+  def test_time_in_zones_rejects_a_missing_time_series
+    assert_raises(Calcpace::Error) { @calc.time_in_zones(heartrate: [120], time: nil, zones: max_190_zones) }
+  end
+
+  # A gap in the time stream is not a zero-length sample — it is a stream we
+  # cannot measure durations from at all
+  def test_time_in_zones_rejects_a_nil_inside_the_time_series
+    assert_error_with_message(Calcpace::Error, 'numeric') do
+      @calc.time_in_zones(heartrate: [120, 130], time: [0, nil], zones: max_190_zones)
+    end
+  end
+
+  # nil is a dropout; a String is a caller who has not parsed their stream
+  def test_time_in_zones_rejects_a_heart_rate_that_is_not_a_number
+    assert_error_with_message(Calcpace::Error, 'numeric') do
+      @calc.time_in_zones(heartrate: [120, '130'], time: [0, 60], zones: max_190_zones)
+    end
+  end
+
+  # --- hr_zone_for ---
+  def test_hr_zone_for_returns_the_zone_holding_the_reading
+    assert_equal 3, @calc.hr_zone_for(150, max_190_zones).zone
+    assert_equal 133, @calc.hr_zone_for(150, max_190_zones).min_bpm
+  end
+
+  def test_hr_zone_for_gives_a_boundary_to_the_higher_zone
+    # The site's own between? lookup gives 114 to zone 1; here it is zone 2
+    assert_equal 2, @calc.hr_zone_for(114, max_190_zones).zone
+    assert_equal 3, @calc.hr_zone_for(133, max_190_zones).zone
+    assert_equal 5, @calc.hr_zone_for(171, max_190_zones).zone
+  end
+
+  def test_hr_zone_for_clamps_a_reading_below_zone_one
+    assert_equal 1, @calc.hr_zone_for(80, max_190_zones).zone
+  end
+
+  # A reading above hr_max is a wrong hr_max, not a missing zone
+  def test_hr_zone_for_clamps_a_reading_above_zone_five
+    assert_equal 5, @calc.hr_zone_for(205, max_190_zones).zone
+    assert_equal 5, @calc.hr_zone_for(190, max_190_zones).zone
+  end
+
+  def test_hr_zone_for_returns_nil_without_a_reading
+    assert_nil @calc.hr_zone_for(nil, max_190_zones)
+    assert_nil @calc.hr_zone_for(0, max_190_zones)
+    assert_nil @calc.hr_zone_for(-5, max_190_zones)
+  end
+
+  def test_hr_zone_for_rejects_a_reading_that_is_not_a_number
+    assert_error_with_message(Calcpace::Error, 'numeric') { @calc.hr_zone_for('150', max_190_zones) }
+  end
+
+  def test_hr_zone_for_rejects_empty_zones
+    assert_error_with_message(Calcpace::Error, 'zone') { @calc.hr_zone_for(150, []) }
+  end
+
+  def test_hr_zone_for_works_with_karvonen_zones
+    zones = @calc.hr_zones(hr_max: 190, hr_rest: 55)
+
+    assert_equal 3, @calc.hr_zone_for(150, zones).zone
+    assert_same zones[2], @calc.hr_zone_for(150, zones)
+  end
+
+  def test_time_in_zones_and_hr_zone_for_agree
+    zones = max_190_zones
+
+    [80, 114, 120, 133, 150, 171, 205].each do |bpm|
+      in_zones = @calc.time_in_zones(heartrate: [bpm, bpm], time: [0, 60], zones: zones)
+      counted = in_zones.find { |row| row.seconds.positive? }
+
+      assert_equal @calc.hr_zone_for(bpm, zones).zone, counted.zone, "disagreed at #{bpm} bpm"
+    end
+  end
 end
