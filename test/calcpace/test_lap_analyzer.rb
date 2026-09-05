@@ -4,11 +4,13 @@ require_relative '../test_helper'
 
 # Tests for LapAnalyzer module — interval structure detected from watch laps
 class TestLapAnalyzer < CalcpaceTest
-  # Warm-up, 6 × (1 km hard / 400 m jog), cool-down — the documented session
+  # Warm-up, 6 × (1 km hard / 400 m jog), cool-down — the documented session.
+  # The cool-down runs at 5:30/km, which is more than 15% faster than the 6:30/km
+  # jog beside it: on contrast alone it would pass as a seventh rep.
   def classic_session
     [{ distance: 2.0, elapsed: 720 }] +
       ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
-      [{ distance: 1.5, elapsed: 540 }]
+      [{ distance: 1.5, elapsed: 495 }]
   end
 
   # --- the documented session ---
@@ -139,7 +141,73 @@ class TestLapAnalyzer < CalcpaceTest
     assert_in_delta 1.0, structure.work_distance   # median of 1.2 and 0.8
   end
 
+  # --- edge laps have to earn their place ---
+  # A warm-up or a cool-down has only one neighbour, so contrast alone is a free
+  # pass: it just has to beat the recovery it happens to touch. An edge lap only
+  # counts as work when it also agrees with the reps found in the interior.
+  def test_interval_structure_rejects_a_cool_down_that_only_beats_the_last_jog
+    # 8 × 400 m at 3:20/km with 200 m jogs at 7:30/km, then 1 km at 6:00/km
+    laps = ([{ distance: 0.4, elapsed: 80 }, { distance: 0.2, elapsed: 90 }] * 8) +
+           [{ distance: 1.0, elapsed: 360 }]
+    structure = @calc.interval_structure(laps)
+
+    assert_equal 8, structure.reps
+    assert_in_delta 0.4, structure.work_distance
+    assert_equal 200, structure.work_pace
+    assert_equal 450, structure.rest_pace
+  end
+
+  def test_interval_structure_rejects_a_cool_down_that_is_too_long_to_be_a_rep
+    # 6 × 1 km at 4:12, 400 m jogs at 6:30, 1.5 km cool-down at 5:30
+    laps = ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
+           [{ distance: 1.5, elapsed: 495 }]
+
+    assert_equal 6, @calc.interval_structure(laps).reps
+  end
+
+  # The cool-down is the right length here, so only the pace rules it out
+  def test_interval_structure_rejects_a_cool_down_too_slow_to_be_a_rep
+    # 5 × 1 km at 4:12 with 400 m jogs, then 1.2 km at 5:20
+    laps = ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 5) +
+           [{ distance: 1.2, elapsed: 384 }]
+
+    assert_equal 5, @calc.interval_structure(laps).reps
+  end
+
+  def test_interval_structure_rejects_a_cool_down_after_a_standing_recovery
+    # The last recovery covers no distance, so the cool-down's only neighbour is
+    # an infinite pace and contrast alone would wave it through as a fifth rep.
+    # The warm-up is what gives the reps a finite pace to beat (see the pauses
+    # test below): without it the session carries no evidence at all.
+    laps = [{ distance: 2.0, elapsed: 720 }] +
+           ([{ distance: 1.0, elapsed: 252 }, { distance: 0.0, elapsed: 120 }] * 4) +
+           [{ distance: 1.5, elapsed: 495 }]
+    structure = @calc.interval_structure(laps)
+
+    assert_equal 4, structure.reps
+    assert_in_delta 1.0, structure.work_distance
+  end
+
+  # With no interior work lap to compare against there is nothing to agree with,
+  # so the plain contrast rule still stands and the shortest session works
+  def test_interval_structure_falls_back_to_contrast_when_the_interior_is_empty
+    laps = [{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 },
+            { distance: 1.0, elapsed: 252 }]
+
+    assert_equal [2, 1.0, 252, 390, 156], @calc.interval_structure(laps).to_a
+  end
+
   # --- sessions that have no structure ---
+  # An infinitely fast neighbour is no evidence: every lap beside a pause looks
+  # 15% faster than it. Something in the set has to have beaten a real pace.
+  def test_interval_structure_returns_nil_for_an_easy_run_with_lap_pauses
+    laps = [{ distance: 1.0, elapsed: 300 }, { distance: 0.0, elapsed: 45 },
+            { distance: 1.0, elapsed: 300 }, { distance: 0.0, elapsed: 50 },
+            { distance: 1.0, elapsed: 300 }]
+
+    assert_nil @calc.interval_structure(laps)
+  end
+
   def test_interval_structure_returns_nil_for_a_steady_run
     laps = [300, 298, 302, 296, 304, 300, 299, 301, 305, 295].map do |elapsed|
       { distance: 1.0, elapsed: elapsed }
@@ -223,6 +291,21 @@ class TestLapAnalyzer < CalcpaceTest
     assert_error_with_message(Calcpace::Error, 'elapsed') do
       @calc.interval_structure([{ distance: 1.0, elapsed: -60 }])
     end
+  end
+
+  # A lap of 1000 is a runner who passed metres. Nothing in a running session
+  # is 100 km long, and reading it as kilometres would silently return paces
+  # that are off by a factor of a thousand.
+  def test_interval_structure_rejects_a_distance_that_looks_like_metres
+    assert_error_with_message(Calcpace::Error, 'kilometres') do
+      @calc.interval_structure([{ distance: 1000, elapsed: 252 }, { distance: 400, elapsed: 156 }])
+    end
+  end
+
+  def test_interval_structure_accepts_a_distance_at_the_sanity_floor
+    laps = [{ distance: 100, elapsed: 36_000 }, { distance: 1.0, elapsed: 252 }]
+
+    assert_nil @calc.interval_structure(laps) # legal input, just not a workout
   end
 
   def test_interval_structure_rejects_a_lap_that_is_not_a_hash

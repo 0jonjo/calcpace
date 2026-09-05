@@ -36,6 +36,15 @@ module LapAnalyzer
   # same set. Wider than this and the fast laps are not one workout
   WORK_DISTANCE_TOLERANCE = 0.25
 
+  # How much slower than the reps found in the interior an edge lap may be and
+  # still be read as one of them. A warm-up or cool-down only ever has one
+  # neighbour, so contrast alone would let it in on beating a single jog
+  EDGE_PACE_TOLERANCE = 1.10
+
+  # A lap longer than this was measured in metres by a caller who thinks they
+  # are kilometres. No lap of a running session is 100 km
+  MAX_LAP_DISTANCE_KM = 100
+
   # Detects a structured interval session in a list of laps
   #
   # Returns nil whenever the laps do not describe one: a steady run, a single
@@ -44,25 +53,36 @@ module LapAnalyzer
   # ordinary pace variation would make every easy run look like a workout.
   #
   # @param laps [Array<Hash>] laps in order, each with :distance in kilometres
-  #   (Numeric, may be 0 for a standing recovery) and :elapsed in seconds
-  #   (Numeric, must be positive). String keys are accepted too
+  #   (Numeric, 0 up to 100, and 0 means a standing recovery) and :elapsed in
+  #   seconds (Numeric, must be positive). String keys are accepted too
   # @param unit [Symbol, String] unit of the returned paces — :km (default) or :mi.
   #   Distances stay in kilometres in both
-  # @return [IntervalStructure, nil] the session's shape, or nil when it has none
+  # @return [IntervalStructure, nil] nil when the laps have no structure, else a
+  #   struct of: reps, the number of work laps; work_distance, their median
+  #   distance in km rounded to 2 decimals; work_pace, their distance-weighted
+  #   pace (total elapsed over total distance) in seconds per unit, rounded;
+  #   rest_pace, the same over the rest laps, or nil when they covered no
+  #   distance; and rest_duration, the mean rest lap in whole seconds
   # @raise [Calcpace::Error] if a lap is missing :distance or :elapsed, its
-  #   distance is negative, or its elapsed time is not positive
+  #   distance is negative or over 100 km, or its elapsed time is not positive
   # @raise [Calcpace::UnsupportedUnitError] if unit is not :km or :mi
   #
   # @example warm-up, 6 × (1 km hard / 400 m jog), cool-down
   #   laps = [{ distance: 2.0, elapsed: 720 }] +
   #          ([{ distance: 1.0, elapsed: 252 }, { distance: 0.4, elapsed: 156 }] * 6) +
-  #          [{ distance: 1.5, elapsed: 540 }]
+  #          [{ distance: 1.5, elapsed: 495 }]
   #   structure = calc.interval_structure(laps)
   #   structure.reps          #=> 6
   #   structure.work_distance #=> 1.0
   #   structure.work_pace     #=> 252
   #   structure.rest_pace     #=> 390
   #   structure.rest_duration #=> 156
+  #
+  # @example the smallest session that has a structure, every field at once
+  #   calc.interval_structure([{ distance: 1.0, elapsed: 252 },
+  #                            { distance: 0.4, elapsed: 156 },
+  #                            { distance: 1.0, elapsed: 252 }]).to_a
+  #   #=> [2, 1.0, 252, 390, 156]
   #
   # @example the same session with paces per mile
   #   calc.interval_structure(laps, unit: :mi).work_pace #=> 406
@@ -107,11 +127,38 @@ module LapAnalyzer
   def check_lap(distance, elapsed)
     raise Calcpace::Error, "Lap distance cannot be negative (got #{distance})" if distance.negative?
     raise Calcpace::Error, "Lap elapsed time must be positive (got #{elapsed})" unless elapsed.positive?
+    return if distance <= MAX_LAP_DISTANCE_KM
+
+    raise Calcpace::Error, "Lap distance #{distance} is too long — lap distances are kilometres, not metres"
   end
 
+  # Interior laps are judged on contrast alone. An edge lap — the first or the
+  # last — has only one neighbour, so contrast is a free pass: a cool-down beats
+  # the jog it happens to touch and walks in as an extra rep, or as a rep of the
+  # wrong length that makes the whole session look unstructured. It is admitted
+  # only if it also looks like the reps already found in the middle.
+  #
+  # When the interior found nothing there is nothing to agree with, so the plain
+  # contrast rule stands and the three-lap session (work, rest, work) still reads.
+  #
   # @return [Array<Integer>] indexes of the laps that stand out as reps
   def work_lap_indexes(laps)
-    laps.each_index.select { |index| work_lap?(laps, index) }
+    interior = (1...(laps.size - 1)).select { |index| work_lap?(laps, index) }
+    return laps.each_index.select { |index| work_lap?(laps, index) } if interior.empty?
+
+    edges = [0, laps.size - 1].uniq.select do |index|
+      work_lap?(laps, index) && matches_interior?(laps, index, interior)
+    end
+
+    (interior + edges).sort
+  end
+
+  def matches_interior?(laps, index, interior)
+    lap = laps[index]
+    median = median(interior.map { |i| laps[i].distance })
+
+    (lap.distance - median).abs <= WORK_DISTANCE_TOLERANCE * median &&
+      lap.pace <= EDGE_PACE_TOLERANCE * weighted_pace(laps, interior)
   end
 
   # Two work laps can never touch: each would have to be 0.85 of the other.
@@ -130,6 +177,7 @@ module LapAnalyzer
 
   def structured?(laps, work)
     return false if work.size < 2
+    return false unless beat_a_real_pace?(laps, work)
 
     distances = work.map { |index| laps[index].distance }
     median = median(distances)
@@ -137,21 +185,33 @@ module LapAnalyzer
     distances.all? { |distance| (distance - median).abs <= WORK_DISTANCE_TOLERANCE * median }
   end
 
+  # A lap of zero distance has an infinite pace, and everything is 15% faster
+  # than infinity. So an easy run with two red-light lap presses looks exactly
+  # like three reps around two standing recoveries. At least one rep has to have
+  # beaten a pace that was actually run; otherwise the contrast is an artefact
+  # of the pauses and there is no evidence of a workout at all.
+  def beat_a_real_pace?(laps, work)
+    work.any? { |index| neighbour_paces(laps, index).any?(&:finite?) }
+  end
+
   def build_interval_structure(laps, work, meters)
     rest = rest_lap_indexes(work)
-    return nil if rest.empty?
 
     IntervalStructure.new(
       reps: work.size,
       work_distance: median(work.map { |index| laps[index].distance }).round(2),
       work_pace: converted_pace(weighted_pace(laps, work), meters),
       rest_pace: converted_pace(weighted_pace(laps, rest), meters),
-      rest_duration: mean(rest.map { |index| laps[index].elapsed }).round
+      rest_duration: rest.empty? ? nil : mean(rest.map { |index| laps[index].elapsed }).round
     )
   end
 
   # Laps sitting between two consecutive reps. Anything outside the reps is
   # warm-up or cool-down, which is not part of the session's structure.
+  #
+  # Never empty in practice once there are two reps, because two work laps can
+  # never be adjacent — but reps and rest are counted separately here so that a
+  # change to the work rule shows up as a nil field, not as a NaN.
   def rest_lap_indexes(work)
     work.each_cons(2).flat_map { |from, to| ((from + 1)...to).to_a }
   end
