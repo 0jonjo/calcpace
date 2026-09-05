@@ -13,6 +13,7 @@ require_relative 'calcpace/pace_calculator'
 require_relative 'calcpace/pace_converter'
 require_relative 'calcpace/race_predictor'
 require_relative 'calcpace/race_splits'
+require_relative 'calcpace/stride_calculator'
 require_relative 'calcpace/track_calculator'
 require_relative 'calcpace/training_zones'
 require_relative 'calcpace/vo2max_estimator'
@@ -51,6 +52,7 @@ class Calcpace
   include PaceConverter
   include RacePredictor
   include RaceSplits
+  include StrideCalculator
   include TrackCalculator
   include TrainingZones
   include Vo2maxEstimator

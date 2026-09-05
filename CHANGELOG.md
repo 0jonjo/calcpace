@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-09-05
+
+### Added
+- `stride_length(pace, cadence, unit: :km)` — metres per step from a pace (clock
+  string or seconds per unit) and a cadence in steps per minute counting **both
+  feet**; Strava's API reports cadence as one-leg RPM, so callers reading it from
+  there must double it first.
+- `cadence_for_stride(pace, stride, unit: :km)` — the inverse: the both-feet
+  cadence in steps per minute that a given stride length implies at a given pace.
+
 ## [1.15.0] - 2026-08-30
 
 ### Added
@@ -505,7 +515,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/0jonjo/calcpace/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/0jonjo/calcpace/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/0jonjo/calcpace/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/0jonjo/calcpace/compare/v1.12.1...v1.13.0
