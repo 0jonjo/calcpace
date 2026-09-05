@@ -417,6 +417,31 @@ pace bands, and age-grading tolerances agree to the metre.
 
 ---
 
+### Stride & Cadence
+
+Pace, cadence and stride length are one identity, so any two of them give the third:
+
+```ruby
+calc.stride_length('05:00', 170)             # => 1.18
+calc.stride_length('04:00', 180)             # => 1.39
+calc.stride_length('08:02', 170, unit: :mi)  # => 1.18
+
+calc.cadence_for_stride('05:00', 1.18)       # => 169.5
+calc.cadence_for_stride('05:30', 1.15)       # => 158.1
+```
+
+`stride_length` returns metres per step (2 decimals); `cadence_for_stride` is its
+inverse and returns steps per minute (1 decimal). Pace takes the same forms as
+everywhere else — a clock string (`'05:00'`, `'00:05:00'`) or seconds per unit
+(`300`) — and `unit:` says which unit that pace is per: `:km` (default) or `:mi`.
+`8:02/mi` is the mile equivalent of `5:00/km`, which is why both give the same stride.
+
+Cadence is steps per minute counting **both feet** — the number a watch shows during a
+run, typically 160–185 spm. Strava's API reports cadence as one-leg RPM, so a value
+read from there must be doubled before it is passed in.
+
+---
+
 ### Fitness Predictor (race times from VO2max)
 
 The inverse of `estimate_vo2max`: what a given fitness is worth over a race.

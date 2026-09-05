@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `stride_length(pace, cadence, unit: :km)` — metres per step from a pace (clock
+  string or seconds per unit) and a cadence in steps per minute counting **both
+  feet**; Strava's API reports cadence as one-leg RPM, so callers reading it from
+  there must double it first.
+- `cadence_for_stride(pace, stride, unit: :km)` — the inverse: the both-feet
+  cadence in steps per minute that a given stride length implies at a given pace.
+
 ## [1.15.0] - 2026-08-30
 
 ### Added
