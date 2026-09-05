@@ -36,18 +36,20 @@ class TestStrideCalculator < CalcpaceTest
   end
 
   def test_stride_length_per_mile_matches_the_equivalent_km_pace
-    # 8:02/mi is the mile equivalent of 5:00/km, so the stride is the same
-    assert_in_delta @calc.stride_length('05:00', 170),
-                    @calc.stride_length('08:02', 170, unit: :mi),
-                    0.01
+    # 5:00/km is exactly 482.8032 s/mi, so at that pace the two are the same
+    # number, not two roundings that happen to land close.
+    assert_equal @calc.stride_length('05:00', 170),
+                 @calc.stride_length(482.8032, 170, unit: :mi)
   end
 
   def test_stride_length_per_mile_documented_example
+    # 8:02/mi is 5:00/km rounded down to the second, and still gives 1.18 at 170
     assert_in_delta 1.18, @calc.stride_length('08:02', 170, unit: :mi)
   end
 
   def test_stride_length_uses_the_exact_international_mile
-    expected = (Converter::Distance::MI_TO_METERS / 482 * 60.0 / 170).round(2)
+    # 1609.344 m / 482 s → 200.33 m/min; 200.33 / 170 = 1.178… → 1.18
+    expected = (1609.344 / 482 * 60.0 / 170).round(2)
 
     assert_in_delta expected, @calc.stride_length(482, 170, unit: :mi)
   end
@@ -90,12 +92,23 @@ class TestStrideCalculator < CalcpaceTest
   end
 
   # A stride rounded to the centimetre is up to 0.005 m away from the exact one,
-  # which is ~0.45% of a 1.11 m stride — so the cadence it comes back as can miss
-  # by up to ~0.8 spm. The round trip is exact in the maths, not in the rounding.
+  # so the cadence it comes back as can miss by up to cadence * 0.005 / stride
+  # spm — 0.81 at 180 spm over a 1.11 m stride, and more as the stride shortens.
+  # The round trip is exact in the maths, not in the rounding.
   def test_cadence_for_stride_round_trips_with_stride_length
     stride = @calc.stride_length(300, 180)
 
     assert_in_delta 180, @calc.cadence_for_stride(300, stride), 1.0
+  end
+
+  # The worst case sampled across the usual pace/cadence range: 393 s/km at 192
+  # spm is a 0.795 m stride, rounded to 0.80, which comes back as 190.8 spm.
+  # The bound above allows 192 * 0.005 / 0.795 = 1.21 spm of drift.
+  def test_cadence_for_stride_round_trip_holds_at_the_worst_sampled_case
+    stride = @calc.stride_length(393, 192)
+
+    assert_in_delta 0.80, stride
+    assert_in_delta 192, @calc.cadence_for_stride(393, stride), 1.5
   end
 
   def test_stride_length_round_trips_with_cadence_for_stride
@@ -130,8 +143,18 @@ class TestStrideCalculator < CalcpaceTest
   end
 
   def test_stride_length_rejects_an_invalid_pace_string
-    # Same treatment convert_pace gives it: an unparseable clock is zero seconds
-    assert_raises(Calcpace::NonPositiveInputError) { @calc.stride_length('not a pace', 170) }
+    assert_raises(Calcpace::InvalidTimeFormatError) { @calc.stride_length('not a pace', 170) }
+  end
+
+  def test_stride_length_rejects_a_clock_shaped_pace_that_is_not_a_clock
+    # '05:xx' parses to something under the old reading; it is a format error
+    assert_raises(Calcpace::InvalidTimeFormatError) { @calc.stride_length('05:xx', 170) }
+  end
+
+  def test_stride_length_checks_the_unit_before_the_pace
+    error = assert_raises(Calcpace::UnsupportedUnitError) { @calc.stride_length(0, 170, unit: :furlong) }
+
+    assert_includes error.message, 'furlong'
   end
 
   def test_stride_length_rejects_an_unsupported_unit
@@ -159,7 +182,7 @@ class TestStrideCalculator < CalcpaceTest
   end
 
   def test_cadence_for_stride_rejects_an_invalid_pace_string
-    assert_raises(Calcpace::NonPositiveInputError) { @calc.cadence_for_stride('abc', 1.18) }
+    assert_raises(Calcpace::InvalidTimeFormatError) { @calc.cadence_for_stride('abc', 1.18) }
   end
 
   def test_cadence_for_stride_rejects_an_unsupported_unit
