@@ -7,7 +7,7 @@ A Ruby gem for runners: pace, time, and distance calculations, unit conversions,
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.12.0'
+gem 'calcpace', '~> 1.17.0'
 ```
 
 ## Usage
