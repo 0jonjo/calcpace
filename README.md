@@ -2,10 +2,12 @@
 
 A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions, GPS track analysis, age grading, VO2max estimation, and training zones.
 
+> **See it in action:** [calcpace.app](https://calcpace.app) — free running calculators, race predictors and a training log, all powered by this gem.
+
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.12.0'
+gem 'calcpace', '~> 1.17.0'
 ```
 
 ## Usage
