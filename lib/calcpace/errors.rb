@@ -20,6 +20,9 @@ class Calcpace
     end
   end
 
+  # Raised when versioned/static gem data fails an internal consistency check
+  class InvalidDataError < Error; end
+
   # Raised when an unsupported unit or unit conversion is requested
   #
   # @example conversion pair

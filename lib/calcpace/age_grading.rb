@@ -33,8 +33,12 @@ module AgeGrading
   end
   AGE_GRADE_LABELS = raw_age_grade_labels.sort_by { |entry| -entry[:min] }.freeze
 
-  unless AGE_GRADE_LABELS.last && AGE_GRADE_LABELS.last[:min] == 0.0
-    raise ArgumentError, 'age_grade_classifications must end with a min of 0.0'
+  age_grade_label_mins = AGE_GRADE_LABELS.map { |entry| entry[:min] }
+  unless age_grade_label_mins == age_grade_label_mins.uniq &&
+         age_grade_label_mins == age_grade_label_mins.sort.reverse &&
+         age_grade_label_mins.last == 0.0
+    raise Calcpace::InvalidDataError,
+          'age_grade_classifications must be strictly descending and end at 0.0'
   end
 
   DISTANCE_TO_METERS = {
@@ -127,8 +131,8 @@ module AgeGrading
       raise ArgumentError, 'Age-grade percent must be a numeric value greater than or equal to 0'
     end
 
-    raise ArgumentError, 'Age-grade percent must be a finite number' unless percent_value.finite?
     raise ArgumentError, 'Age-grade percent must be greater than or equal to 0' if percent_value.negative?
+    raise ArgumentError, 'Age-grade percent must be a number' if percent_value.nan?
 
     AGE_GRADE_LABELS.find { |entry| percent_value >= entry[:min] }[:label]
   end

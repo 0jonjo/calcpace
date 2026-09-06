@@ -79,16 +79,21 @@ class TestAgeGrading < CalcpaceTest
     assert_equal 'Active Beginner', @calc.age_grade_label(0.0)
   end
 
-  def test_age_grade_rounds_up_to_local_class_at_the_sixty_edge
-    # Raw age-grade percent here is 59.9886%, which rounds to 60.0 and lands
-    # in "Local Class" rather than the "Intermediate" band the unrounded
-    # value would suggest.
-    assert_equal 'Local Class', @calc.age_grade(10.0, 2750, age: 40, sex: :male)[:category]
+  def test_age_grade_label_rounding_moves_the_boundary
+    # 59.9886% is "Intermediate" unrounded, but rounds to 60.0, which is
+    # "Local Class" - the boundary is decided by the rounded value.
+    assert_equal 'Intermediate', @calc.age_grade_label(59.9886)
+    assert_equal 'Local Class', @calc.age_grade_label(59.9886.round(1))
+
+    result = @calc.age_grade(10.0, 2750, age: 40, sex: :male)
+    assert_equal 60.0, result[:age_grade_percent]
+    assert_equal 'Local Class', result[:category]
   end
 
-  def test_age_grade_label_raises_for_non_finite_percent
+  def test_age_grade_label_nan_raises_but_infinity_is_top_band
     assert_raises(ArgumentError) { @calc.age_grade_label(Float::NAN) }
-    assert_raises(ArgumentError) { @calc.age_grade_label(Float::INFINITY) }
+    assert_equal 'Approximate World Record Level', @calc.age_grade_label(Float::INFINITY)
+    assert_raises(ArgumentError) { @calc.age_grade_label(-Float::INFINITY) }
   end
 
   def test_age_grade_labels_are_sorted_descending_and_end_at_zero

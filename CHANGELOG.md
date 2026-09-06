@@ -10,18 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.18.1] - 2026-09-06
 
 ### Fixed
-- `age_grade_label` raised an unhelpful `TypeError`/`FloatDomainError` for
-  `Float::NAN` and `Float::INFINITY` instead of a clear `ArgumentError`.
-  `Float(percent)` accepts both without complaint, so the guard now checks
-  `finite?` after the conversion and raises
-  `ArgumentError: Age-grade percent must be a finite number` for either one.
-- `AGE_GRADE_LABELS` is now sorted by `min` descending at load time and
-  validated to end with a `min` of exactly `0.0`, raising at require time
-  otherwise. `age_grade_label` walks the list in order and returns the first
-  match, so a data file with an out-of-order or missing zero-floor entry
-  would silently misclassify percentages instead of failing loudly.
+- `age_grade_label(Float::NAN)` raised an opaque `NoMethodError` (`undefined
+  method '[]' for nil`) instead of a clear error; it now raises
+  `ArgumentError`. `Float::INFINITY` is unchanged and still maps to the top
+  band, "Approximate World Record Level".
 
 ### Changed
+- `AGE_GRADE_LABELS` is now sorted by `min` descending at load time and
+  validated to be strictly descending with a `min` of exactly `0.0` on the
+  last entry, raising `Calcpace::InvalidDataError` at require time otherwise.
+  `age_grade_label` walks the list in order and returns the first match, so
+  an out-of-order entry in the data file would have silently misclassified
+  percentages, and a missing zero floor raised an opaque `NoMethodError`
+  instead of failing loudly.
 - Corrected the provenance note for the age-grade categories in the README
   and in `wma_2023_open_standards.yml`. The WMA / Alan Jones (Howard Grubb)
   tables are numeric age factors and open standards only — they define no
@@ -29,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   USATF Masters / National Masters News convention; the three bands below
   60% remain calcpace's own extension for recreational runners. No band
   boundaries or labels changed, only the attribution text.
+- Documented in the README that the bands apply to the percentage as
+  reported by `age_grade` (rounded to one decimal), so calling
+  `age_grade_label` directly on an unrounded value can land one band lower
+  at an edge.
 
 ## [1.18.0] - 2026-09-06
 
