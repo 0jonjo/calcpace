@@ -28,9 +28,14 @@ module AgeGrading
                                                                       aliases: false).freeze
   TABLE_VERSION = OPEN_STANDARDS_DATA.fetch('meta').fetch('table_version').freeze
 
-  AGE_GRADE_LABELS = OPEN_STANDARDS_DATA.fetch('age_grade_classifications').map do |entry|
+  raw_age_grade_labels = OPEN_STANDARDS_DATA.fetch('age_grade_classifications').map do |entry|
     { min: entry.fetch('min').to_f, label: entry.fetch('label') }
-  end.freeze
+  end
+  AGE_GRADE_LABELS = raw_age_grade_labels.sort_by { |entry| -entry[:min] }.freeze
+
+  unless AGE_GRADE_LABELS.last && AGE_GRADE_LABELS.last[:min] == 0.0
+    raise ArgumentError, 'age_grade_classifications must end with a min of 0.0'
+  end
 
   DISTANCE_TO_METERS = {
     5.0 => '5000',
@@ -122,6 +127,7 @@ module AgeGrading
       raise ArgumentError, 'Age-grade percent must be a numeric value greater than or equal to 0'
     end
 
+    raise ArgumentError, 'Age-grade percent must be a finite number' unless percent_value.finite?
     raise ArgumentError, 'Age-grade percent must be greater than or equal to 0' if percent_value.negative?
 
     AGE_GRADE_LABELS.find { |entry| percent_value >= entry[:min] }[:label]

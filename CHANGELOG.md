@@ -7,14 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.18.0] - 2026-09-06
+## [1.18.1] - 2026-09-06
+
+### Fixed
+- `age_grade_label` raised an unhelpful `TypeError`/`FloatDomainError` for
+  `Float::NAN` and `Float::INFINITY` instead of a clear `ArgumentError`.
+  `Float(percent)` accepts both without complaint, so the guard now checks
+  `finite?` after the conversion and raises
+  `ArgumentError: Age-grade percent must be a finite number` for either one.
+- `AGE_GRADE_LABELS` is now sorted by `min` descending at load time and
+  validated to end with a `min` of exactly `0.0`, raising at require time
+  otherwise. `age_grade_label` walks the list in order and returns the first
+  match, so a data file with an out-of-order or missing zero-floor entry
+  would silently misclassify percentages instead of failing loudly.
 
 ### Changed
-- `age_grade_label(percent)` — and therefore `age_grade`'s `:category` — splits
-  the old single `"Developing"` band below 60% into three: `"Intermediate"`
-  (50–59.9%), `"Recreational"` (40–49.9%) and `"Active Beginner"` (below 40%).
-  Most recreational runners grade under 60%, so the old catch-all told nearly
-  every one of them the same thing.
+- Corrected the provenance note for the age-grade categories in the README
+  and in `wma_2023_open_standards.yml`. The WMA / Alan Jones (Howard Grubb)
+  tables are numeric age factors and open standards only — they define no
+  categories at all. The bands from Local Class (60%) upward follow the
+  USATF Masters / National Masters News convention; the three bands below
+  60% remain calcpace's own extension for recreational runners. No band
+  boundaries or labels changed, only the attribution text.
+
+## [1.18.0] - 2026-09-06
+
+### Breaking
+- **`age_grade[:category]` and `age_grade_label` return different strings for
+  anything below 60%.** The old single `"Developing"` band below 60% is now
+  three bands: `"Intermediate"` (50–59.9%), `"Recreational"` (40–49.9%) and
+  `"Active Beginner"` (below 40%). Most recreational runners grade under 60%,
+  so the old catch-all told nearly every one of them the same thing. A caller
+  matching on the string `"Developing"` must update — that string is no
+  longer returned by either method.
 
   ```ruby
   calc.age_grade_label(55.0) # => "Intermediate"      (was "Developing")
@@ -22,10 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calc.age_grade_label(30.0) # => "Active Beginner"   (was "Developing")
   ```
 
-  The bands at 60% and above are untouched, and no numeric output changes —
-  `age_grade_percent`, `age_graded_time_seconds` and the rest are identical.
-  This is a label-only change, so callers that match on the string
-  `"Developing"` need updating.
+  The bands at 60% and above are untouched, and the numeric fields —
+  `age_grade_percent`, `age_graded_time_seconds` and the rest — are
+  unaffected; only the two label-returning methods changed.
 
 ## [1.17.0] - 2026-09-05
 
@@ -620,7 +644,9 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.18.1...HEAD
+[1.18.1]: https://github.com/0jonjo/calcpace/compare/v1.18.0...v1.18.1
+[1.18.0]: https://github.com/0jonjo/calcpace/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/0jonjo/calcpace/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/0jonjo/calcpace/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/0jonjo/calcpace/compare/v1.14.0...v1.15.0

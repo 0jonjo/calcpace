@@ -79,6 +79,25 @@ class TestAgeGrading < CalcpaceTest
     assert_equal 'Active Beginner', @calc.age_grade_label(0.0)
   end
 
+  def test_age_grade_rounds_up_to_local_class_at_the_sixty_edge
+    # Raw age-grade percent here is 59.9886%, which rounds to 60.0 and lands
+    # in "Local Class" rather than the "Intermediate" band the unrounded
+    # value would suggest.
+    assert_equal 'Local Class', @calc.age_grade(10.0, 2750, age: 40, sex: :male)[:category]
+  end
+
+  def test_age_grade_label_raises_for_non_finite_percent
+    assert_raises(ArgumentError) { @calc.age_grade_label(Float::NAN) }
+    assert_raises(ArgumentError) { @calc.age_grade_label(Float::INFINITY) }
+  end
+
+  def test_age_grade_labels_are_sorted_descending_and_end_at_zero
+    mins = AgeGrading::AGE_GRADE_LABELS.map { |entry| entry[:min] }
+
+    assert mins.each_cons(2).all? { |higher, lower| higher > lower }, 'expected mins to be strictly descending'
+    assert_equal 0.0, mins.last
+  end
+
   def test_raises_for_invalid_distance
     assert_raises(ArgumentError) do
       @calc.age_grade(7.0, '00:35:00', age: 45, sex: :male)
