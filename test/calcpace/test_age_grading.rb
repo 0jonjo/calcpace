@@ -71,8 +71,12 @@ class TestAgeGrading < CalcpaceTest
     assert_equal 'National Class', @calc.age_grade_label(80.0)
     assert_equal 'Regional Class', @calc.age_grade_label(70.0)
     assert_equal 'Local Class', @calc.age_grade_label(60.0)
-    assert_equal 'Developing', @calc.age_grade_label(55.0)
-    assert_equal 'Developing', @calc.age_grade_label(0.0)
+    assert_equal 'Intermediate', @calc.age_grade_label(59.9)
+    assert_equal 'Intermediate', @calc.age_grade_label(50.0)
+    assert_equal 'Recreational', @calc.age_grade_label(49.9)
+    assert_equal 'Recreational', @calc.age_grade_label(40.0)
+    assert_equal 'Active Beginner', @calc.age_grade_label(39.9)
+    assert_equal 'Active Beginner', @calc.age_grade_label(0.0)
   end
 
   def test_raises_for_invalid_distance

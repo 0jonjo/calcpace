@@ -3,6 +3,10 @@ meta:
   url: "https://howardgrubb.co.uk/athletics/wmatnf23.html"
   table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
 
+# The bands from Local Class up follow the WMA / Alan Jones convention. The
+# WMA tables define nothing below Local Class, so the three bands under 60%
+# are Calcpace's own extension, added to give recreational runners a
+# meaningful label instead of a single catch-all.
 age_grade_classifications:
   - min: 100.0
     label: "Approximate World Record Level"
@@ -14,8 +18,12 @@ age_grade_classifications:
     label: "Regional Class"
   - min: 60.0
     label: "Local Class"
+  - min: 50.0
+    label: "Intermediate"
+  - min: 40.0
+    label: "Recreational"
   - min: 0.0
-    label: "Developing"
+    label: "Active Beginner"
 
 open_standards_seconds:
   M:
