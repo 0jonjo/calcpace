@@ -37,5 +37,6 @@ class TestErrors < CalcpaceTest
     assert_kind_of Calcpace::Error, Calcpace::NonPositiveInputError.new
     assert_kind_of Calcpace::Error, Calcpace::InvalidTimeFormatError.new
     assert_kind_of Calcpace::Error, Calcpace::UnsupportedUnitError.new
+    assert_kind_of Calcpace::Error, Calcpace::InvalidDataError.new
   end
 end

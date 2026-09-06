@@ -3,10 +3,12 @@ meta:
   url: "https://howardgrubb.co.uk/athletics/wmatnf23.html"
   table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
 
-# The bands from Local Class up follow the WMA / Alan Jones convention. The
-# WMA tables define nothing below Local Class, so the three bands under 60%
-# are Calcpace's own extension, added to give recreational runners a
-# meaningful label instead of a single catch-all.
+# The WMA / Alan Jones (Howard Grubb) tables are numeric age factors and open
+# standards only — they define no categories at all. The bands from Local
+# Class (60%) upward follow the USATF Masters / National Masters News
+# convention; the three bands under 60% are Calcpace's own extension, added
+# to give recreational runners a meaningful label instead of a single
+# catch-all.
 age_grade_classifications:
   - min: 100.0
     label: "Approximate World Record Level"
