@@ -691,6 +691,8 @@ All errors inherit from `Calcpace::Error`:
 - `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format
 - `Calcpace::UnsupportedUnitError` — unknown conversion (`convert`) or unknown
   `unit:` / `distance_unit:` keyword
+- `Calcpace::InvalidDataError` — the bundled data table failed its load-time
+  consistency check (raised on `require`, never for user input)
 
 Argument validation that is not about units or numbers raises a plain `ArgumentError`:
 unknown race names, unsupported age-grading distances, and invalid `age` / `sex` values.

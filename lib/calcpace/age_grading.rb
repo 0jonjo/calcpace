@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'errors'
 
 # Module for age-grading race performances with a versioned table
 #
@@ -34,11 +35,11 @@ module AgeGrading
   AGE_GRADE_LABELS = raw_age_grade_labels.sort_by { |entry| -entry[:min] }.freeze
 
   age_grade_label_mins = AGE_GRADE_LABELS.map { |entry| entry[:min] }
-  unless age_grade_label_mins == age_grade_label_mins.uniq &&
-         age_grade_label_mins == age_grade_label_mins.sort.reverse &&
+  unless age_grade_label_mins.all?(&:finite?) &&
+         age_grade_label_mins == age_grade_label_mins.uniq &&
          age_grade_label_mins.last == 0.0
     raise Calcpace::InvalidDataError,
-          'age_grade_classifications must be strictly descending and end at 0.0'
+          "age_grade_classifications must have unique finite mins ending at 0.0, got #{age_grade_label_mins.inspect}"
   end
 
   DISTANCE_TO_METERS = {
@@ -124,6 +125,7 @@ module AgeGrading
   #
   # @param percent [Numeric] age-grade percentage
   # @return [String] category label
+  # @raise [ArgumentError] when percent is not numeric, is negative, or is NaN
   def age_grade_label(percent)
     percent_value = begin
       Float(percent)
