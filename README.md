@@ -7,7 +7,7 @@ A Ruby gem for runners: pace, time, and distance calculations, unit conversions,
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.17.0'
+gem 'calcpace', '~> 1.18.0'
 ```
 
 ## Usage
@@ -262,6 +262,24 @@ result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
 calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 65.2
 calc.age_grade_label(65.2)                                      # => "Local Class"
 ```
+
+`category` (and `age_grade_label`) returns one of:
+
+| Age grade | Category |
+| --- | --- |
+| 100%+ | Approximate World Record Level |
+| 90–99.9% | World Class |
+| 80–89.9% | National Class |
+| 70–79.9% | Regional Class |
+| 60–69.9% | Local Class |
+| 50–59.9% | Intermediate |
+| 40–49.9% | Recreational |
+| below 40% | Active Beginner |
+
+The bands from Local Class up are the WMA / Alan Jones convention. Those tables
+define nothing below Local Class, so the three bands under 60% are calcpace's
+own extension — most recreational runners land there, and one catch-all label
+for everybody under 60% tells them nothing.
 
 Supported distances: 5K, 10K, half marathon, marathon.
 

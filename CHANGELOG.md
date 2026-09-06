@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-09-06
+
+### Changed
+- `age_grade_label(percent)` — and therefore `age_grade`'s `:category` — splits
+  the old single `"Developing"` band below 60% into three: `"Intermediate"`
+  (50–59.9%), `"Recreational"` (40–49.9%) and `"Active Beginner"` (below 40%).
+  Most recreational runners grade under 60%, so the old catch-all told nearly
+  every one of them the same thing.
+
+  ```ruby
+  calc.age_grade_label(55.0) # => "Intermediate"      (was "Developing")
+  calc.age_grade_label(45.0) # => "Recreational"      (was "Developing")
+  calc.age_grade_label(30.0) # => "Active Beginner"   (was "Developing")
+  ```
+
+  The bands at 60% and above are untouched, and no numeric output changes —
+  `age_grade_percent`, `age_graded_time_seconds` and the rest are identical.
+  This is a label-only change, so callers that match on the string
+  `"Developing"` need updating.
+
 ## [1.17.0] - 2026-09-05
 
 ### Added
