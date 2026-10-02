@@ -1,0 +1,48 @@
+# VO2max percentiles by age and sex (ml/kg/min), treadmill CPX with measured VO2max
+#
+# Source: Kaminsky LA, Arena R, Myers J. Reference Standards for
+# Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing:
+# Data From the Fitness Registry and the Importance of Exercise National
+# Database (FRIEND). Mayo Clinic Proceedings 2015;90(11):1515-1523.
+# doi:10.1016/j.mayocp.2015.07.026 (author manuscript: PMC4919021)
+#
+# Table 3, "Sex-Specific Percentiles for CRF From Treadmill Exercise Tests With
+# Measured VO2max Obtained From FRIEND [...]", rows "Men from FRIEND" and
+# "Women from FRIEND". 7,783 apparently healthy US adults (4,611 men, 3,172
+# women) free of known cardiovascular disease, VO2max measured by
+# cardiopulmonary exercise testing (not predicted).
+#
+# The same Table 3 also reproduces the Cooper Clinic percentiles as printed in
+# ACSM's Guidelines for Exercise Testing and Prescription, 9th ed. (2014),
+# pp. 88-93 — the paper's reference 13 and, in its words, "the only widely
+# cited reference data in the United States". They are not used here: those
+# VO2max values were predicted from Balke treadmill time rather than measured,
+# and their spread is much narrower (95th percentile for men aged 20-29: 55.5
+# predicted against 66.3 measured).
+#
+# Each row lists the VO2max at the percentiles in `percentiles`, in order.
+# Age bands are keyed by their lower bound and span ten years (20 = 20-29).
+
+meta:
+  table_version: "FRIEND 2015 (Kaminsky et al., Mayo Clin Proc 90:1515, Table 3)"
+  doi: "10.1016/j.mayocp.2015.07.026"
+  units: "ml/kg/min"
+  modality: "treadmill, measured VO2max"
+
+percentiles: [5, 10, 25, 50, 75, 90, 95]
+
+M:
+  20: [29.0, 32.1, 40.1, 48.0, 55.2, 61.8, 66.3]
+  30: [27.2, 30.2, 35.9, 42.4, 49.2, 56.5, 59.8]
+  40: [24.2, 26.8, 31.9, 37.8, 45.0, 52.1, 55.6]
+  50: [20.9, 22.8, 27.1, 32.6, 39.7, 45.6, 50.7]
+  60: [17.4, 19.8, 23.7, 28.2, 34.5, 40.3, 43.0]
+  70: [16.3, 17.1, 20.4, 24.4, 30.4, 36.6, 39.7]
+
+F:
+  20: [21.7, 23.9, 30.5, 37.6, 44.7, 51.3, 56.0]
+  30: [19.0, 20.9, 25.3, 30.2, 36.1, 41.4, 45.8]
+  40: [17.0, 18.8, 22.1, 26.7, 32.4, 38.4, 41.7]
+  50: [16.0, 17.3, 19.9, 23.4, 27.6, 32.0, 35.9]
+  60: [13.4, 14.6, 17.2, 20.0, 23.8, 27.0, 29.4]
+  70: [13.1, 13.6, 15.6, 18.3, 20.8, 23.1, 24.1]

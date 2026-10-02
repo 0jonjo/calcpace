@@ -102,16 +102,33 @@ module Vo2maxEstimator
 
   # Returns a descriptive label for a given VO2max value
   #
+  # Without age and sex, the label comes from fixed thresholds that are the same
+  # for everyone (see VO2MAX_LABELS) — exactly as it always has. With both, it
+  # comes from where the value sits among people of the same sex and age
+  # decade, measured on a treadmill in the FRIEND registry (see
+  # Vo2maxNorms#vo2max_percentile and Vo2maxNorms::VO2MAX_PERCENTILE_LABELS):
+  # the same 45 ml/kg/min is "Fair" for a 25-year-old man and "Elite" for a
+  # 60-year-old woman.
+  #
   # @param value [Numeric] VO2max in ml/kg/min
+  # @param age [Integer, nil] age in years (18 or over); give it with sex
+  # @param sex [String, Symbol, nil] male or female; give it with age
   # @return [String] label: "Beginner", "Fair", "Good", "Very Good", "Excellent", or "Elite"
-  # @raise [ArgumentError] if value is not positive
+  # @raise [Calcpace::NonPositiveInputError] if value is not positive
+  # @raise [ArgumentError] if only one of age and sex is given, or either is invalid
   #
   # @example
-  #   calc.vo2max_label(51.9) #=> "Very Good"
-  def vo2max_label(value)
+  #   calc.vo2max_label(51.9)                     #=> "Very Good"
+  #   calc.vo2max_label(45)                       #=> "Good"
+  #   calc.vo2max_label(45, age: 25, sex: :male)  #=> "Fair"
+  #   calc.vo2max_label(45, age: 60, sex: :female) #=> "Elite"
+  def vo2max_label(value, age: nil, sex: nil)
     check_positive(value.to_f, 'VO2max value')
+    return VO2MAX_LABELS.find { |entry| value.to_f >= entry[:min] }[:label] if age.nil? && sex.nil?
+    raise ArgumentError, 'Age and sex must be provided together' if age.nil? || sex.nil?
 
-    VO2MAX_LABELS.find { |entry| value.to_f >= entry[:min] }[:label]
+    percentile = raw_vo2max_percentile(value.to_f, age, sex)
+    Vo2maxNorms::VO2MAX_PERCENTILE_LABELS.find { |entry| percentile >= entry[:min] }[:label]
   end
 
   private

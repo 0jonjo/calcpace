@@ -397,6 +397,49 @@ calc.vo2max_label(51.9)  # => "Very Good"
 
 *Thresholds based on Daniels, J. (2014). Daniels' Running Formula (3rd ed.), consistent with ACSM guidelines and McArdle, Katch & Katch (2015) Exercise Physiology.*
 
+#### By age and sex
+
+The fixed thresholds above are the same for everyone. Give `vo2max_label` an
+age and a sex and it reads the value against people of the same sex and age
+decade instead, using the **FRIEND registry** percentiles of VO2max measured on
+a treadmill (Kaminsky, Arena & Myers, 2015):
+
+```ruby
+calc.vo2max_label(45)                         # => "Good"  (fixed thresholds, unchanged)
+calc.vo2max_label(45, age: 25, sex: :male)    # => "Fair"
+calc.vo2max_label(45, age: 60, sex: :male)    # => "Elite"
+calc.vo2max_label(45, age: 25, sex: :female)  # => "Very Good"
+calc.vo2max_label(45, age: 60, sex: :female)  # => "Elite"
+
+calc.vo2max_percentile(45, age: 25, sex: :male)    # => 40.5
+calc.vo2max_percentile(45, age: 25, sex: :female)  # => 75.7
+calc.vo2max_percentile(45, age: 60, sex: :male)    # => 95.0
+```
+
+| Percentile (same sex and age decade) | Level     |
+|--------------------------------------|-----------|
+| ≥ 95th                               | Elite     |
+| 90th–94th                            | Excellent |
+| 75th–89th                            | Very Good |
+| 50th–74th                            | Good      |
+| 25th–49th                            | Fair      |
+| < 25th                               | Beginner  |
+
+- The cuts sit on percentiles the table publishes (5th, 10th, 25th, 50th,
+  75th, 90th, 95th), so a label never depends on interpolation. They are
+  calcpace's choice: FRIEND publishes percentiles, not labels.
+- `vo2max_percentile` interpolates linearly between the published percentiles,
+  rounded to one decimal, and is bounded to the table: `5.0` means at or below
+  the 5th percentile, `95.0` at or above the 95th.
+- Age decades (20–29 … 70–79) are used as published, without blending, so a
+  29- and a 30-year-old read different rows. Ages 18–19 use the 20–29 row and
+  80+ the 70–79 row; under 18 raises `ArgumentError`, as does a sex other than
+  male/female. Age and sex must be given together.
+- The registry measured VO2max in a lab; a VO2max estimated from a race time
+  carries its own ±3–5 ml/kg/min on top.
+
+*Kaminsky, L. A., Arena, R., & Myers, J. (2015). Reference Standards for Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing: Data From the Fitness Registry and the Importance of Exercise National Database. Mayo Clinic Proceedings, 90(11), 1515–1523, Table 3 (rows "Men/Women from FRIEND"; 7,783 adults free of known cardiovascular disease). https://doi.org/10.1016/j.mayocp.2015.07.026. The same table also lists the Cooper Clinic norms printed in ACSM's Guidelines for Exercise Testing and Prescription (9th ed., 2014); those are predicted from treadmill time rather than measured, and are not used here.*
+
 **Formula:**
 ```
 velocity (m/min) = distance_m / time_min
