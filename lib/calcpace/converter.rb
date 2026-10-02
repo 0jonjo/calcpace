@@ -79,7 +79,7 @@ module Converter
   #
   # Every method in the gem that takes a time or pace string goes through
   # here, so they all read the same clocks: the ones Checker#check_time
-  # accepts, which are exactly the ones the gem writes — signed track_splits
+  # accepts, which cover every clock the gem writes — signed track_splits
   # paces ('-0:40' is -40), minutes past the hour ('75:00'), any number of
   # hours ('400:00:00') and the day prefix of convert_to_clocktime
   # ('1 03:46:40'). Methods that need a positive time reject a negative one

@@ -176,4 +176,28 @@ class TestClockValidation < CalcpaceTest
       assert_equal @calc.convert_to_seconds(time), seconds.last
     end
   end
+
+  # The clock grammar takes any number of digits, so a clock can parse to an
+  # Integer too large for a Float; it must not come back as Infinity
+  def test_a_clock_too_large_for_a_float_is_rejected
+    huge = "#{'9' * 400}:00:00"
+
+    assert_operator @calc.convert_to_seconds(huge), :>, 10**400
+    %i[checked_pace race_pace predict_time race_splits predict_time_cameron age_grade estimate_vo2max].each do |name|
+      assert_raises(Calcpace::NonPositiveInputError, name.to_s) { PATHS.fetch(name).call(@calc, huge) }
+    end
+  end
+
+  def test_strings_in_other_encodings_are_not_clocks
+    ['05:00'.encode('UTF-16LE'), '05:00'.encode('UTF-32BE'), (+"05:00\xFF").force_encoding('UTF-8'),
+     (+"\xFF05:00").force_encoding('UTF-8')].each do |clock|
+      assert_raises(Calcpace::InvalidTimeFormatError, clock.inspect) { @calc.convert_to_seconds(clock) }
+      assert_raises(Calcpace::InvalidTimeFormatError, clock.inspect) { @calc.check_time(clock) }
+    end
+  end
+
+  def test_ascii_compatible_encodings_still_parse
+    assert_equal 300, @calc.convert_to_seconds((+'05:00').force_encoding('ASCII-8BIT'))
+    assert_equal 300, @calc.convert_to_seconds('05:00'.encode('ISO-8859-1'))
+  end
 end

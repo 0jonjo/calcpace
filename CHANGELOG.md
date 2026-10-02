@@ -32,21 +32,24 @@ return shapes are unchanged except where listed under Breaking; the
   strings — or garbage like `'abc'` — into the wrong number of seconds,
   `convert_to_seconds` returning `0` for anything it could not split and
   dropping the sign of `'-0:40'`.
-  - Accepted — exactly the clocks the gem writes (`Checker::CLOCK_FORMAT`):
+  - Accepted — every clock the gem writes (`Checker::CLOCK_FORMAT`):
     `H:MM:SS` with any number of hour digits (`'400:00:00'`); `M:SS` with any
     number of minute digits, counting past the hour (`'75:00'`, `'123:45'`); the
     `'D HH:MM:SS'` day prefix of `convert_to_clocktime` (`'1 03:46:40'`); and a
     leading `-` (`track_splits` writes `'-0:40'` for a backwards split;
-    `convert_to_seconds` returns `-40`).
+    `convert_to_seconds` returns `-40`). A few clocks the gem never writes
+    parse too, such as `'-1 03:46:40'`, `'0:00:00'` or `'000000000:00'`.
   - Rejected with `Calcpace::InvalidTimeFormatError`: seconds that are not two
     digits below 60; minutes that are not two digits below 60 when hours are
     given (`'1:60:00'`, `'1:5:00'`); after a day prefix, hours that are not two
     digits below 24 (`'1 3:46:40'`, `'1 24:00:00'`); a `+` sign, blanks,
-    surrounding whitespace, non-ASCII digits, more than three fields, and
-    anything that is not a String.
+    surrounding whitespace, non-ASCII digits, more than three fields, strings
+    in an invalid or non-ASCII-compatible encoding (broken UTF-8, UTF-16,
+    UTF-32), and anything that is not a String.
   - A negative clock parses, but every method that needs a positive time or
-    pace rejects it with `Calcpace::NonPositiveInputError`. Numeric (seconds)
-    inputs are unaffected.
+    pace rejects it with `Calcpace::NonPositiveInputError`, as it does a
+    clock too large for a Float (see Fixed). Numeric (seconds) inputs are
+    unaffected.
 - **Cameron predictions are limited to 100 km.** `predict_time_cameron`,
   `predict_time_cameron_clock`, `predict_pace_cameron`,
   `predict_pace_cameron_clock` and `predict_time_cameron_adjusted` raise
@@ -326,7 +329,9 @@ Summary of the other models:
   finite (and fast) marathon prediction, an infinite pace a `FloatDomainError`
   far from the input. Infinity now raises `Calcpace::NonPositiveInputError`
   ("must be a finite positive number"), like zero, negatives and NaN already
-  did.
+  did, and so does an Integer too large for a Float (e.g. a clock with
+  hundreds of hour digits), which used to become `Infinity` or a
+  `FloatDomainError` inside the formulas.
 - `Calcpace::VERSION` is defined after `require 'calcpace'`; before, it only
   existed once the gemspec had been loaded.
 - The `vo2max_label` docstring now documents the error it actually raises for

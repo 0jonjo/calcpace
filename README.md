@@ -919,7 +919,7 @@ calc.check_time('01:00:00')          # => nil (valid)
 ```
 
 Every time or pace string the gem reads goes through `convert_to_seconds`, so
-every method reads the same clocks — exactly the ones the gem writes:
+every method reads the same clocks, and every clock the gem writes is among them:
 
 ```ruby
 calc.convert_to_seconds('75:00')       # => 4500     (MM:SS keeps counting minutes)
@@ -930,7 +930,8 @@ calc.convert_to_seconds('-0:40')       # => -40      (a backwards track_splits s
 
 Seconds must be two digits below 60, and so must minutes when hours are given;
 after a day prefix the hours are two digits below 24. A leading `-` is the only
-sign, and blanks or surrounding whitespace are not trimmed. Anything else —
+sign, blanks or surrounding whitespace are not trimmed, and the string must be
+in a valid, ASCII-compatible encoding (UTF-8, not UTF-16). Anything else —
 `'05:99'`, `'1:60:00'`, `'1 3:46:40'`, `' 05:00'`, `'abc'` — raises
 `Calcpace::InvalidTimeFormatError`. A negative clock parses, but every method
 that needs a positive time or pace rejects it with `Calcpace::NonPositiveInputError`.

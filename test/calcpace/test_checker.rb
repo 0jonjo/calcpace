@@ -59,4 +59,13 @@ class TestChecker < CalcpaceTest
     assert_raises(Calcpace::InvalidTimeFormatError) { @calc.checked_pace('00:19:99', 5) }
     assert_raises(Calcpace::InvalidTimeFormatError) { @calc.checked_velocity('1:60:00', 10) }
   end
+
+  # A bignum is finite, but one too large for a Float overflows to Infinity as
+  # soon as a formula calls to_f on it
+  def test_check_positive_rejects_integers_that_overflow_a_float
+    assert_error_with_message(Calcpace::NonPositiveInputError, 'Time must be a finite positive number') do
+      @calc.check_positive(10**400, 'Time')
+    end
+    assert_nil @calc.check_positive(10**300)
+  end
 end

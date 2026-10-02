@@ -11,7 +11,9 @@ module Checker
   #
   # NaN and infinity are rejected too: NaN is not positive, and an infinite
   # distance or time would flow through the formulas into nonsense (a finite
-  # "prediction") or a FloatDomainError far from the input that caused it.
+  # "prediction") or a FloatDomainError far from the input that caused it. So
+  # is an Integer too large for a Float (a clock with hundreds of hour digits
+  # parses to one), which would turn into Infinity inside the formulas.
   #
   # @param number [Numeric] the number to validate
   # @param name [String] the name of the parameter for error messages
@@ -27,13 +29,16 @@ module Checker
     unless number.is_a?(Numeric) && number.positive?
       raise Calcpace::NonPositiveInputError, "#{name} must be a positive number"
     end
-    return if number.finite?
+    # An Integer is always finite, but one past Float::MAX overflows to
+    # Infinity the moment a formula calls to_f on it
+    return if number.finite? && number.to_f.finite?
 
     raise Calcpace::NonPositiveInputError, "#{name} must be a finite positive number"
   end
 
-  # The clock grammar every time and pace string in the gem is read with —
-  # exactly the clocks the gem itself writes:
+  # The clock grammar every time and pace string in the gem is read with. It
+  # covers every clock the gem writes (and a few it never writes, such as
+  # '-1 03:46:40' or '000000000:00'):
   # - an optional leading '-' (track_splits reports a backwards split as '-0:40')
   # - an optional day prefix, 'D HH:MM:SS', as convert_to_clocktime writes
   #   durations above 24 hours ('1 03:46:40'); the hour field after it is two
@@ -42,7 +47,8 @@ module Checker
   #   minutes and seconds are two digits below 60
   # - M:SS, where the minutes have any number of digits and keep counting past
   #   the hour ('75:00', '123:45') and the seconds are two digits below 60
-  # Nothing else: no '+', no blanks or surrounding whitespace, ASCII digits only.
+  # Nothing else: no '+', no blanks or surrounding whitespace, ASCII digits only,
+  # and only in a String whose encoding is valid and ASCII-compatible.
   CLOCK_FORMAT = /
     \A(?<sign>-)?
     (?:(?<days>\d+)[ ](?=(?:[01]\d|2[0-3]):[0-5]\d:))?
@@ -86,12 +92,19 @@ module Checker
   # @return [MatchData] the CLOCK_FORMAT match for a valid clock
   # @raise [Calcpace::InvalidTimeFormatError] otherwise
   def clock_match(time_string)
-    match = CLOCK_FORMAT.match(time_string) if time_string.is_a?(String)
+    match = CLOCK_FORMAT.match(time_string) if clock_encoding?(time_string)
     return match if match
 
     raise Calcpace::InvalidTimeFormatError,
           'It must be a valid time in the XX:XX:XX or XX:XX format ' \
           '(seconds below 60, and minutes too when hours are given)'
+  end
+
+  # Only a String in a valid, ASCII-compatible encoding can be a clock: the
+  # pattern cannot match UTF-16/UTF-32, and a broken byte sequence raises
+  # ArgumentError inside the regexp engine instead of a clock error
+  def clock_encoding?(time_string)
+    time_string.is_a?(String) && time_string.valid_encoding? && time_string.encoding.ascii_compatible?
   end
 
   # Age in whole years, 18 or over — the rule AgeGrading and Vo2maxNorms share
