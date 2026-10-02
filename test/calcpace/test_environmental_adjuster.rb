@@ -12,10 +12,10 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_calculate_penalty_with_heat
-    # 20°C for 60 min should have 2.8% penalty (Updated scientific baseline)
+    # 20°C for 60 min: base 4.3 · (5/10)^1.5 = 1.52%
     result = @calc.calculate_penalty(temperature: 20, time_seconds: 3600)
-    assert_equal 2.8, result[:factors][:heat]
-    assert_equal 2.8, result[:total_penalty_percent]
+    assert_equal 1.52, result[:factors][:heat]
+    assert_equal 1.52, result[:total_penalty_percent]
   end
 
   def test_calculate_penalty_with_altitude
@@ -26,11 +26,11 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_calculate_penalty_combined
-    # 20°C at 60m (2.8%) and 1828.8m (3.76%)
+    # 20°C at 60m (1.52%) and 1828.8m (3.76%)
     result = @calc.calculate_penalty(temperature: 20, altitude: 1828.8, time_seconds: 3600)
-    assert_equal 2.8, result[:factors][:heat]
+    assert_equal 1.52, result[:factors][:heat]
     assert_equal 3.76, result[:factors][:altitude]
-    assert_equal 6.56, result[:total_penalty_percent]
+    assert_equal 5.28, result[:total_penalty_percent]
   end
 
   def test_adjust_time_with_no_penalties
@@ -42,20 +42,20 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_adjust_time_with_heat_and_altitude
-    # 3600s at 20°C (Base 2.8% * 1.0x = 2.8%) and 1828.8m (3.76%) = 6.56% penalty
-    # 3600 * 1.0656 = 3836.16
+    # 3600s at 20°C (Base 1.52% * 1.0x) and 1828.8m (3.76%) = 5.28% penalty
+    # 3600 * 1.0528 = 3790.08
     result = @calc.adjust_time(3600, temperature: 20, altitude: 1828.8)
     assert_equal 3600, result[:original_time]
-    assert_in_delta 3836.16, result[:adjusted_time], 0.01
-    assert_equal 6.56, result[:penalty_percent]
-    assert_equal '01:03:56', result[:adjusted_time_clock]
+    assert_in_delta 3790.08, result[:adjusted_time], 0.01
+    assert_equal 5.28, result[:penalty_percent]
+    assert_equal '01:03:10', result[:adjusted_time_clock]
   end
 
   def test_calculate_penalty_with_fahrenheit
-    # 68°F is 20°C. 20°C for 60m should have 2.8% penalty.
+    # 68°F is 20°C. 20°C for 60m should have 1.52% penalty.
     result = @calc.calculate_penalty(temperature: 68, temperature_unit: :f, time_seconds: 3600)
-    assert_equal 2.8, result[:factors][:heat]
-    assert_equal 2.8, result[:total_penalty_percent]
+    assert_equal 1.52, result[:factors][:heat]
+    assert_equal 1.52, result[:total_penalty_percent]
   end
 
   def test_normalize_time_returns_original_for_ideal_conditions
@@ -65,13 +65,12 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_normalize_time_with_heat
-    # If I ran 3600s at 20C (Base 2.8% penalty)
+    # If I ran 3600s at 20C (Base 1.52% penalty)
     # Duration factor for 60 min is 1.0x
-    # Effective penalty: 2.8 * 1.0 = 2.8%
-    # Ideal time: 3600 / 1.028 = 3501.945...
+    # Ideal time: 3600 / 1.0152 = 3546.10...
     result = @calc.normalize_time(3600, temperature: 20)
-    assert_in_delta 3501.95, result[:normalized_time], 0.01
-    assert_equal 2.8, result[:penalty_percent]
+    assert_in_delta 3546.1, result[:normalized_time], 0.01
+    assert_equal 1.52, result[:penalty_percent]
   end
 
   def test_environmental_round_trip_consistency
@@ -90,18 +89,18 @@ class TestEnvironmentalAdjuster < CalcpaceTest
 
   def test_calculate_penalty_with_duration
     # 25C at 180 min (Marathon sub-3)
-    # Factor: 1.24x (least-squares fit to El Helou et al. 2012, Table S3)
-    # Penalty: 4.3 * 1.24 = 5.33%
+    # Factor: 1.76x (least-squares fit to El Helou et al. 2012, Table S3)
+    # Penalty: 4.3 * 1.76 = 7.57%
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 10_800)
-    assert_equal 5.33, result[:factors][:heat]
+    assert_equal 7.57, result[:factors][:heat]
   end
 
   def test_calculate_penalty_with_long_duration
     # 25C at 240 min (Amateur Marathon)
-    # Factor: 2.18x
-    # Penalty: 4.3 * 2.18 = 9.37%
+    # Factor: 2.81x
+    # Penalty: 4.3 * 2.81 = 12.08%
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 14_400)
-    assert_equal 9.37, result[:factors][:heat]
+    assert_equal 12.08, result[:factors][:heat]
   end
 
   # --- heat duration factor (fit to El Helou et al. 2012) ---
@@ -113,15 +112,15 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_duration_factor_points_for_two_three_and_four_hours
-    assert_in_delta 1.12, @calc.send(:duration_factor, 7200), 1e-12
-    assert_in_delta 1.24, @calc.send(:duration_factor, 10_800), 1e-12
-    assert_in_delta 1.71, @calc.send(:duration_factor, 12_600), 1e-12
-    assert_in_delta 2.18, @calc.send(:duration_factor, 14_400), 1e-12
+    assert_in_delta 1.38, @calc.send(:duration_factor, 7200), 1e-12
+    assert_in_delta 1.76, @calc.send(:duration_factor, 10_800), 1e-12
+    assert_in_delta 2.285, @calc.send(:duration_factor, 12_600), 1e-12
+    assert_in_delta 2.81, @calc.send(:duration_factor, 14_400), 1e-12
   end
 
   def test_duration_factor_is_flat_beyond_four_hours
-    assert_in_delta 2.18, @calc.send(:duration_factor, 18_000), 1e-12
-    assert_in_delta 2.18, @calc.send(:duration_factor, 36_000), 1e-12
+    assert_in_delta 2.81, @calc.send(:duration_factor, 18_000), 1e-12
+    assert_in_delta 2.81, @calc.send(:duration_factor, 36_000), 1e-12
   end
 
   # El Helou et al. (2012) PLoS One 7(5):e37407, Table S3: optimum °C, speed at
@@ -137,10 +136,36 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     'women Q3' => [7.35, 2.39, [3.04, 0.76, 0, 0.77, 3.14, 7.35, 13.85]]
   }.freeze
 
-  # Reproduces the derivation documented in environmental_factors.yml: the
-  # time penalty against 15 °C at 20 and 25 °C, divided by the 60-minute base
-  # (2.8 / 4.3), fitted by weighted least squares (each sex half the weight)
-  # with the 3 h and 4 h points free and 1.0 at 60 min fixed
+  # Reproduces the derivation documented in environmental_factors.yml, step 1:
+  # the time penalty against 15 °C grows 2^p times from 20 to 25 °C in every
+  # group; p is the sex-weighted mean of log2(P25 / P20), and the 60-minute
+  # base follows 4.3 · ((T − 15) / 10)^p, anchored at base(25) = 4.3
+  def test_heat_base_points_follow_the_el_helou_exponent
+    exponent = el_helou_exponent
+    assert_in_delta 1.497, exponent, 0.001
+
+    points = EnvironmentalAdjuster::FACTORS.fetch('heat').fetch('data_points')
+    points.each do |temperature, base|
+      expected = (4.3 * (((temperature - 15) / 10.0)**exponent.round(2))).round(2)
+      assert_in_delta expected, base, 1e-9, "#{temperature} °C"
+    end
+  end
+
+  def test_heat_base_points_track_the_power_law_within_a_tenth
+    exponent = el_helou_exponent.round(2)
+
+    (1500..4000).each do |hundredths|
+      temperature = hundredths / 100.0
+      law = 4.3 * (((temperature - 15) / 10.0)**exponent)
+      base = @calc.calculate_penalty(temperature: temperature, time_seconds: 3600)[:factors][:heat]
+
+      assert_in_delta law, base, 0.1, "#{temperature} °C"
+    end
+  end
+
+  # Step 2: those penalties divided by the base, fitted by weighted least
+  # squares (each sex half the weight) with the 3 h and 4 h points free and
+  # 1.0 at 60 min fixed
   def test_duration_factor_points_are_the_least_squares_fit_of_el_helou_table_s3
     observations = el_helou_ratios
     assert_equal 15, observations.size # men P1 at 25 °C lies beyond the table
@@ -162,9 +187,9 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_extreme_heat_for_four_hours
-    # 35 °C / 4 h: 8.7 * 2.18 = 18.97%; 40 °C / 4 h: 10.9 * 2.18 = 23.76%
-    assert_equal 18.97, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
-    assert_equal 23.76, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
+    # 35 °C / 4 h: 12.16 * 2.81 = 34.17%; 40 °C / 4 h: 17.0 * 2.81 = 47.77% (extrapolated)
+    assert_equal 34.17, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
+    assert_equal 47.77, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
   end
 
   # --- altitude curve (v1.19.0) ---
@@ -228,16 +253,16 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     at30 = @calc.calculate_penalty(temperature: 30, time_seconds: 3600)[:factors][:heat]
     at35 = @calc.calculate_penalty(temperature: 35, time_seconds: 3600)[:factors][:heat]
 
-    assert_equal 6.5, at30
-    assert_equal 8.7, at35
+    assert_equal 7.9, at30
+    assert_equal 12.16, at35
   end
 
   def test_heat_at_forty_is_worse_than_at_thirty_five
-    assert_equal 10.9, @calc.calculate_penalty(temperature: 40, time_seconds: 3600)[:factors][:heat]
+    assert_equal 17.0, @calc.calculate_penalty(temperature: 40, time_seconds: 3600)[:factors][:heat]
   end
 
   def test_heat_is_capped_at_forty
-    assert_equal 10.9, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
+    assert_equal 17.0, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
   end
 
   # --- humidity / dew point (effective temperature) ---
@@ -296,34 +321,34 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_humid_air_raises_the_effective_temperature_and_the_penalty
-    # WBGT(30 °C, 90%) = WBGT(35.94 °C, 50%) → base 8.7 + 0.94/5 × 2.2 = 9.11
+    # WBGT(30 °C, 90%) = WBGT(35.94 °C, 50%) → base 12.16 + 0.94/2.5 × 2.35 = 13.04
     result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 3600)
 
     assert_in_delta 35.94, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 9.11, result[:factors][:heat]
-    assert_equal 9.11, result[:total_penalty_percent]
+    assert_equal 13.04, result[:factors][:heat]
+    assert_equal 13.04, result[:total_penalty_percent]
   end
 
   def test_dry_air_lowers_the_effective_temperature_and_the_penalty
-    # WBGT(30 °C, 30%) = WBGT(26.6946 °C, 50%) → base 4.3 + 1.6946/5 × 2.2 = 5.05
+    # WBGT(30 °C, 30%) = WBGT(26.6946 °C, 50%) → base 4.3 + 1.6946/2.5 × 1.71 = 5.46
     result = @calc.calculate_penalty(temperature: 30, humidity: 30, time_seconds: 3600)
 
     assert_in_delta 26.69, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 5.05, result[:factors][:heat]
+    assert_equal 5.46, result[:factors][:heat]
   end
 
   def test_humidity_scales_with_duration_like_temperature
     result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 7200)
 
-    assert_equal (9.11 * @calc.send(:duration_factor, 7200)).round(2), result[:factors][:heat]
+    assert_equal (13.04 * @calc.send(:duration_factor, 7200)).round(2), result[:factors][:heat]
   end
 
   def test_humid_air_can_lift_an_ideal_temperature_out_of_the_ideal_range
-    # 15 °C at 90% behaves like 18.3304 °C at 50% → 3.3304/5 × 2.8 = 1.87
+    # 15 °C at 90% behaves like 18.3304 °C at 50% → 0.54 + 0.8304/2.5 × 0.98 = 0.87
     result = @calc.calculate_penalty(temperature: 15, humidity: 90, time_seconds: 3600)
 
     assert_in_delta 18.33, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 1.87, result[:factors][:heat]
+    assert_equal 0.87, result[:factors][:heat]
   end
 
   def test_dry_cool_air_stays_penalty_free
@@ -388,8 +413,8 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     adjusted = @calc.adjust_time(3600, temperature: 30, humidity: 90)
     normalized = @calc.normalize_time(3600, temperature: 30, humidity: 90)
 
-    assert_equal 9.11, adjusted[:penalty_percent]
-    assert_equal 9.11, normalized[:penalty_percent]
+    assert_equal 13.04, adjusted[:penalty_percent]
+    assert_equal 13.04, normalized[:penalty_percent]
     assert_in_delta 35.94, adjusted[:factors][:effective_temperature_celsius], 0.01
   end
 
@@ -425,8 +450,8 @@ class TestEnvironmentalAdjuster < CalcpaceTest
 
   private
 
-  def el_helou_ratios
-    base = { 20 => 2.8, 25 => 4.3 }
+  # [sex, finish minutes, temperature, time penalty (%) against 15 °C]
+  def el_helou_penalties
     EL_HELOU_TABLE_S3.flat_map do |group, (optimum, speed, losses)|
       minutes = 42_195 / speed / 60
       loss15 = table_loss(optimum, losses, 15)
@@ -434,9 +459,23 @@ class TestEnvironmentalAdjuster < CalcpaceTest
         loss = table_loss(optimum, losses, temperature)
         next unless loss
 
-        penalty = (((1 - (loss15 / 100)) / (1 - (loss / 100))) - 1) * 100
-        [group.split.first, minutes, penalty / base[temperature]]
+        [group.split.first, minutes, temperature, (((1 - (loss15 / 100)) / (1 - (loss / 100))) - 1) * 100]
       end
+    end
+  end
+
+  def el_helou_exponent
+    pairs = el_helou_penalties.group_by { |sex, minutes, *| [sex, minutes] }.values.select { |rows| rows.size == 2 }
+    per_sex = pairs.map { |rows| rows.first.first }.tally
+    pairs.sum do |(at20, at25)|
+      Math.log2(at25.last / at20.last) / per_sex[at20.first] / per_sex.size
+    end
+  end
+
+  def el_helou_ratios
+    base = EnvironmentalAdjuster::FACTORS.fetch('heat').fetch('data_points')
+    el_helou_penalties.map do |sex, minutes, temperature, penalty|
+      [sex, minutes, penalty / base.fetch(temperature)]
     end
   end
 

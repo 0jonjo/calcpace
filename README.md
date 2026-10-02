@@ -45,14 +45,16 @@ simplified WBGT for humidity, NCAA standards for altitude).
   (914.4 m → 1.41%), the NCAA table up to 2438.4 m (5.90%), and an extrapolated
   curve beyond it (3000 m → 7.92%, 3500 m → 9.97%, 4000 m → 12.2%, capped there).
   São Paulo (760 m) gets ~1.06%.
-- **Heat**: 60-minute baseline from 15 °C (0%) to 30 °C (6.5%), extrapolated to
-  35 °C (8.7%) and 40 °C (10.9%, capped there), then scaled by effort duration:
-  0.5× up to 30 min, 1.0× at 60 min, 1.24× at 3 h, 2.18× at 4 h and beyond
-  (linear in between, so 1.12× at 2 h). The 3 h and 4 h points are a
-  least-squares fit to El Helou et al. (2012, Table S3: eight finisher groups,
-  2:41–4:54, time penalty against 15 °C at 20 and 25 °C); the derivation table
-  is in `lib/calcpace/data/environmental_factors.yml`. The 60-minute base and
-  the 30/60-minute factors have no direct published source.
+- **Heat**: a 60-minute baseline `4.3 · ((T − 15) / 10)^1.5` (0% at 15 °C,
+  1.52% at 20 °C, 4.3% at 25 °C, 7.9% at 30 °C; extrapolated to 12.16% at
+  35 °C and 17.0% at 40 °C, capped there), stored as points every 2.5 °C, then
+  scaled by effort duration: 0.5× up to 30 min, 1.0× at 60 min, 1.76× at 3 h,
+  2.81× at 4 h and beyond (linear in between, so 1.38× at 2 h). The exponent
+  and the 3 h / 4 h points are fitted to El Helou et al. (2012, Table S3: eight
+  finisher groups, 2:41–4:54, time penalty against 15 °C at 20 and 25 °C,
+  which grows ~2.8× from 20 to 25 °C in every group); the derivation table is
+  in `lib/calcpace/data/environmental_factors.yml`. The 25 °C / 60-minute
+  anchor (4.3%) and the 30/60-minute factors have no direct published source.
 - **Humidity** (optional): pass `humidity:` (relative humidity, %) or
   `dew_point:` (in `temperature_unit`). Without either, the heat curve assumes
   50% humidity. With one, the temperature is replaced by the effective
@@ -61,21 +63,21 @@ simplified WBGT for humidity, NCAA standards for altitude).
 
 | Heat penalty (%) | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
 | --- | --- | --- | --- | --- | --- | --- |
-| 20 °C | 1.4 | 2.8 | 3.14 | 3.47 | 6.1 | 6.1 |
-| 25 °C | 2.15 | 4.3 | 4.82 | 5.33 | 9.37 | 9.37 |
-| 30 °C | 3.25 | 6.5 | 7.28 | 8.06 | 14.17 | 14.17 |
-| 35 °C | 4.35 | 8.7 | 9.74 | 10.79 | 18.97 | 18.97 |
-| 40 °C | 5.45 | 10.9 | 12.21 | 13.52 | 23.76 | 23.76 |
+| 20 °C | 0.76 | 1.52 | 2.1 | 2.68 | 4.27 | 4.27 |
+| 25 °C | 2.15 | 4.3 | 5.93 | 7.57 | 12.08 | 12.08 |
+| 30 °C | 3.95 | 7.9 | 10.9 | 13.9 | 22.2 | 22.2 |
+| 35 °C | 6.08 | 12.16 | 16.78 | 21.4 | 34.17 | 34.17 |
+| 40 °C | 8.5 | 17.0 | 23.46 | 29.92 | 47.77 | 47.77 |
 
 | 30 °C at | Effective temperature | 60 min | 4 h |
 | --- | --- | --- | --- |
-| 30% RH | 26.69 °C | 5.05% | 11.01% |
-| 50% RH (= no humidity) | 30.0 °C | 6.5% | 14.17% |
-| 70% RH | 33.07 °C | 7.85% | 17.11% |
-| 90% RH | 35.94 °C | 9.11% | 19.86% |
+| 30% RH | 26.69 °C | 5.46% | 15.34% |
+| 50% RH (= no humidity) | 30.0 °C | 7.9% | 22.2% |
+| 70% RH | 33.07 °C | 10.46% | 29.39% |
+| 90% RH | 35.94 °C | 13.04% | 36.64% |
 
-Above ~30 °C (and above ~25 °C for 4 h+) the numbers are extrapolations: the
-marathon studies behind the curve have little or no data there.
+Above ~25 °C the numbers are extrapolations of the fitted curve: the marathon
+studies behind it have no data there (El Helou's hottest race was 25.2 °C).
 
 ```ruby
 # Calculate penalty for 25°C and 2000m altitude (Defaults to 60-min effort)
@@ -87,30 +89,30 @@ penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
 
 # Fahrenheit support
 calc.calculate_penalty(temperature: 80, temperature_unit: :f)
-# => { total_penalty_percent: 5.03, ... }
+# => { total_penalty_percent: 5.44, ... }
 
 # Humidity: 30 °C at 90% hits like 35.94 °C at 50%
-calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 9.11
+calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 13.04
 calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius]  # => 35.94
-calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 8.16
+calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 11.07
 
 # Adjust a 3:30 marathon time (12600s) for these conditions (High exposure penalty)
 result = calc.adjust_time(12600, temperature: 25, altitude: 2000)
 # => {
 #      original_time: 12600,
-#      adjusted_time: 14070.42,
-#      adjusted_time_clock: "03:54:30",
-#      penalty_percent: 11.67,
-#      factors: { heat: 7.35, altitude: 4.32 }
+#      adjusted_time: 14382.9,
+#      adjusted_time_clock: "03:59:42",
+#      penalty_percent: 14.15,
+#      factors: { heat: 9.83, altitude: 4.32 }
 #    }
 
 # Predicted adjusted times (Riegel formula)
 calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 28)
-# => { adjusted_time: 2599.74, adjusted_time_clock: "00:43:19", penalty_percent: 3.91, ... }
+# => { adjusted_time: 2613.0, adjusted_time_clock: "00:43:33", penalty_percent: 4.44, ... }
 
 # Predicted adjusted times (Cameron formula)
 calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 80, temperature_unit: :f)
-# => { adjusted_time: 12011.41, adjusted_time_clock: "03:20:11", penalty_percent: 6.82, ... }
+# => { adjusted_time: 12400.47, adjusted_time_clock: "03:26:40", penalty_percent: 10.28, ... }
 ```
 
 ---

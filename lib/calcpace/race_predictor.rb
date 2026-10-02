@@ -139,9 +139,9 @@ module RacePredictor
   #
   # @example Predict marathon time from 5K adjusted for heat (25C)
   #   predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)
-  #   #=> { adjusted_time: 12214.84, penalty_percent: 6.13, ... }
-  #   calc.predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)[:penalty_percent] #=> 6.13
-  #   calc.predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25, humidity: 80)[:penalty_percent] #=> 8.52
+  #   #=> { adjusted_time: 12483.01, penalty_percent: 8.46, ... }
+  #   calc.predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)[:penalty_percent] #=> 8.46
+  #   calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 25, humidity: 80)[:penalty_percent] #=> 4.87
   def predict_time_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)

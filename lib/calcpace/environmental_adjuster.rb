@@ -22,13 +22,13 @@ module EnvironmentalAdjuster
   # environmental_factors.yml is for a 60-minute effort (factor 1.0).
   # - 30 min (0.5x) and 60 min (1.0x): kept from the original model; no
   #   marathon dataset covers efforts this short.
-  # - 3 h (1.24x) and 4 h (2.18x, flat after): weighted least-squares fit to
+  # - 3 h (1.76x) and 4 h (2.81x, flat after): weighted least-squares fit to
   #   El Helou et al. (2012) Table S3 — the time penalty against 15 °C at
   #   20 °C and 25 °C for eight finisher groups (2:41–4:54) divided by the
-  #   60-minute base. The 2 h value (1.12x) is the straight line 60 → 180 min:
-  #   no group finishes between 1 h and 2:41. Derivation table in
-  #   environmental_factors.yml.
-  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 1.24], [240.0, 2.18]].freeze
+  #   60-minute base (itself fitted to the same table). The 2 h value (1.38x)
+  #   is the straight line 60 → 180 min: no group finishes between 1 h and
+  #   2:41. Derivation table in environmental_factors.yml.
+  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 1.76], [240.0, 2.81]].freeze
 
   # Relative humidity (%) the temperature-only heat curve stands for
   # (see EnvironmentalAdjuster::Humidity)
@@ -53,9 +53,9 @@ module EnvironmentalAdjuster
   #   temperature, both are given, or either is given without a temperature
   #
   # @example
-  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 9.11
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 13.04
   #   calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius] #=> 35.94
-  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 8.16
+  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 11.07
   def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil,
                         humidity: nil, dew_point: nil)
     effective = effective_temperature(temperature, temperature_unit, humidity, dew_point)

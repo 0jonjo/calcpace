@@ -132,7 +132,7 @@ module CameronPredictor
   #
   # @example
   #   calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 25, humidity: 80)[:adjusted_time_clock]
-  #   #=> '00:43:23'
+  #   #=> '00:43:41'
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)

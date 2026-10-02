@@ -248,12 +248,12 @@ class TestCameronPredictor < CalcpaceTest
     # 5K in 20:00 to 10K
     # Normal Cameron: ~2499.66s
     # Duration factor for ~41:40 (2499.66s) is ~0.694x
-    # Adjusted for 20°C (Base 2.8% * 0.694 ≈ 1.94% penalty): 2499.66 * 1.0194 ≈ 2548.15s
+    # Adjusted for 20°C (Base 1.52% * 0.694 ≈ 1.06% penalty): 2499.66 * 1.0106 ≈ 2526.16s
     result = @calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 20)
 
     assert_kind_of Hash, result
-    assert_in_delta 2548.15, result[:adjusted_time], 0.01
-    assert_equal 1.94, result[:penalty_percent]
+    assert_in_delta 2526.16, result[:adjusted_time], 0.01
+    assert_equal 1.06, result[:penalty_percent]
   end
 
   # --- free distances (v1.15.0) ---
