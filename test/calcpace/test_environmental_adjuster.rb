@@ -112,7 +112,18 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_altitude_is_continuous_just_above_the_threshold
-    assert_in_delta 0.0, @calc.calculate_penalty(altitude: 301)[:factors][:altitude], 0.01
+    at_threshold = @calc.calculate_penalty(altitude: 300)[:factors][:altitude]
+    ten_above = @calc.calculate_penalty(altitude: 310)[:factors][:altitude]
+
+    assert_operator ten_above, :>, at_threshold, 'penalty should start growing right above the threshold'
+    assert_operator ten_above - at_threshold, :<, 0.05
+  end
+
+  def test_altitude_is_continuous_across_the_first_ncaa_point
+    below = @calc.calculate_penalty(altitude: 914.3)[:factors][:altitude]
+    above = @calc.calculate_penalty(altitude: 914.5)[:factors][:altitude]
+
+    assert_operator (above - below).abs, :<, 0.05
   end
 
   def test_altitude_is_continuous_around_the_first_ncaa_point
@@ -174,5 +185,16 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     assert_kind_of Hash, altitude.fetch('data_points')
     assert_equal [10.0, 15.0], heat.fetch('ideal_range_celsius')
     assert_kind_of Hash, heat.fetch('data_points')
+
+    [altitude, heat].each do |table|
+      table.fetch('data_points').each do |key, value|
+        assert_kind_of Numeric, key
+        assert_kind_of Numeric, value
+      end
+    end
+
+    first_key, first_value = altitude.fetch('data_points').min_by { |key, _| key }
+    assert_in_delta altitude.fetch('threshold_meters'), first_key, 0.0
+    assert_in_delta 0.0, first_value, 0.0
   end
 end

@@ -192,6 +192,56 @@ class TestCameronPredictor < CalcpaceTest
     end
   end
 
+  # ── valid distance range ─────────────────────────────────────────────────
+  # f(d) crosses zero near 445 km, so beyond the fitted range the formula returns
+  # negative or absurd times. Distances above CAMERON_MAX_DISTANCE_KM raise.
+
+  CAMERON_VARIANTS = %i[predict_time_cameron predict_time_cameron_clock
+                        predict_pace_cameron predict_pace_cameron_clock
+                        predict_time_cameron_adjusted].freeze
+
+  def test_max_distance_constant
+    assert_in_delta 100.0, CameronPredictor::CAMERON_MAX_DISTANCE_KM, 0.0
+  end
+
+  def test_max_distance_is_accepted_as_source_and_target
+    CAMERON_VARIANTS.each do |method|
+      @calc.public_send(method, 100, '08:00:00', 'marathon')
+      @calc.public_send(method, '100k', '08:00:00', 'marathon')
+      @calc.public_send(method, 'marathon', '03:30:00', 100)
+      @calc.public_send(method, 'marathon', '03:30:00', '100k')
+    end
+  end
+
+  def test_max_distance_prediction_is_sane
+    # Marathon 3:30:00 → 100 km should be slower than 2.37× the marathon time
+    result = @calc.predict_time_cameron('marathon', '03:30:00', '100k')
+
+    assert_operator result, :>, 12_600 * (100 / 42.195)
+  end
+
+  def test_distances_above_the_max_raise_as_source
+    [100.1, 445.5, 1000].each do |distance|
+      CAMERON_VARIANTS.each do |method|
+        error = assert_raises(ArgumentError, "#{method} from #{distance} km") do
+          @calc.public_send(method, distance, '10:00:00', 'marathon')
+        end
+        assert_match(/Cameron.*100\.0 km/, error.message)
+      end
+    end
+  end
+
+  def test_distances_above_the_max_raise_as_target
+    [100.1, 445.5, 1000].each do |distance|
+      CAMERON_VARIANTS.each do |method|
+        error = assert_raises(ArgumentError, "#{method} to #{distance} km") do
+          @calc.public_send(method, '10k', '00:42:00', distance)
+        end
+        assert_match(/Cameron.*100\.0 km/, error.message)
+      end
+    end
+  end
+
   # ── adjusted predictions ───────────────────────────────────────────────────
 
   def test_predict_time_cameron_adjusted_with_heat

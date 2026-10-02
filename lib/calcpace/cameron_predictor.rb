@@ -14,6 +14,11 @@
 # Distances are accepted in kilometres (or as race names) like every other method
 # in this gem, and converted to metres before f(d) is evaluated.
 #
+# Valid range: the model was fitted from 800 m to the marathon, and f(d) crosses
+# zero near 445 km, beyond which it returns negative or absurd times. Distances
+# above CAMERON_MAX_DISTANCE_KM (100 km, so the standard '100k' race stays usable)
+# raise ArgumentError on either end of the prediction.
+#
 # References:
 # - Dave Cameron, metric version of his model posted to the t-and-f mailing list,
 #   20 Jun 2001: https://www.mail-archive.com/t-and-f@lists.uoregon.edu/msg11312.html
@@ -29,6 +34,8 @@ module CameronPredictor
   CAMERON_POWER_COEFFICIENT = 835.7114
   # Exponent of the power term of f(d)
   CAMERON_POWER_EXPONENT = 0.7905
+  # Longest distance (km), on either end, a Cameron prediction accepts
+  CAMERON_MAX_DISTANCE_KM = 100.0
 
   # Predicts race time using the Cameron formula
   #
@@ -37,7 +44,8 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted time in seconds
-  # @raise [ArgumentError] if a race name is invalid or the distances are the same
+  # @raise [ArgumentError] if a race name is invalid, the distances are the same,
+  #   or either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example Predict marathon time from 10K
@@ -51,6 +59,7 @@ module CameronPredictor
     from_distance = race_distance(from_race)
     to_distance   = race_distance(to_race)
 
+    ensure_cameron_range!(from_distance, to_distance)
     ensure_different_distances!(from_distance, to_distance)
 
     time_seconds = from_time.is_a?(String) ? convert_to_seconds(from_time) : from_time
@@ -67,6 +76,7 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted time in HH:MM:SS format
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_time_cameron_clock('10k', '00:42:00', 'marathon')
@@ -81,6 +91,7 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted pace in seconds per kilometer
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_pace_cameron('5k', '00:20:00', 'marathon')
@@ -95,6 +106,7 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted pace in HH:MM:SS format
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_pace_cameron_clock('5k', '00:20:00', 'marathon')
@@ -110,12 +122,25 @@ module CameronPredictor
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @param options [Hash] environmental options (temperature, altitude, etc.)
   # @return [Hash] hash with adjusted prediction and penalty details
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)
   end
 
   private
+
+  # Rejects distances outside the range where Cameron's model is meaningful
+  #
+  # @param distances [Array<Float>] distances in kilometers
+  # @raise [ArgumentError] if any distance exceeds CAMERON_MAX_DISTANCE_KM
+  def ensure_cameron_range!(*distances)
+    too_long = distances.find { |distance| distance > CAMERON_MAX_DISTANCE_KM }
+    return unless too_long
+
+    raise ArgumentError,
+          "Cameron formula is only valid up to #{CAMERON_MAX_DISTANCE_KM} km (got #{too_long} km)"
+  end
 
   # Evaluates Cameron's velocity-ratio function f(d) for a given distance
   #

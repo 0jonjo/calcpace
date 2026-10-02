@@ -175,6 +175,9 @@ from shorter races):
 
 `T2 = T1 × (D2/D1) × f(D1)/f(D2)`, with `f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905`
 and `d` in metres (distances are still passed in km or as race names).
+Both distances must be at most `CameronPredictor::CAMERON_MAX_DISTANCE_KM` (100 km):
+the model is fitted up to the marathon and breaks down far beyond it, so longer
+distances raise `ArgumentError`.
 
 ```ruby
 calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "03:16:46"
