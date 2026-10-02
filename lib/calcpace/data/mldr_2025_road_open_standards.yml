@@ -1,0 +1,46 @@
+meta:
+  source: "Alan Jones, 2025 road age-grading tables (single-age bests by Tom Bernhard), approved 2025-01-10 by the USATF Masters Long Distance Running Council"
+  url: "https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/4aac6737cb9f216c90a0a610355667cd3d921c61/2025%20Files"
+  files:
+    - "2025 Files/MaleRoadStd2025.xlsx (sheet \"Age Factors\", row \"OC sec\")"
+    - "2025 Files/FemaleRoadStd2025.xlsx (sheet \"Age Facctors\", row \"OC sec\")"
+  table_version: "MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"
+
+# The Alan Jones road tables (also served by Howard Grubb's calculators) are
+# numeric age factors and open standards only — they define no categories at
+# all. The bands from Local Class (60%) upward follow the USATF Masters /
+# National Masters News convention; the three bands under 60% are Calcpace's
+# own extension, added to give recreational runners a meaningful label instead
+# of a single catch-all.
+age_grade_classifications:
+  - min: 100.0
+    label: "Approximate World Record Level"
+  - min: 90.0
+    label: "World Class"
+  - min: 80.0
+    label: "National Class"
+  - min: 70.0
+    label: "Regional Class"
+  - min: 60.0
+    label: "Local Class"
+  - min: 50.0
+    label: "Intermediate"
+  - min: 40.0
+    label: "Recreational"
+  - min: 0.0
+    label: "Active Beginner"
+
+# Open-class (OC) road standards, in seconds: the best road time for the
+# distance at any age. 21097 is the half marathon (21.0975 km), 42195 the
+# marathon (42.195 km).
+open_standards_seconds:
+  M:
+    "5000": 769.0    # 12:49
+    "10000": 1584.0  # 26:24
+    "21097": 3451.0  # 57:31
+    "42195": 7235.0  # 2:00:35
+  F:
+    "5000": 834.0    # 13:54
+    "10000": 1726.0  # 28:46
+    "21097": 3772.0  # 1:02:52
+    "42195": 7796.0  # 2:09:56
