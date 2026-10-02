@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Age grading now uses the 2025 road tables.** Age factors and open
+  standards come from Alan Jones' 2025 road age-grading tables, approved on
+  2025-01-10 by the USATF Masters Long Distance Running Council
+  ([source spreadsheets](https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/master/2025%20Files):
+  `MaleRoadStd2025.xlsx`, `FemaleRoadStd2025.xlsx`). The previous data,
+  despite the `wma_2023_road.yml` name, came from the WMA 2023 **track and
+  field** tables: track open standards (5000 m 12:35 / 14:06, 10 000 m
+  26:11 / 29:01), an outdated women's marathon standard (2:14:04), and no
+  factors under age 30. Road age grades were off by about 1–3%.
+- New open standards — men: 5K 12:49, 10K 26:24, half 57:31, marathon
+  2:00:35; women: 5K 13:54, 10K 28:46, half 1:02:52, marathon 2:09:56.
+- One factor per year of age from 18 to 100. Runners under 30 now get the
+  table's real factors instead of 1.0 (e.g. a male 18-year-old at 5K: 0.9995;
+  a female 30-year-old at 5K: 0.9959). Ages over 100 use the age-100 factor,
+  as ages over the table end did before.
+- `table_version` is now `"MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"` (was
+  `"WMA_2023_ONE_YEAR_FACTORS_V1"`). The data files were renamed to
+  `lib/calcpace/data/mldr_2025_road.yml` and
+  `lib/calcpace/data/mldr_2025_road_open_standards.yml`; `DATA_PATH`,
+  `OPEN_STANDARDS_DATA_PATH`, `WMA_DATA`, `OPEN_STANDARDS_DATA` and
+  `TABLE_VERSION` keep their names and shapes. The track-only keys
+  (`"1500"`, `"3000"`) are gone. Category labels are unchanged.
+
+  | Case | Before (WMA 2023 track) | After (2025 road) | Official 2025 |
+  | --- | --- | --- | --- |
+  | Male 40, marathon 3:30:00 | 58.8% (factor 0.9804) | 58.7% (0.9783) | 58.7% |
+  | Female 50, marathon 4:00:00 | 62.7% (0.8915) | 60.2% (0.8998) | 60.2% |
+  | Female 30, 5K 25:00 | 56.4% (1.0) | 55.8% (0.9959) | 55.8% |
+  | Male 60, half 1:50:00 | 63.3% (0.8264) | 64.7% (0.8082) | 64.7% |
+  | Male 55, 10K 45:00 | 69.0% (0.8438) | 68.9% (0.8511) | 68.9% |
+
+  "Official" is age standard / time from the spreadsheets' `AgeStdSec` sheet,
+  at one decimal.
+
 ## [1.18.1] - 2026-09-06
 
 ### Fixed

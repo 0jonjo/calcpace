@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = 'Ruby gem for runners: pace, time, and distance calculations, ' \
                        'unit conversions (30+ units), race time predictions (Riegel & Cameron), ' \
                        'GPS track analysis (Haversine, elevation gain, per-km splits), ' \
-                       'age grading (WMA 2023), VO2max estimation (Daniels & Gilbert), and ' \
+                       'age grading (2025 road tables), VO2max estimation (Daniels & Gilbert), and ' \
                        'personalized training zones (Daniels paces & Karvonen heart-rate zones).'
   spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage

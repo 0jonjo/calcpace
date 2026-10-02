@@ -249,18 +249,18 @@ age factors and open standards.
 result = calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
 # numeric distances also accepted in miles: calc.age_grade(6.21371, '00:45:00', age: 55, sex: :male, distance_unit: :mi)
 # => {
-#      age_grade_percent: 69.0,
+#      age_grade_percent: 68.9,
 #      category: "Local Class",
-#      age_graded_time_seconds: 2278.26,
-#      age_graded_time_clock: "00:37:58",
-#      open_standard_seconds: 1571.0,
-#      open_standard_clock: "00:26:11",
-#      factor: 0.8438,
-#      table_version: "WMA_2023_ONE_YEAR_FACTORS_V1"
+#      age_graded_time_seconds: 2297.97,
+#      age_graded_time_clock: "00:38:17",
+#      open_standard_seconds: 1584.0,
+#      open_standard_clock: "00:26:24",
+#      factor: 0.8511,
+#      table_version: "MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"
 #    }
 
-calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 65.2
-calc.age_grade_label(65.2)                                      # => "Local Class"
+calc.age_grade_percent(5.0, '00:22:30', age: 40, sex: :female) # => 65.0
+calc.age_grade_label(65.0)                                      # => "Local Class"
 ```
 
 `category` (and `age_grade_label`) returns one of:
@@ -276,7 +276,7 @@ calc.age_grade_label(65.2)                                      # => "Local Clas
 | 40–49.9% | Recreational |
 | below 40% | Active Beginner |
 
-The WMA / Alan Jones (Howard Grubb) tables are numeric age factors and open
+The Alan Jones road tables are numeric age factors and open
 standards only — they define no categories at all. The bands from Local Class
 (60%) upward follow the USATF Masters / National Masters News convention; the
 three bands below 60% are calcpace's own extension — most recreational
@@ -293,8 +293,8 @@ A numeric distance within **2%** of one of those is graded as that standard —
 a GPS watch rarely reads a 5K as exactly 5.000 km:
 
 ```ruby
-calc.age_grade_percent(5.0,    '00:25:00', age: 40, sex: :male) # => 51.9
-calc.age_grade_percent(5.0374, '00:25:00', age: 40, sex: :male) # => 51.9
+calc.age_grade_percent(5.0,    '00:25:00', age: 40, sex: :male) # => 54.1
+calc.age_grade_percent(5.0374, '00:25:00', age: 40, sex: :male) # => 54.1
 
 calc.age_grade(7.79, '00:26:59', age: 36, sex: :male)
 # => ArgumentError: Unsupported distance 7.79km. Supported: 5.0, 10.0, 21.0975, 42.195 km
@@ -302,20 +302,31 @@ calc.age_grade(7.79, '00:26:59', age: 36, sex: :male)
 
 That refusal is deliberate, and it is where age grading parts ways with the
 predictors above. A prediction is a formula and works at any distance; an age
-grade is a lookup in the WMA table, which publishes a factor per *specific*
+grade is a lookup in the road table, which publishes a factor per *specific*
 distance. There is no world standard for 7.79 km, so there is no honest
 percentage to return — interpolating one would produce a number with the look
 of an official standard and none of the authority.
 
-Age factors are based on WMA 2023 one-year age grading tables:
-https://world-masters-athletics.org/documents/competition-rules/
+Age factors and open standards come from Alan Jones' **2025 road** age-grading
+tables, approved on 2025-01-10 by the USATF Masters Long Distance Running
+Council — the standard for road races, the same tables behind Howard Grubb's
+MLDR road calculator. The source spreadsheets are `MaleRoadStd2025.xlsx` and
+`FemaleRoadStd2025.xlsx` in
+https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/master/2025%20Files.
+The bundled data has one factor per year of age from 18 to 100 (older ages use
+the age-100 factor) and lives in `lib/calcpace/data/mldr_2025_road.yml` (factors)
+and `lib/calcpace/data/mldr_2025_road_open_standards.yml` (open standards and
+category labels).
 
-Open standards used in `open_standard_seconds` / `open_standard_clock` are loaded
-from the bundled WMA 2023 open standards dataset
-(`lib/calcpace/data/wma_2023_open_standards.yml`).
+| Distance | Open standard (men) | Open standard (women) |
+| --- | --- | --- |
+| 5K | 12:49 | 13:54 |
+| 10K | 26:24 | 28:46 |
+| Half marathon | 57:31 | 1:02:52 |
+| Marathon | 2:00:35 | 2:09:56 |
 
 Field meanings:
-- `age_graded_time_clock`: your result after applying the WMA age factor (normalized performance time).
+- `age_graded_time_clock`: your result after applying the age factor (normalized performance time).
 - `open_standard_clock`: the open standard reference time used to compute the percentage for that distance/sex.
 - `age_grade_percent`: `(open_standard_seconds / age_graded_time_seconds) * 100`.
 
