@@ -177,6 +177,128 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     assert_equal 10.9, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
   end
 
+  # --- humidity / dew point (effective temperature) ---
+
+  def test_humidity_at_the_reference_reproduces_the_temperature_only_numbers
+    [3600, 14_400].each do |seconds|
+      plain = @calc.calculate_penalty(temperature: 30, time_seconds: seconds)
+      humid = @calc.calculate_penalty(temperature: 30, humidity: 50, time_seconds: seconds)
+
+      assert_equal plain[:factors][:heat], humid[:factors][:heat]
+    end
+  end
+
+  def test_reference_humidity_constant
+    assert_in_delta 50.0, EnvironmentalAdjuster::REFERENCE_HUMIDITY, 0.0
+  end
+
+  def test_humid_air_raises_the_effective_temperature_and_the_penalty
+    # WBGT(30 °C, 90%) = WBGT(35.94 °C, 50%) → base 8.7 + 0.94/5 × 2.2 = 9.11
+    result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 3600)
+
+    assert_in_delta 35.94, result[:factors][:effective_temperature_celsius], 0.01
+    assert_equal 9.11, result[:factors][:heat]
+    assert_equal 9.11, result[:total_penalty_percent]
+  end
+
+  def test_dry_air_lowers_the_effective_temperature_and_the_penalty
+    # WBGT(30 °C, 30%) = WBGT(26.69 °C, 50%) → base 4.3 + 1.69/5 × 2.2 = 5.04
+    result = @calc.calculate_penalty(temperature: 30, humidity: 30, time_seconds: 3600)
+
+    assert_in_delta 26.69, result[:factors][:effective_temperature_celsius], 0.01
+    assert_equal 5.04, result[:factors][:heat]
+  end
+
+  def test_humidity_scales_with_duration_like_temperature
+    result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 7200)
+
+    assert_equal (9.11 * 2.0).round(2), result[:factors][:heat]
+  end
+
+  def test_humid_air_can_lift_an_ideal_temperature_out_of_the_ideal_range
+    # 15 °C at 90% behaves like 18.33 °C at 50% → 3.33/5 × 2.8 = 1.86
+    result = @calc.calculate_penalty(temperature: 15, humidity: 90, time_seconds: 3600)
+
+    assert_in_delta 18.33, result[:factors][:effective_temperature_celsius], 0.01
+    assert_equal 1.86, result[:factors][:heat]
+  end
+
+  def test_dry_cool_air_stays_penalty_free
+    result = @calc.calculate_penalty(temperature: 12, humidity: 20, time_seconds: 3600)
+
+    assert_equal 0.0, result[:factors][:heat]
+  end
+
+  def test_effective_temperature_is_only_reported_when_humidity_is_given
+    refute @calc.calculate_penalty(temperature: 30)[:factors].key?(:effective_temperature_celsius)
+    assert_equal %i[heat altitude], @calc.calculate_penalty(temperature: 30)[:factors].keys
+  end
+
+  def test_dew_point_equal_to_temperature_is_saturated_air
+    saturated = @calc.calculate_penalty(temperature: 30, dew_point: 30, time_seconds: 3600)
+    full = @calc.calculate_penalty(temperature: 30, humidity: 100, time_seconds: 3600)
+
+    assert_equal full, saturated
+  end
+
+  def test_dew_point_matches_the_equivalent_relative_humidity
+    # Td 20 °C at 30 °C → e = 23.37 hPa of es = 42.43 hPa → RH 55.08%
+    from_dew = @calc.calculate_penalty(temperature: 30, dew_point: 20, time_seconds: 3600)
+    from_rh = @calc.calculate_penalty(temperature: 30, humidity: 55.08, time_seconds: 3600)
+
+    assert_in_delta from_rh[:factors][:effective_temperature_celsius],
+                    from_dew[:factors][:effective_temperature_celsius], 0.01
+  end
+
+  def test_dew_point_follows_the_temperature_unit
+    fahrenheit = @calc.calculate_penalty(temperature: 86, dew_point: 68, temperature_unit: :f, time_seconds: 3600)
+    celsius = @calc.calculate_penalty(temperature: 30, dew_point: 20, time_seconds: 3600)
+
+    assert_equal celsius, fahrenheit
+  end
+
+  def test_humidity_outside_zero_to_one_hundred_is_rejected
+    [-1, 100.5, Float::NAN].each do |rh|
+      assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, humidity: rh) }
+    end
+  end
+
+  def test_non_numeric_humidity_is_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, humidity: '80') }
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, dew_point: '20') }
+  end
+
+  def test_humidity_and_dew_point_together_are_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, humidity: 60, dew_point: 20) }
+  end
+
+  def test_dew_point_above_temperature_is_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 20, dew_point: 21) }
+  end
+
+  def test_humidity_without_temperature_is_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(humidity: 60) }
+    assert_raises(ArgumentError) { @calc.calculate_penalty(dew_point: 10) }
+  end
+
+  def test_adjust_and_normalize_forward_humidity
+    adjusted = @calc.adjust_time(3600, temperature: 30, humidity: 90)
+    normalized = @calc.normalize_time(3600, temperature: 30, humidity: 90)
+
+    assert_equal 9.11, adjusted[:penalty_percent]
+    assert_equal 9.11, normalized[:penalty_percent]
+    assert_in_delta 35.94, adjusted[:factors][:effective_temperature_celsius], 0.01
+  end
+
+  def test_predictions_forward_humidity
+    dry = @calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 30, humidity: 30)
+    humid = @calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 30, humidity: 90)
+    cameron = @calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 30, humidity: 90)
+
+    assert_operator humid[:adjusted_time], :>, dry[:adjusted_time]
+    assert cameron[:factors].key?(:effective_temperature_celsius)
+  end
+
   def test_environmental_data_keeps_the_structure_the_site_reads
     altitude = EnvironmentalAdjuster::FACTORS.fetch('altitude')
     heat = EnvironmentalAdjuster::FACTORS.fetch('heat')

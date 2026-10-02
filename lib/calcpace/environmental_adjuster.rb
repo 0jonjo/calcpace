@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'humidity'
 
 # Module for adjusting race performance based on environmental conditions
 #
 # Scientific basis:
 # - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
 # - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
+# - Humidity: Australian Bureau of Meteorology simplified WBGT
+#   (WBGT = 0.567·Ta + 0.393·e + 3.94, e = vapour pressure in hPa)
 module EnvironmentalAdjuster
   DATA_PATH = File.expand_path('data/environmental_factors.yml', __dir__).freeze
   FACTORS = YAML.safe_load_file(DATA_PATH, permitted_classes: [], aliases: false).freeze
@@ -15,12 +18,11 @@ module EnvironmentalAdjuster
   # and flat outside the first and last point. The base heat penalty in
   # environmental_factors.yml is for a 60-minute effort (factor 1.0).
   # Rule based on Matthew Ely (2007) heat degradation curve.
-  HEAT_DURATION_FACTORS = [
-    [30.0, 0.5],
-    [60.0, 1.0],
-    [180.0, 3.0],
-    [240.0, 4.5]
-  ].freeze
+  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 3.0], [240.0, 4.5]].freeze
+
+  # Relative humidity (%) the temperature-only heat curve stands for
+  # (see EnvironmentalAdjuster::Humidity)
+  REFERENCE_HUMIDITY = Humidity::REFERENCE_HUMIDITY
 
   # Calculates the performance penalty percentage for given environmental conditions
   #
@@ -28,18 +30,32 @@ module EnvironmentalAdjuster
   # @param temperature_unit [Symbol, String] :c (Celsius) or :f (Fahrenheit)
   # @param altitude [Numeric, nil] altitude in meters
   # @param time_seconds [Numeric, nil] duration of the effort in seconds
-  # @return [Hash] hash with :total_penalty_percent and breakdown in :factors
-  def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil)
-    heat_penalty = calculate_heat_penalty(temperature, temperature_unit, time_seconds)
+  # @param humidity [Numeric, nil] relative humidity in % (0–100). Optional;
+  #   without it (and without dew_point) the heat curve assumes
+  #   REFERENCE_HUMIDITY. With it, the temperature is replaced by the effective
+  #   temperature that has the same simplified WBGT at REFERENCE_HUMIDITY.
+  # @param dew_point [Numeric, nil] dew point, in temperature_unit. Alternative
+  #   to humidity (pass one or the other), must not exceed the temperature
+  # @return [Hash] hash with :total_penalty_percent and breakdown in :factors;
+  #   when humidity or dew_point is given, :factors also carries
+  #   :effective_temperature_celsius
+  # @raise [ArgumentError] if humidity is outside 0–100, dew_point is above the
+  #   temperature, both are given, or either is given without a temperature
+  #
+  # @example
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 9.11
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius] #=> 35.94
+  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 8.15
+  def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil,
+                        humidity: nil, dew_point: nil)
+    effective = effective_temperature(temperature, temperature_unit, humidity, dew_point)
+    heat_penalty = calculate_heat_penalty(effective, time_seconds)
     altitude_penalty = calculate_altitude_penalty(altitude)
 
-    {
-      total_penalty_percent: (heat_penalty + altitude_penalty).round(2),
-      factors: {
-        heat: heat_penalty,
-        altitude: altitude_penalty
-      }
-    }
+    factors = { heat: heat_penalty, altitude: altitude_penalty }
+    factors[:effective_temperature_celsius] = effective unless humidity.nil? && dew_point.nil?
+
+    { total_penalty_percent: (heat_penalty + altitude_penalty).round(2), factors: factors }
   end
 
   # Adjusts a given time based on environmental conditions
@@ -82,10 +98,19 @@ module EnvironmentalAdjuster
 
   private
 
-  def calculate_heat_penalty(temp, unit, time_seconds)
-    return 0.0 if temp.nil?
+  # Air temperature in °C, moved to the temperature that has the same
+  # simplified WBGT at REFERENCE_HUMIDITY when humidity or dew point is known
+  def effective_temperature(temp, unit, humidity, dew_point)
+    Humidity.check_inputs!(temp, humidity, dew_point)
+    temp_c = temp && normalize_temperature(temp, unit)
+    return temp_c if temp_c.nil? || (humidity.nil? && dew_point.nil?)
 
-    temp_c = normalize_temperature(temp, unit)
+    Humidity.effective_temperature(temp_c, humidity: humidity,
+                                           dew_point_c: dew_point && normalize_temperature(dew_point, unit))
+  end
+
+  def calculate_heat_penalty(temp_c, time_seconds)
+    return 0.0 if temp_c.nil?
 
     data = FACTORS.fetch('heat')
     ideal_min, ideal_max = data.fetch('ideal_range_celsius')
