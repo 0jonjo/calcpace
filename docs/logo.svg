@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10B981"/><stop offset="1" stop-color="#047857"/>
+    </linearGradient>
+    <mask id="m" maskUnits="userSpaceOnUse" x="-100" y="-100" width="712" height="712">
+      <rect width="512" height="512" fill="#fff"/>
+      <rect x="40" y="206" width="200" height="14" fill="#000"/>
+      <rect x="40" y="242" width="200" height="14" fill="#000"/>
+      <rect x="40" y="278" width="200" height="14" fill="#000"/>
+    </mask>
+  </defs>
+  <polygon points="88,12 424,12 500,88 500,424 424,500 88,500 12,424 12,88" fill="url(#g)"/>
+  <polygon points="128,70 384,70 442,128 442,384 384,442 128,442 70,384 70,128" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="5"/>
+  <g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="5">
+    <line x1="88" y1="12" x2="128" y2="70"/><line x1="424" y1="12" x2="384" y2="70"/>
+    <line x1="500" y1="88" x2="442" y2="128"/><line x1="500" y1="424" x2="442" y2="384"/>
+    <line x1="424" y1="500" x2="384" y2="442"/><line x1="88" y1="500" x2="128" y2="442"/>
+    <line x1="12" y1="424" x2="70" y2="384"/><line x1="12" y1="88" x2="70" y2="128"/>
+  </g>
+  <g transform="translate(256,256) scale(0.86) translate(-256,-256)">
+    <g transform="translate(46,0) skewX(-10)">
+      <path d="M385.2,175.7 A120,120 0 1 0 385.2,336.3" fill="none" stroke="#FFFFFF" stroke-width="70" mask="url(#m)"/>
+      <path d="M100,227 L176,227" stroke="#A3E635" stroke-width="22" stroke-linecap="round"/>
+      <path d="M70,263 L176,263" stroke="#A3E635" stroke-width="22" stroke-linecap="round"/>
+      <path d="M100,299 L176,299" stroke="#A3E635" stroke-width="22" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

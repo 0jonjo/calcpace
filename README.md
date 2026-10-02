@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/0jonjo/calcpace/main/docs/logo.svg" alt="calcpace logo" width="128"></p>
+
 # Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
 A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions (including personalized ones), GPS track analysis with grade-adjusted pace, heat, humidity and altitude adjustments, age grading, VO2max estimation and norms, and training zones.
