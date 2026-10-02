@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/logo.svg" alt="calcpace logo" width="128"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/0jonjo/calcpace/main/docs/logo.svg" alt="calcpace logo" width="128"></p>
 
 # Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
