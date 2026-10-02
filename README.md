@@ -919,8 +919,21 @@ calc.check_time('01:00:00')          # => nil (valid)
 ```
 
 Every time or pace string the gem reads goes through `convert_to_seconds`, so
-the same clock rule holds in every method: `'05:99'` or `'1:60:00'` raise
-`Calcpace::InvalidTimeFormatError`, while `'75:00'` is a valid 75 minutes.
+every method reads the same clocks — exactly the ones the gem writes:
+
+```ruby
+calc.convert_to_seconds('75:00')       # => 4500     (MM:SS keeps counting minutes)
+calc.convert_to_seconds('400:00:00')   # => 1440000  (any number of hours)
+calc.convert_to_seconds('1 03:46:40')  # => 100000   (convert_to_clocktime's day prefix)
+calc.convert_to_seconds('-0:40')       # => -40      (a backwards track_splits split)
+```
+
+Seconds must be two digits below 60, and so must minutes when hours are given;
+after a day prefix the hours are two digits below 24. A leading `-` is the only
+sign, and blanks or surrounding whitespace are not trimmed. Anything else —
+`'05:99'`, `'1:60:00'`, `'1 3:46:40'`, `' 05:00'`, `'abc'` — raises
+`Calcpace::InvalidTimeFormatError`. A negative clock parses, but every method
+that needs a positive time or pace rejects it with `Calcpace::NonPositiveInputError`.
 
 `convert_to_clocktime` takes a `compact:` keyword for the format a runner reads
 on a screen — no zero hour, no leading zero on the most significant component:
@@ -948,10 +961,9 @@ call without it returns exactly what it returned before.
 All errors inherit from `Calcpace::Error`:
 
 - `Calcpace::NonPositiveInputError` — numeric input is zero, negative, NaN or infinite
-- `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format,
-  or not a valid clock: seconds must be below 60, and so must minutes when hours are
-  given (`'05:99'` and `'1:60:00'` raise). `MM:SS` keeps counting minutes past the
-  hour, so `'75:00'` is 75 minutes
+- `Calcpace::InvalidTimeFormatError` — time string that is not a clock the gem writes
+  (`[-][D ]H:MM:SS` or `[-]M:SS`, see Other Utilities): seconds must be below 60, and
+  so must minutes when hours are given (`'05:99'` and `'1:60:00'` raise)
 - `Calcpace::UnsupportedUnitError` — unknown conversion (`convert`) or unknown
   `unit:` / `distance_unit:` keyword
 - `Calcpace::InvalidDataError` — the bundled data table failed its load-time

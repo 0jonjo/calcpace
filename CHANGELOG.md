@@ -27,15 +27,26 @@ return shapes are unchanged except where listed under Breaking; the
   `predict_time_personal`, `predict_marathon_from_training`,
   `estimate_vo2max`, `estimate_detailed_vo2max`, `training_paces_from_race`,
   `age_grade`, `stride_length`, `cadence_for_stride` and `grade_adjusted_pace`
-  (and `_clock`). Seconds must be below 60, and so must minutes when an hour
-  field is present; anything else raises `Calcpace::InvalidTimeFormatError`.
-  Before, `check_time` accepted any two digits per field (`'05:99'`,
-  `'1:60:00'`), and the methods that did not call it at all turned such
+  (and `_clock`). Before, `check_time` accepted any two digits per field
+  (`'05:99'`, `'1:60:00'`), and the methods that did not call it turned such
   strings — or garbage like `'abc'` — into the wrong number of seconds,
-  `convert_to_seconds` returning `0` for anything it could not split. `MM:SS`
-  still counts minutes past the hour (`'75:00'` is 75 minutes), as the padded
-  paces `track_splits` emits (`'66:33'`) always have. Numeric (seconds) inputs
-  are unaffected.
+  `convert_to_seconds` returning `0` for anything it could not split and
+  dropping the sign of `'-0:40'`.
+  - Accepted — exactly the clocks the gem writes (`Checker::CLOCK_FORMAT`):
+    `H:MM:SS` with any number of hour digits (`'400:00:00'`); `M:SS` with any
+    number of minute digits, counting past the hour (`'75:00'`, `'123:45'`); the
+    `'D HH:MM:SS'` day prefix of `convert_to_clocktime` (`'1 03:46:40'`); and a
+    leading `-` (`track_splits` writes `'-0:40'` for a backwards split;
+    `convert_to_seconds` returns `-40`).
+  - Rejected with `Calcpace::InvalidTimeFormatError`: seconds that are not two
+    digits below 60; minutes that are not two digits below 60 when hours are
+    given (`'1:60:00'`, `'1:5:00'`); after a day prefix, hours that are not two
+    digits below 24 (`'1 3:46:40'`, `'1 24:00:00'`); a `+` sign, blanks,
+    surrounding whitespace, non-ASCII digits, more than three fields, and
+    anything that is not a String.
+  - A negative clock parses, but every method that needs a positive time or
+    pace rejects it with `Calcpace::NonPositiveInputError`. Numeric (seconds)
+    inputs are unaffected.
 - **Cameron predictions are limited to 100 km.** `predict_time_cameron`,
   `predict_time_cameron_clock`, `predict_pace_cameron`,
   `predict_pace_cameron_clock` and `predict_time_cameron_adjusted` raise

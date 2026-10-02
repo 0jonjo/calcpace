@@ -86,4 +86,94 @@ class TestClockValidation < CalcpaceTest
     assert_raises(Calcpace::InvalidTimeFormatError) { @calc.race_splits('10k', target_time: '40', split_distance: '5k') }
     assert_raises(Calcpace::InvalidTimeFormatError) { @calc.predict_time('5k', '20:00:00:00', '10k') }
   end
+
+  # The gem must read every clock it writes: signed track_splits paces, padded
+  # paces past 100 minutes, compact durations past 100 hours and the day
+  # prefix of convert_to_clocktime above 24 hours
+  def test_convert_to_seconds_reads_the_gems_own_formats
+    {
+      '-0:40' => -40, '-00:40' => -40, '-5:12' => -312, '-1:06:33' => -3993,
+      '123:45' => 7425, '400:00:00' => 1_440_000, '1 03:46:40' => 100_000,
+      '12 00:00:00' => 1_036_800, '-1 03:46:40' => -100_000, '0:00' => 0
+    }.each do |clock, seconds|
+      assert_equal seconds, @calc.convert_to_seconds(clock), clock
+      assert_nil @calc.check_time(clock), clock
+    end
+  end
+
+  def test_malformed_clocks_still_raise
+    ['', '-', '--05:00', '+05:00', ' 05:00', '05:00 ', '5:0', '1:5:00', '05:60', '1:60:00',
+     '1 3:46:40', '1 24:00:00', '1 03:46', '1 03:60:00', '1  03:46:40', '1:02:03:04', '05:00:',
+     "05:00\n", 'abc', '０５:００'].each do |clock|
+      assert_raises(Calcpace::InvalidTimeFormatError, clock.inspect) { @calc.convert_to_seconds(clock) }
+      assert_raises(Calcpace::InvalidTimeFormatError, clock.inspect) { @calc.check_time(clock) }
+    end
+  end
+
+  def test_non_strings_are_not_clocks
+    [nil, 300, :'05:00'].each do |value|
+      assert_raises(Calcpace::InvalidTimeFormatError, value.inspect) { @calc.check_time(value) }
+    end
+  end
+
+  # A negative clock parses, but every method that needs a positive time or
+  # pace still refuses it
+  PATHS.each do |name, call|
+    define_method(:"test_#{name}_rejects_a_negative_clock") do
+      next assert_equal(-300, call.call(@calc, '-05:00')) if name == :convert_to_seconds
+
+      negative = PACE_PATHS.include?(name) ? '-05:00' : '-1:40:00'
+      assert_raises(Calcpace::NonPositiveInputError, "#{name} accepted #{negative}") { call.call(@calc, negative) }
+    end
+  end
+
+  ROUND_TRIP_SECONDS = [0, 1, 40, 59, 60, 61, 312, 3599, 3600, 3993, 5999, 6000, 7425, 35_999, 86_399,
+                        86_400, 100_000, 359_999, 360_000, 1_440_000, 1_000_000_007].freeze
+
+  def test_convert_to_clocktime_round_trips_in_both_formats
+    (ROUND_TRIP_SECONDS + ROUND_TRIP_SECONDS.map { |s| s + 0.75 }).each do |seconds|
+      [false, true].each do |compact|
+        clock = @calc.convert_to_clocktime(seconds, compact: compact)
+        assert_equal seconds.to_i, @calc.convert_to_seconds(clock), "#{seconds} -> #{clock}"
+      end
+    end
+  end
+
+  def test_track_split_paces_round_trip_in_both_formats
+    ROUND_TRIP_SECONDS.flat_map { |s| [s, -s] }.each do |pace|
+      [false, true].each do |compact|
+        clock = @calc.send(:seconds_to_pace, pace, 1.0, compact: compact)
+        assert_equal pace, @calc.convert_to_seconds(clock), "#{pace} -> #{clock}"
+      end
+    end
+  end
+
+  def test_track_splits_output_round_trips_including_backwards_and_slow_splits
+    start = Time.utc(2026, 1, 1, 7)
+    points = [
+      { lat: 0.0, lon: 0.0, time: start },
+      { lat: 0.0, lon: 0.009, time: start + 7425 },   # ~1 km in 2:03:45
+      { lat: 0.0, lon: 0.018, time: start + 7385 },   # ~1 km, 40 s backwards
+      { lat: 0.0, lon: 0.0185, time: start + 7700 }
+    ]
+    [false, true].each do |compact|
+      splits = @calc.track_splits(points, 1.0, compact: compact)
+      paces = splits.map { |split| @calc.convert_to_seconds(split[:pace]) }
+
+      assert_predicate paces.min, :negative?, splits.inspect
+      assert_operator paces.max, :>, 6000, splits.inspect
+      splits.zip(paces).each do |split, seconds|
+        assert_equal split[:pace], @calc.send(:seconds_to_pace, seconds, 1.0, compact: compact)
+      end
+    end
+  end
+
+  def test_race_splits_round_trip
+    [['marathon', '400:00:00'], ['10k', '00:40:00'], ['marathon', '1 03:46:40'], [100, '99:59:59']].each do |race, time|
+      splits = @calc.race_splits(race, target_time: time, split_distance: '5k')
+      seconds = splits.map { |clock| @calc.convert_to_seconds(clock) }
+      assert_equal seconds.sort, seconds, splits.inspect
+      assert_equal @calc.convert_to_seconds(time), seconds.last
+    end
+  end
 end
