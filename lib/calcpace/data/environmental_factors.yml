@@ -3,11 +3,42 @@
 # Sources:
 # - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
 #   Ref: ~3.76% penalty for 1828.8m (6000ft).
-# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
-#   NOTE: These heat factors are the BASELINE for a 60-minute effort.
+# - Heat: Ely et al. (2007) "Impact of Weather on Marathon-Running Performance",
+#   MSSE 39(3):487-493 — qualitative source: marathon times slow progressively
+#   from 5 to 25 °C WBGT, and more for slower runners (top men 1.7 / 2.5 / 3.3 /
+#   4.5% off the course record in WBGT 5-10 / 10-15 / 15-20 / 20-25 °C).
+#   NOTE: These heat factors are the BASELINE for a 60-minute effort. They have
+#   no direct published source at 60 min.
 #   The final penalty is scaled by a DurationFactor (0.5x at 30 min, 1.0x at
-#   60 min, 3.0x at 3 h, 3.5x at 4 h and beyond; see
+#   60 min, 1.24x at 3 h, 2.18x at 4 h and beyond; see
 #   EnvironmentalAdjuster::HEAT_DURATION_FACTORS) based on total exposure time.
+#   The 3 h and 4 h points are fitted to El Helou et al. (2012), PLoS One
+#   7(5):e37407, Table S3 (1.79 M finishers of Berlin, Boston, Chicago, London,
+#   New York and Paris, 2001-2010). Derivation (reproduced by
+#   test_duration_factor_points_are_the_least_squares_fit_of_el_helou_table_s3):
+#   1. Speed loss (%) at 15, 20 and 25 °C: straight line between the table's
+#      points (optimum -10 ... +20 °C, every 5 °C).
+#   2. Time penalty against 15 °C: ((1 - loss15) / (1 - lossT) - 1) x 100.
+#   3. Ratio = that penalty / the 60-min base (2.8 at 20 °C, 4.3 at 25 °C).
+#   4. Finish time = 42195 m / the group's speed at its optimum.
+#   5. Weighted least squares over the 15 ratios with 1.0x at 60 min fixed and
+#      the 180 and 240 min points free (flat after 240), each sex carrying half
+#      the weight (men 7 observations, women 8): 1.239 and 2.180.
+#
+#   | Group        | Finish | loss@15 | loss@20 | loss@25 | vs 15 °C @20 | @25   | ratio @20 | @25  |
+#   | men P1       | 2:41   | 1.88    | 3.93    | n/a*    | 2.14         | n/a*  | 0.76      | n/a* |
+#   | women P1     | 3:06   | 0.79    | 3.13    | 7.27    | 2.42         | 6.99  | 0.86      | 1.63 |
+#   | men Q1       | 3:31   | 2.86    | 7.00    | 13.58   | 4.46         | 12.41 | 1.59      | 2.89 |
+#   | men median   | 3:57   | 3.18    | 7.93    | 15.63   | 5.17         | 14.76 | 1.85      | 3.43 |
+#   | women Q1     | 4:00   | 1.86    | 4.73    | 9.26    | 3.02         | 8.16  | 1.08      | 1.90 |
+#   | women median | 4:25   | 2.09    | 5.30    | 10.40   | 3.39         | 9.27  | 1.21      | 2.16 |
+#   | men Q3       | 4:28   | 2.92    | 7.91    | 16.38   | 5.42         | 16.10 | 1.94      | 3.74 |
+#   | women Q3     | 4:54   | 2.03    | 5.37    | 10.80   | 3.54         | 9.83  | 1.26      | 2.29 |
+#   * men P1's optimum is 3.81 °C, so 25 °C is beyond its last point (+20 °C).
+#   (P1 = first percentile, Q1/Q3 = quartiles; losses and penalties in %.)
+#   Caveat: El Helou's penalty grows ~2.5-2.9x from 20 to 25 °C, the base only
+#   1.54x (2.8 -> 4.3), so one factor per duration over-reads 20 °C and
+#   under-reads 25 °C for the slower groups.
 # - Humidity: the points are read at air temperature with ~50% relative
 #   humidity (EnvironmentalAdjuster::REFERENCE_HUMIDITY). With humidity: or
 #   dew_point:, the temperature is first moved to the effective temperature
@@ -46,8 +77,8 @@ heat:
   ideal_range_celsius: [10.0, 15.0]
   data_points:
     15: 0.0
-    20: 2.8    # Base for 60m. For 3h (3.0x) = 8.4% (Ely: 9%)
-    25: 4.3    # Base for 60m. For 3h (3.0x) = 12.9% (Ely: 12%)
-    30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%, for 4h (3.5x) = 22.75%
+    20: 2.8    # Base for 60m. For 3h (1.24x) = 3.47%, for 4h (2.18x) = 6.1%
+    25: 4.3    # Base for 60m. For 3h (1.24x) = 5.33%, for 4h (2.18x) = 9.37%
+    30: 6.5    # Base for 60m. For 3h (1.24x) = 8.06%, for 4h (2.18x) = 14.17%
     35: 8.7    # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)
     40: 10.9   # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)

@@ -90,34 +90,66 @@ class TestEnvironmentalAdjuster < CalcpaceTest
 
   def test_calculate_penalty_with_duration
     # 25C at 180 min (Marathon sub-3)
-    # Factor: 3.0x
-    # Penalty: 4.3 * 3.0 = 12.9%
+    # Factor: 1.24x (least-squares fit to El Helou et al. 2012, Table S3)
+    # Penalty: 4.3 * 1.24 = 5.33%
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 10_800)
-    assert_equal 12.9, result[:factors][:heat]
+    assert_equal 5.33, result[:factors][:heat]
   end
 
   def test_calculate_penalty_with_long_duration
     # 25C at 240 min (Amateur Marathon)
-    # Factor: 3.5x (El Helou et al. 2012, men's median ~3:58: 3.0-3.9x)
-    # Penalty: 4.3 * 3.5 = 15.05%
+    # Factor: 2.18x
+    # Penalty: 4.3 * 2.18 = 9.37%
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 14_400)
-    assert_equal 15.05, result[:factors][:heat]
+    assert_equal 9.37, result[:factors][:heat]
   end
 
-  # --- heat duration factor beyond 3 h ---
+  # --- heat duration factor (fit to El Helou et al. 2012) ---
 
-  def test_duration_factor_keeps_the_three_hour_anchor
-    assert_in_delta 3.0, @calc.send(:duration_factor, 10_800), 1e-12
+  def test_duration_factor_keeps_the_short_effort_points
+    assert_in_delta 0.5, @calc.send(:duration_factor, 1200), 1e-12
+    assert_in_delta 0.5, @calc.send(:duration_factor, 1800), 1e-12
+    assert_in_delta 1.0, @calc.send(:duration_factor, 3600), 1e-12
   end
 
-  def test_duration_factor_reaches_three_and_a_half_at_four_hours
-    assert_in_delta 3.5, @calc.send(:duration_factor, 14_400), 1e-12
-    assert_in_delta 3.25, @calc.send(:duration_factor, 12_600), 1e-12
+  def test_duration_factor_points_for_two_three_and_four_hours
+    assert_in_delta 1.12, @calc.send(:duration_factor, 7200), 1e-12
+    assert_in_delta 1.24, @calc.send(:duration_factor, 10_800), 1e-12
+    assert_in_delta 1.71, @calc.send(:duration_factor, 12_600), 1e-12
+    assert_in_delta 2.18, @calc.send(:duration_factor, 14_400), 1e-12
   end
 
   def test_duration_factor_is_flat_beyond_four_hours
-    assert_in_delta 3.5, @calc.send(:duration_factor, 18_000), 1e-12
-    assert_in_delta 3.5, @calc.send(:duration_factor, 36_000), 1e-12
+    assert_in_delta 2.18, @calc.send(:duration_factor, 18_000), 1e-12
+    assert_in_delta 2.18, @calc.send(:duration_factor, 36_000), 1e-12
+  end
+
+  # El Helou et al. (2012) PLoS One 7(5):e37407, Table S3: optimum °C, speed at
+  # the optimum (m/s) and speed loss (%) at optimum −10, −5, 0, +5, +10, +15, +20 °C
+  EL_HELOU_TABLE_S3 = {
+    'men P1' => [3.81, 4.36, [1.41, 0.35, 0, 0.36, 1.44, 3.29, 6.00]],
+    'men Q1' => [6.02, 3.32, [3.27, 0.82, 0, 0.82, 3.38, 7.93, 15.03]],
+    'men median' => [6.24, 2.96, [3.77, 0.94, 0, 0.95, 3.91, 9.26, 17.73]],
+    'men Q3' => [7.42, 2.62, [4.41, 1.10, 0, 1.12, 4.61, 11.01, 21.42]],
+    'women P1' => [9.91, 3.78, [2.97, 0.74, 0, 0.75, 3.06, 7.16, 13.47]],
+    'women Q1' => [6.85, 2.93, [2.51, 0.63, 0, 0.63, 2.58, 6.00, 11.18]],
+    'women median' => [6.75, 2.65, [2.76, 0.69, 0, 0.70, 2.84, 6.63, 12.43]],
+    'women Q3' => [7.35, 2.39, [3.04, 0.76, 0, 0.77, 3.14, 7.35, 13.85]]
+  }.freeze
+
+  # Reproduces the derivation documented in environmental_factors.yml: the
+  # time penalty against 15 °C at 20 and 25 °C, divided by the 60-minute base
+  # (2.8 / 4.3), fitted by weighted least squares (each sex half the weight)
+  # with the 3 h and 4 h points free and 1.0 at 60 min fixed
+  def test_duration_factor_points_are_the_least_squares_fit_of_el_helou_table_s3
+    observations = el_helou_ratios
+    assert_equal 15, observations.size # men P1 at 25 °C lies beyond the table
+
+    f180, f240 = weighted_two_point_fit(observations)
+    points = EnvironmentalAdjuster::HEAT_DURATION_FACTORS.to_h
+
+    assert_in_delta f180, points.fetch(180.0), 0.005
+    assert_in_delta f240, points.fetch(240.0), 0.005
   end
 
   def test_duration_factor_is_continuous_and_monotonic
@@ -130,9 +162,9 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_extreme_heat_for_four_hours
-    # 35 °C / 4 h: 8.7 * 3.5 = 30.45% (was 39.15%); 40 °C / 4 h: 10.9 * 3.5 = 38.15% (was 49.05%)
-    assert_equal 30.45, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
-    assert_equal 38.15, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
+    # 35 °C / 4 h: 8.7 * 2.18 = 18.97%; 40 °C / 4 h: 10.9 * 2.18 = 23.76%
+    assert_equal 18.97, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
+    assert_equal 23.76, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
   end
 
   # --- altitude curve (v1.19.0) ---
@@ -283,7 +315,7 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   def test_humidity_scales_with_duration_like_temperature
     result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 7200)
 
-    assert_equal (9.11 * 2.0).round(2), result[:factors][:heat]
+    assert_equal (9.11 * @calc.send(:duration_factor, 7200)).round(2), result[:factors][:heat]
   end
 
   def test_humid_air_can_lift_an_ideal_temperature_out_of_the_ideal_range
@@ -389,5 +421,61 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     first_key, first_value = altitude.fetch('data_points').min_by { |key, _| key }
     assert_in_delta altitude.fetch('threshold_meters'), first_key, 0.0
     assert_in_delta 0.0, first_value, 0.0
+  end
+
+  private
+
+  def el_helou_ratios
+    base = { 20 => 2.8, 25 => 4.3 }
+    EL_HELOU_TABLE_S3.flat_map do |group, (optimum, speed, losses)|
+      minutes = 42_195 / speed / 60
+      loss15 = table_loss(optimum, losses, 15)
+      [20, 25].filter_map do |temperature|
+        loss = table_loss(optimum, losses, temperature)
+        next unless loss
+
+        penalty = (((1 - (loss15 / 100)) / (1 - (loss / 100))) - 1) * 100
+        [group.split.first, minutes, penalty / base[temperature]]
+      end
+    end
+  end
+
+  # Straight line between the published points; nil beyond them
+  def table_loss(optimum, losses, temperature)
+    xs = (-10..20).step(5).map { |delta| optimum + delta }
+    index = xs.each_cons(2).find_index { |low, high| temperature.between?(low, high) }
+    return nil unless index
+
+    losses[index] + ((temperature - xs[index]) / 5.0 * (losses[index + 1] - losses[index]))
+  end
+
+  # factor(m) = c0 + c1·f180 + c2·f240 on the 60 → 180 → 240 min segments
+  def segment_weights(minutes)
+    if minutes <= 180
+      w = (minutes - 60) / 120.0
+      [1 - w, w, 0.0]
+    elsif minutes <= 240
+      w = (minutes - 180) / 60.0
+      [0.0, 1 - w, w]
+    else
+      [0.0, 0.0, 1.0]
+    end
+  end
+
+  def weighted_two_point_fit(observations)
+    per_sex = observations.map(&:first).tally
+    a11 = a12 = a22 = b1 = b2 = 0.0
+    observations.each do |sex, minutes, ratio|
+      weight = 1.0 / per_sex[sex]
+      c0, c1, c2 = segment_weights(minutes)
+      y = ratio - c0
+      a11 += weight * c1 * c1
+      a12 += weight * c1 * c2
+      a22 += weight * c2 * c2
+      b1 += weight * c1 * y
+      b2 += weight * c2 * y
+    end
+    det = (a11 * a22) - (a12**2)
+    [((b1 * a22) - (a12 * b2)) / det, ((a11 * b2) - (a12 * b1)) / det]
   end
 end

@@ -6,7 +6,10 @@ require_relative 'humidity'
 # Module for adjusting race performance based on environmental conditions
 #
 # Scientific basis:
-# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+# - Heat: Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+#   (qualitative: slowing grows with WBGT, more for slower runners) and
+#   El Helou et al. (2012) "Impact of Environmental Parameters on Marathon
+#   Running Performance" (duration scaling, see HEAT_DURATION_FACTORS)
 # - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
 # - Humidity: Australian Bureau of Meteorology simplified WBGT
 #   (WBGT = 0.567·Ta + 0.393·e + 3.94, e = vapour pressure in hPa)
@@ -17,13 +20,15 @@ module EnvironmentalAdjuster
   # Heat duration scaling: [minutes, factor] points, joined by straight lines
   # and flat outside the first and last point. The base heat penalty in
   # environmental_factors.yml is for a 60-minute effort (factor 1.0).
-  # - up to 3 h (3.0x): Ely et al. (2007) — a ~3 h marathoner loses ~9% at
-  #   20 °C WBGT and ~12% at 25 °C; 2.8 × 3.0 = 8.4%, 4.3 × 3.0 = 12.9%.
-  # - 4 h (3.5x, flat after): El Helou et al. (2012, 1.8 M finishers, Table S3).
-  #   Men's median (~3:58) loses 8.45% at 20 °C and 16.9% at 25 °C against the
-  #   optimum, i.e. 3.0x and 3.9x the 60-minute base; men's Q3 (~4:28) is no
-  #   worse (3.0x / 4.1x). The previous 4.5x at 4 h was above every group.
-  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 3.0], [240.0, 3.5]].freeze
+  # - 30 min (0.5x) and 60 min (1.0x): kept from the original model; no
+  #   marathon dataset covers efforts this short.
+  # - 3 h (1.24x) and 4 h (2.18x, flat after): weighted least-squares fit to
+  #   El Helou et al. (2012) Table S3 — the time penalty against 15 °C at
+  #   20 °C and 25 °C for eight finisher groups (2:41–4:54) divided by the
+  #   60-minute base. The 2 h value (1.12x) is the straight line 60 → 180 min:
+  #   no group finishes between 1 h and 2:41. Derivation table in
+  #   environmental_factors.yml.
+  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 1.24], [240.0, 2.18]].freeze
 
   # Relative humidity (%) the temperature-only heat curve stands for
   # (see EnvironmentalAdjuster::Humidity)
