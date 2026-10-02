@@ -7,63 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.19.0] - 2026-10-02
-
-### Changed (numbers)
-Four models produced unrealistic numbers. The method names, signatures, return
-shapes and the structure of `environmental_factors.yml` are unchanged; only the
-values they return move.
-
-- **Cameron prediction now uses Dave Cameron's actual model.** The previous
-  constants (`a + b·e^(−d/c)` with a = 0.000495, b = 0.000985, c = 1.4485) were
-  not Cameron's formula and were far more optimistic than Riegel for the
-  marathon, while the real model is more conservative. `predict_time_cameron`
-  and friends now use Cameron's velocity-ratio function, with distances in
-  metres as in his own metric version (t-and-f mailing list, 20 Jun 2001) and
-  the had2know.org calculator:
-  `f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905`,
-  `T2 = T1 · (D2/D1) · f(D1)/f(D2)`. Distances are still passed in km or as race
-  names.
-- **Altitude no longer jumps at 914 m and no longer stops at 2438 m.** The
-  threshold moves from 914.4 m to 300 m with a new `300: 0.0` point, so the
-  penalty ramps linearly up to the first NCAA point (914.4 m → 1.41%) instead of
-  jumping from 0% at 914 m to 1.41% at 915 m. The NCAA points are unchanged.
-  Above 2438.4 m, where everything used to be capped at 5.90%, three points are
-  extrapolated from a quadratic fit to the NCAA table
-  (`p = 0.3647·x² + 1.9482·x`, `x = km − 0.3`): 3000 m → 7.92%,
-  3500 m → 9.97%, 4000 m → 12.2% (capped there). The redundant `0: 0.0` point is
-  gone; the YAML keys are the same.
-- **Negative/positive race splits are ±1% per half instead of ±4%.** A 3:00:00
-  marathon with `strategy: :negative` used to go through halfway in 1:33:36 (a
-  7-minute negative split); it now splits 1:30:54 + 1:29:06.
-- **Heat above 30 °C keeps increasing.** 35 °C and 40 °C used to get the same
-  penalty as 30 °C. Two points extrapolate the 25→30 °C slope (0.44 points/°C):
-  35 °C → 8.7% and 40 °C → 10.9% at the 60-minute baseline (capped at 40 °C).
-  The ideal range and the duration scaling are unchanged.
-
-| Case | 1.18.1 | 1.19.0 |
-| --- | --- | --- |
-| Cameron 10K 42:00 → marathon | 02:57:34 | 03:16:46 (Riegel 03:13:12) |
-| Cameron 5K 20:00 → marathon | 02:59:25 | 03:15:11 (Riegel 03:11:49) |
-| Cameron 5K 20:00 → 10K | 00:42:26 | 00:41:39 |
-| Cameron 7.79 km 26:59 → half marathon | 01:13:44 | 01:17:26 |
-| Altitude 500 m | 0.0% | 0.46% |
-| Altitude 760 m (São Paulo) | 0.0% | 1.06% |
-| Altitude 914 m / 915 m | 0.0% / 1.41% | 1.41% / 1.41% |
-| Altitude 2800 m | 5.9% | 7.2% |
-| Altitude 3600 m | 5.9% | 10.42% |
-| Heat 35 °C, 60 min | 6.5% | 8.7% |
-| Heat 40 °C, 60 min | 6.5% | 10.9% |
-| Splits marathon 3:00:00 `:negative` (halves) | 1:33:36 + 1:26:24 | 1:30:54 + 1:29:06 |
-| Splits marathon 3:00:00 `:positive` (halves) | 1:26:24 + 1:33:36 | 1:29:06 + 1:30:54 |
-
-### Removed
-- `CameronPredictor::CAMERON_A`, `CAMERON_B` and `CAMERON_C`. They described
-  the wrong formula, and keeping them would suggest they still drive the
-  prediction. The new model's constants are `CAMERON_CONSTANT`,
-  `CAMERON_LINEAR_COEFFICIENT`, `CAMERON_POWER_COEFFICIENT` and
-  `CAMERON_POWER_EXPONENT`.
-
 ## [1.18.1] - 2026-09-06
 
 ### Fixed
