@@ -114,14 +114,42 @@ class TestPersonalizedPredictor < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) do
       @calc.predict_marathon_from_training(weekly_distance: 60, training_pace: -1)
     end
-    assert_raises(Calcpace::NonPositiveInputError) do
-      @calc.predict_marathon_from_training(weekly_distance: 60, training_pace: 'abc')
+  end
+
+  def test_malformed_training_pace_raises_invalid_time_format
+    ['5:3x', 'abc', '', :'05:00', nil].each do |pace|
+      assert_raises(Calcpace::InvalidTimeFormatError, "expected #{pace.inspect} to be rejected") do
+        @calc.predict_marathon_from_training(weekly_distance: 60, training_pace: pace)
+      end
     end
   end
 
+  def test_numeric_string_weekly_distance_is_accepted
+    string = @calc.predict_marathon_from_training(weekly_distance: '60', training_pace: 300)
+    numeric = @calc.predict_marathon_from_training(weekly_distance: 60, training_pace: 300)
+
+    assert_equal numeric, string
+  end
+
   def test_non_numeric_weekly_distance_raises
+    ['abc', '', nil, :'60'].each do |distance|
+      assert_raises(Calcpace::NonPositiveInputError, "expected #{distance.inspect} to be rejected") do
+        @calc.predict_marathon_from_training(weekly_distance: distance, training_pace: 300)
+      end
+    end
+  end
+
+  def test_non_finite_inputs_raise
+    [Float::INFINITY, Float::NAN].each do |value|
+      assert_raises(Calcpace::NonPositiveInputError) do
+        @calc.predict_marathon_from_training(weekly_distance: value, training_pace: 300)
+      end
+      assert_raises(Calcpace::NonPositiveInputError) do
+        @calc.predict_marathon_from_training(weekly_distance: 60, training_pace: value)
+      end
+    end
     assert_raises(Calcpace::NonPositiveInputError) do
-      @calc.predict_marathon_from_training(weekly_distance: '60', training_pace: 300)
+      @calc.predict_marathon_from_training(weekly_distance: 'Infinity', training_pace: 300)
     end
   end
 
@@ -163,6 +191,18 @@ class TestPersonalizedPredictor < CalcpaceTest
   def test_riegel_exponent_rejects_unknown_race_and_non_positive_time
     assert_raises(ArgumentError) { @calc.riegel_exponent('10q', 2700, '5k', 1300) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.riegel_exponent('10k', 0, '5k', 1300) }
+    assert_raises(Calcpace::NonPositiveInputError) { @calc.riegel_exponent('10k', Float::INFINITY, '5k', 1300) }
+  end
+
+  def test_malformed_race_times_raise_invalid_time_format
+    ['45:0x', 'abc', :'00:45:00', nil].each do |time|
+      assert_raises(Calcpace::InvalidTimeFormatError, "expected #{time.inspect} to be rejected") do
+        @calc.riegel_exponent('10k', time, '5k', 1300)
+      end
+      assert_raises(Calcpace::InvalidTimeFormatError) do
+        @calc.predict_time_personal('10k', 2700, '5k', time, 'marathon')
+      end
+    end
   end
 
   def test_personal_prediction_uses_the_performance_closest_to_the_target
@@ -210,6 +250,44 @@ class TestPersonalizedPredictor < CalcpaceTest
     assert result[:clamped]
     assert_operator result[:raw_exponent], :<, 0
     assert_in_delta 1.01, result[:exponent], 1e-12
+  end
+
+  def test_a_target_between_the_two_races_uses_the_raw_exponent
+    # k = ln(3000 / 1200) / ln(20 / 5) = 0.661, far below the clamp: but the 10K
+    # lies between the two known races, so the curve through both of them is
+    # used as is — clamping would contradict the runner's own data
+    result = @calc.predict_time_personal(5, 1200, 20, 3000, 10)
+
+    refute result[:clamped]
+    assert_in_delta 0.6610, result[:exponent], 1e-4
+    assert_equal result[:raw_exponent], result[:exponent]
+    assert_in_delta 1200 * (2**(Math.log(2.5) / Math.log(4))), result[:time], 0.01
+  end
+
+  def test_interpolation_does_not_depend_on_argument_order
+    # 10 km is the geometric mean of 5 and 20: both races are equally close
+    forward = @calc.predict_time_personal(5, 1200, 20, 3000, 10)
+    backward = @calc.predict_time_personal(20, 3000, 5, 1200, 10)
+
+    assert_equal forward, backward
+  end
+
+  def test_interpolation_passes_through_both_known_performances
+    # Between a 10K in 45:00 and a half in 1:42:00, a 15K sits on the same
+    # curve whichever performance it is scaled from
+    result = @calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 15)
+    exponent = Math.log(6120.0 / 2700) / Math.log(21.0975 / 10)
+
+    assert_in_delta 2700 * (1.5**exponent), result[:time], 0.01
+    assert_in_delta 6120 * ((15 / 21.0975)**exponent), result[:time], 0.01
+  end
+
+  def test_extrapolation_outside_the_pair_is_still_clamped
+    result = @calc.predict_time_personal(5, 1200, 20, 3000, 'marathon')
+
+    assert result[:clamped]
+    assert_in_delta 1.01, result[:exponent], 1e-12
+    assert_in_delta 3000 * ((42.195 / 20)**1.01), result[:time], 0.01
   end
 
   def test_personal_prediction_rejects_a_target_already_known

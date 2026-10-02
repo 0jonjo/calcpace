@@ -32,7 +32,7 @@ module PersonalizedPredictor
   TANDA_TRAINING_PACE_RANGE_SECONDS_PER_KM = (253.3..330.6)
   TANDA_MARATHON_TIME_RANGE_SECONDS = ((167 * 60.0)..(216 * 60.0))
 
-  MARATHON_KM = 42.195
+  TANDA_MARATHON_KM = 42.195
 
   # Personal Riegel exponents outside this range almost never describe fitness:
   # below 1.01 the longer race was run at practically the shorter one's pace,
@@ -53,7 +53,8 @@ module PersonalizedPredictor
   # Inputs or a predicted time outside the paper's sample do not raise — the
   # prediction is still returned, flagged in :out_of_range.
   #
-  # @param weekly_distance [Numeric] mean weekly training distance, in unit per week
+  # @param weekly_distance [Numeric, String] mean weekly training distance, in
+  #   unit per week — a number or a numeric string ('60')
   # @param training_pace [Numeric, String] mean training pace per unit, in
   #   seconds or as a clock string ('05:30')
   # @param unit [Symbol, String] :km (default) or :mi — applies to both inputs
@@ -61,7 +62,10 @@ module PersonalizedPredictor
   # @return [Hash] :time (seconds), :time_clock (HH:MM:SS), :pace (seconds per
   #   unit), :pace_clock, :within_validated_range (Boolean) and :out_of_range
   #   (Array of :weekly_distance, :training_pace and/or :marathon_time)
-  # @raise [Calcpace::NonPositiveInputError] if an input is not positive
+  # @raise [Calcpace::NonPositiveInputError] if an input is not a positive,
+  #   finite number (or numeric string, for weekly_distance)
+  # @raise [Calcpace::InvalidTimeFormatError] if training_pace is neither a
+  #   number nor an HH:MM:SS / MM:SS string
   # @raise [Calcpace::UnsupportedUnitError] if unit is not :km or :mi
   #
   # @example
@@ -70,12 +74,13 @@ module PersonalizedPredictor
   #   calc.predict_marathon_from_training(weekly_distance: 40, training_pace: '05:30')[:out_of_range]
   #   # => [:weekly_distance, :marathon_time]
   def predict_marathon_from_training(weekly_distance:, training_pace:, unit: :km)
-    check_positive(weekly_distance, 'Weekly distance')
-    pace_seconds = training_pace.is_a?(String) ? convert_to_seconds(training_pace) : training_pace
+    weekly = personal_number(weekly_distance)
+    check_positive(weekly, 'Weekly distance')
+    pace_seconds = personal_time_seconds(training_pace)
     check_positive(pace_seconds, 'Training pace')
 
     km_per_unit = normalize_distance_km(1, unit)
-    weekly_km = weekly_distance * km_per_unit
+    weekly_km = weekly * km_per_unit
     pace_km = pace_seconds / km_per_unit
 
     marathon_pace_km = tanda_marathon_pace(weekly_km, pace_km)
@@ -101,8 +106,8 @@ module PersonalizedPredictor
   # @example
   #   calc.riegel_exponent('10k', '00:45:00', 'half_marathon', '01:42:00') # => 1.0961
   def riegel_exponent(race1, time1, race2, time2)
-    distance1, seconds1 = performance(race1, time1)
-    distance2, seconds2 = performance(race2, time2)
+    distance1, seconds1 = personal_performance(race1, time1)
+    distance2, seconds2 = personal_performance(race2, time2)
     ensure_different_distances!(distance1, distance2)
 
     Math.log(seconds2 / seconds1) / Math.log(distance2 / distance1)
@@ -110,10 +115,15 @@ module PersonalizedPredictor
 
   # Predicts a race time with a personal Riegel exponent
   #
-  # Fits k to the two performances (see #riegel_exponent), clamps it to
-  # PERSONAL_EXPONENT_RANGE, and applies Riegel from whichever performance is
-  # closer to the target in log-distance — the shorter extrapolation. On an
-  # exact tie (target at the geometric mean of the two) the first one is used.
+  # Fits k to the two performances (see #riegel_exponent), then:
+  #
+  # - Target between the two races: interpolates along the Riegel curve that
+  #   passes through both performances, with the raw k and no clamping — the
+  #   runner's own data already brackets the answer, and it is the same
+  #   whichever performance it is scaled from or in which order they are given.
+  # - Target outside the pair: extrapolates from the performance closer to it
+  #   in log-distance (the shorter extrapolation), with k clamped to
+  #   PERSONAL_EXPONENT_RANGE.
   #
   # @param race1 [Numeric, String, Symbol] distance in km or race name
   # @param time1 [String, Numeric] time at race1 (HH:MM:SS or seconds)
@@ -121,22 +131,25 @@ module PersonalizedPredictor
   # @param time2 [String, Numeric] time at race2 (HH:MM:SS or seconds)
   # @param to_race [Numeric, String, Symbol] target distance in km or race name
   # @return [Hash] :time (seconds), :time_clock (HH:MM:SS), :exponent (the one
-  #   used, after clamping), :raw_exponent (as fitted), :clamped (Boolean)
+  #   used, after any clamping), :raw_exponent (as fitted), :clamped (Boolean,
+  #   always false when the target lies between the two races)
   # @raise [ArgumentError] if the two races are the same distance, the target
   #   is one of them, or a race name is unknown
   # @raise [Calcpace::NonPositiveInputError] if a distance or time is not positive
+  # @raise [Calcpace::InvalidTimeFormatError] if a time is neither a number nor
+  #   an HH:MM:SS / MM:SS string
   #
   # @example
+  #   calc.predict_time_personal(5, 1200, 20, 3000, 10)[:time] # => 1897.37
   #   calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:time_clock]
   #   # => "03:38:03"
   #   calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:clamped] # => false
   def predict_time_personal(race1, time1, race2, time2, to_race)
     raw = riegel_exponent(race1, time1, race2, time2)
-    exponent = raw.clamp(PERSONAL_EXPONENT_RANGE.min, PERSONAL_EXPONENT_RANGE.max)
     target = race_distance(to_race)
-    anchor_distance, anchor_seconds = closest_performance([performance(race1, time1), performance(race2, time2)],
-                                                          target)
-    ensure_different_distances!(anchor_distance, target)
+    performances = [personal_performance(race1, time1), personal_performance(race2, time2)].sort
+    performances.map(&:first).each { |distance| ensure_different_distances!(distance, target) }
+    (anchor_distance, anchor_seconds), exponent = personal_prediction_basis(performances, target, raw)
 
     time = (anchor_seconds * ((target / anchor_distance)**exponent)).round(2)
     { time: time, time_clock: convert_to_clocktime(time), exponent: exponent.round(4),
@@ -154,13 +167,13 @@ module PersonalizedPredictor
     checks = {
       weekly_distance: TANDA_WEEKLY_DISTANCE_RANGE_KM.cover?(weekly_km),
       training_pace: TANDA_TRAINING_PACE_RANGE_SECONDS_PER_KM.cover?(pace_km),
-      marathon_time: TANDA_MARATHON_TIME_RANGE_SECONDS.cover?(marathon_pace_km * MARATHON_KM)
+      marathon_time: TANDA_MARATHON_TIME_RANGE_SECONDS.cover?(marathon_pace_km * TANDA_MARATHON_KM)
     }
     checks.reject { |_name, inside| inside }.keys
   end
 
   def tanda_result(marathon_pace_km, km_per_unit, out_of_range)
-    time = (marathon_pace_km * MARATHON_KM).round(2)
+    time = (marathon_pace_km * TANDA_MARATHON_KM).round(2)
     pace = (marathon_pace_km * km_per_unit).round(2)
 
     {
@@ -174,13 +187,34 @@ module PersonalizedPredictor
   end
 
   # A performance as [distance in km, time in seconds], validated
-  def performance(race, time)
-    seconds = time.is_a?(String) ? convert_to_seconds(time) : time
+  def personal_performance(race, time)
+    seconds = personal_time_seconds(time)
     check_positive(seconds, 'Time')
     [race_distance(race), seconds.to_f]
   end
 
-  def closest_performance(performances, target)
-    performances.min_by { |distance, _seconds| Math.log(target / distance).abs }
+  # Seconds from a number, or from a strictly validated clock string — the same
+  # rule as Calculator, AgeGrading and Vo2maxEstimator
+  def personal_time_seconds(time)
+    return time if time.is_a?(Numeric)
+
+    check_time(time)
+    convert_to_seconds(time)
+  end
+
+  # A number, or a numeric string read the way race distances are; nil otherwise
+  def personal_number(value)
+    value.is_a?(Numeric) ? value : Float(value, exception: false)
+  end
+
+  # [anchor performance, exponent] for a target, given performances sorted by
+  # distance. Between the two, the raw curve through both; outside, the closer
+  # performance with the clamped exponent
+  def personal_prediction_basis(performances, target, raw)
+    shorter, longer = performances
+    return [shorter, raw] if target.between?(shorter.first, longer.first)
+
+    closer = performances.min_by { |distance, _seconds| Math.log(target / distance).abs }
+    [closer, raw.clamp(PERSONAL_EXPONENT_RANGE.min, PERSONAL_EXPONENT_RANGE.max)]
   end
 end

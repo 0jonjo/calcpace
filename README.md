@@ -221,9 +221,11 @@ The equation is `Pm = 17.1 + 140.0 · exp(−0.0053 · K) + 0.55 · P` (Pm marat
 pace in s/km, K km/week, P s/km). Training pace is the plain average of every
 run — total time over total distance, warm-ups and easy days included — not the
 pace of the hard sessions. The paper reports a standard error of about 4 minutes.
+`weekly_distance` may be a number or a numeric string (`'60'`); `training_pace`
+is seconds or an `MM:SS` / `HH:MM:SS` string.
 
 It was fitted on 22 experienced runners (21 men) and 46 marathons, so it is only
-validated inside that sample: 40.4–110.7 km/week, training pace 4:13–5:31/km,
+validated inside that sample: 40.4–110.7 km/week, training pace 253.3–330.6 s/km (4:13–5:30/km),
 finish 2:47–3:36. Outside it the prediction is still returned, and
 `out_of_range` names what fell outside (`:weekly_distance`, `:training_pace`,
 `:marathon_time`) — a warning, not an error. A low-volume runner at an easy pace
@@ -244,20 +246,34 @@ calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'mara
 ```
 
 The standard Riegel gives 3:32:39 from that half and 3:27:00 from that 10K; this
-runner fades more than average, and the personal exponent says so. The
-prediction is made from whichever race is closer to the target (in log-distance),
-with the exponent clamped to 1.01–1.20:
+runner fades more than average, and the personal exponent says so.
+
+When the target lies outside the two races, the prediction extrapolates from
+whichever race is closer to it (in log-distance), with the exponent clamped to
+1.01–1.20:
 
 ```ruby
 calc.predict_time_personal('5k', '00:20:00', '10k', '00:50:00', 'half_marathon')
 # => { time: 7348.5, time_clock: "02:02:28", exponent: 1.2, raw_exponent: 1.3219, clamped: true }
 ```
 
+When the target lies between them, it interpolates along the curve through both
+performances with the raw exponent, never clamped: the runner's own data
+already brackets the answer, and the result does not depend on which race comes
+first.
+
+```ruby
+calc.predict_time_personal(5, 1200, 20, 3000, 10)[:time] # => 1897.37
+calc.predict_time_personal(20, 3000, 5, 1200, 10)[:time] # => 1897.37
+```
+
 An exponent outside that range — or `clamped: true` — usually means one of the
 two races was not an all-out effort, or was run on a course or day that does
-not compare with the other. Both races may be names or distances in km; two
-races at the same distance, or a target equal to one of them, raise
-`ArgumentError`.
+not compare with the other — the raw exponent in an interpolation
+(0.661 above) is worth the same suspicion. Both races may be names or distances
+in km; two races at the same distance, or a target equal to one of them, raise
+`ArgumentError`. Times are seconds or `HH:MM:SS` / `MM:SS` strings; anything
+else raises `Calcpace::InvalidTimeFormatError`.
 
 ---
 

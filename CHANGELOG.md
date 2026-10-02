@@ -24,10 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `riegel_exponent(race1, time1, race2, time2)` fits a personal Riegel
   exponent, `ln(t2/t1) / ln(d2/d1)`, to two performances.
 - `predict_time_personal(race1, time1, race2, time2, to_race)` predicts with
-  that exponent, clamped to 1.01–1.20, from whichever performance is closer to
-  the target in log-distance. Returns `:time`, `:time_clock`, `:exponent`,
-  `:raw_exponent` and `:clamped`; an exponent that needed clamping usually
-  means one of the races was not all-out.
+  that exponent. A target between the two races is interpolated along the
+  curve through both, with the raw exponent (never clamped, independent of
+  argument order); a target outside the pair is extrapolated from the closer
+  performance in log-distance, with the exponent clamped to 1.01–1.20.
+  Returns `:time`, `:time_clock`, `:exponent`, `:raw_exponent` and
+  `:clamped`; an exponent that needed clamping usually means one of the races
+  was not all-out.
 
   ```ruby
   calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:time_clock] # => "03:38:03"
