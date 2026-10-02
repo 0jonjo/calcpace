@@ -61,6 +61,13 @@ module Vo2maxEstimator
 
   # Estimates a detailed and contextualized VO2max
   #
+  # Elevation is folded in with a flat heuristic — every 100 m of gain adds
+  # 600 m of equivalent flat distance — that ignores where the climbing is and
+  # gives nothing back for descents. It is kept as is so results stay
+  # comparable across versions. For a profile-aware view of a GPS track, see
+  # GradeAdjustedPace#grade_adjusted_pace and
+  # TrackCalculator#track_grade_adjusted_splits (Minetti et al., 2002).
+  #
   # @param distance [Numeric] race distance, in kilometres by default or in
   #   the unit given by distance_unit
   # @param time [String, Integer] finish time

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Grade-adjusted pace from the energy cost of running on gradients of
+  Minetti et al. (2002), J Appl Physiol 93:1039–1046:
+  `grade_adjustment_factor(grade)` (Cr(i)/Cr(0), grade as a fraction, clamped
+  to the measured ±0.45), `grade_adjusted_pace(pace, grade, unit: :km)` and
+  `grade_adjusted_pace_clock(pace, grade, unit: :km, compact: false)`.
+- `track_grade_adjusted_splits(points, split_km = 1.0, compact: false)`: the
+  `track_splits` splits with a `:gap` pace per split, computed segment by
+  segment from `:ele`. Grades are measured over segments of at least 100 m of
+  horizontal distance so GPS elevation noise does not become fake climbing;
+  stretches without `:ele` are flat. `track_splits` output is unchanged.
+
 ## [1.18.1] - 2026-09-06
 
 ### Fixed

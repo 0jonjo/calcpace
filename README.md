@@ -238,6 +238,58 @@ in both formats (`"-00:40"` / `"-0:40"`) rather than raising.
 
 **Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
 
+#### Grade-adjusted pace (GAP)
+
+The flat-ground pace that costs the same energy as a pace run on a slope, from
+the energy cost of running on gradients measured by **Minetti et al. (2002)**.
+The grade is a fraction (rise over horizontal distance): `0.05` is 5% uphill,
+`-0.05` is 5% downhill.
+
+```ruby
+calc.grade_adjustment_factor(0.1)   # => 1.6578372222222222  (a metre at +10% ≈ 1.66 flat metres)
+calc.grade_adjustment_factor(-0.1)  # => 0.5976961111111111
+
+calc.grade_adjusted_pace(360, 0.1)                       # => 217.1503903847952 (s/km)
+calc.grade_adjusted_pace_clock('06:00', 0.1)             # => "00:03:37"
+calc.grade_adjusted_pace_clock('06:00', 0.1, compact: true)  # => "3:37"
+calc.grade_adjusted_pace(480, 0.05, unit: :mi)           # => 368.82127811700303 (s/mi)
+
+# Per-split GAP for a GPS track: the track_splits fields plus :gap
+calc.track_grade_adjusted_splits(points, 1.0)
+# => [{ km: 1.0, elapsed: 415, pace: "06:55", gap: "06:50" },
+#     { km: 1.51, elapsed: 600, pace: "06:04", gap: "06:21" }]
+```
+
+| Grade | −10% | −5% | 0% | +5% | +10% |
+|-------|------|-----|----|-----|------|
+| Factor | 0.598 | 0.763 | 1.000 | 1.301 | 1.658 |
+
+**Formula** (J·kg⁻¹·m⁻¹, R² = 0.999):
+```
+Cr(i)  = 155.4·i⁵ − 30.4·i⁴ − 43.3·i³ + 46.3·i² + 19.5·i + 3.6
+factor = Cr(i) / Cr(0)
+GAP    = pace / factor
+```
+
+- Grades are clamped to **±45%**, the range Minetti et al. measured; nothing
+  is extrapolated beyond it. Running is cheapest near −20% and gets dearer
+  again on steeper descents.
+- It is a metabolic model: it does not see the muscular cost of long descents
+  or technical terrain, and field models fitted to heart rate (Strava's, for
+  instance) are gentler on steep climbs.
+- `track_grade_adjusted_splits` leaves `track_splits` untouched: it returns the
+  same `:km`, `:elapsed` and `:pace` with `:gap` added (formatted like `:pace`,
+  `compact:` applies to both). GPS elevation is noisy, so grades are measured
+  over **grade segments of at least 100 m** of horizontal distance — read
+  between fixes a metre apart, ±2 m of jitter would be a ±400% grade. A short
+  leftover at the end of a stretch joins the segment before it. Stretches
+  between points without `:ele` count as flat, so a track with no elevation
+  has `:gap` equal to `:pace`.
+- `estimate_detailed_vo2max` keeps its own flat elevation heuristic (100 m of
+  gain = 600 m of flat), so its numbers do not change.
+
+*Minetti, A. E., Moia, C., Roi, G. S., Susta, D., & Ferretti, G. (2002). Energy cost of walking and running at extreme uphill and downhill slopes. Journal of Applied Physiology, 93(3), 1039–1046. https://doi.org/10.1152/japplphysiol.01177.2001*
+
 ---
 
 ### Age Grading (Road Races)

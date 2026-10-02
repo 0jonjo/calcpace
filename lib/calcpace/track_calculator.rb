@@ -27,6 +27,19 @@ module TrackCalculator
   # Mean radius of the Earth in kilometers (IAU standard)
   EARTH_RADIUS_KM = 6371.0
 
+  # Shortest horizontal distance a grade is measured over in
+  # #track_grade_adjusted_splits. GPS elevation is noisy — a few metres between
+  # consecutive fixes even from a barometric altimeter — so a grade read
+  # between points 1 m apart can be ±300% on flat ground, and the grade factor's
+  # curvature turns that symmetric noise into a fake climb. Over 100 m, ±1–2 m
+  # of noise is ±1–2% of grade, while a hill longer than a track straight still
+  # shows up.
+  GRADE_SEGMENT_MIN_KM = 0.1
+
+  # Slack on GRADE_SEGMENT_MIN_KM so ten 10 m steps, which sum to a hair under
+  # 0.1 km in floating point, still close a 100 m grade segment (1 mm)
+  GRADE_SEGMENT_TOLERANCE_KM = 1e-6
+
   # Computes the great-circle distance between two GPS coordinates using
   # the Haversine formula.
   #
@@ -156,6 +169,45 @@ module TrackCalculator
     collect_splits(points, split_km, compact: compact)
   end
 
+  # Pace splits with a grade-adjusted pace (GAP) for each split.
+  #
+  # Each split is the hash #track_splits returns — same :km, :elapsed and :pace,
+  # split boundaries computed the same way — plus :gap, the flat-ground pace of
+  # equal effort for that split (Minetti et al., 2002; see GradeAdjustedPace).
+  # #track_splits itself is unchanged.
+  #
+  # How :gap is computed:
+  # - The track is cut into grade segments of at least GRADE_SEGMENT_MIN_KM
+  #   (100 m) of horizontal distance, and each gets one grade: its net
+  #   elevation change over its length. A leftover shorter than that at the end
+  #   of a stretch is merged into the segment before it. Grades are clamped to
+  #   ±45%, the range the model was measured on.
+  # - A stretch between points without :ele is flat (factor 1.0), and a missing
+  #   :ele ends the grade segment in progress.
+  # - Each split's distance is weighted by the grade factor of the segments it
+  #   covers, and :gap is the split's time over that flat-equivalent distance.
+  #   A split on flat ground, or with no elevation data, has :gap equal to :pace.
+  #
+  # @param points [Array<Hash>] points with :lat, :lon and :time keys, and
+  #   optionally :ele (metres), as for #track_splits
+  # @param split_km [Numeric] split interval in kilometers (default: 1.0)
+  # @param compact [Boolean] when true, :pace and :gap use the compact display format
+  # @return [Array<Hash>] split hashes with :km, :elapsed, :pace and :gap
+  #   (:gap formatted like :pace)
+  # @raise [ArgumentError] if split_km is not positive
+  # @raise [ArgumentError] if any point is missing a :time key
+  #
+  # @example a steady 5% climb at 5:00/km
+  #   calc.track_grade_adjusted_splits(points, 1.0)
+  #   #=> [{ km: 1.0, elapsed: 300, pace: "05:00", gap: "03:51" }, ...]
+  def track_grade_adjusted_splits(points, split_km = 1.0, compact: false)
+    raise ArgumentError, 'split_km must be positive' unless split_km.is_a?(Numeric) && split_km.positive?
+    return [] if points.nil? || points.size < 2
+
+    validate_points_have_time(points)
+    collect_splits(points, split_km, compact: compact, grade_factors: segment_grade_factors(points))
+  end
+
   private
 
   def haversine_km(lat1, lon1, lat2, lon2)
@@ -253,41 +305,50 @@ module TrackCalculator
     format('%<min>02d:%<sec>02d', min: pace_seconds / 60, sec: pace_seconds % 60)
   end
 
-  def collect_splits(points, split_km, compact:)
+  # grade_factors, when given, holds one grade factor per segment (see
+  # #segment_grade_factors) and turns on the :gap field; without it the splits
+  # are exactly the ones #track_splits has always returned.
+  def collect_splits(points, split_km, compact:, grade_factors: nil)
     state = { splits: [], start_time: point_time(points.first),
               split_start_time: point_time(points.first),
-              accumulated_km: 0.0, split_number: 1, compact: compact }
+              accumulated_km: 0.0, split_number: 1, compact: compact,
+              grade_factors: grade_factors, flat_equivalent_km: 0.0 }
 
-    points.each_cons(2) { |a, b| process_segment(a, b, split_km, state) }
+    points.each_cons(2).with_index { |(a, b), index| process_segment(a, b, split_km, state, index) }
     append_partial_split(points.last, split_km, state)
     state[:splits]
   end
 
-  def process_segment(point_a, point_b, split_km, state)
-    segment_km = haversine_distance(dig_key(point_a, :lat), dig_key(point_a, :lon),
-                                    dig_key(point_b, :lat), dig_key(point_b, :lon))
+  def process_segment(point_a, point_b, split_km, state, index)
+    segment_km = segment_distance_km(point_a, point_b)
     state[:accumulated_km] += segment_km
+    state[:segment] = { km: segment_km, assigned_km: 0.0, factor: state[:grade_factors]&.fetch(index) }
 
     while state[:accumulated_km] >= split_km * state[:split_number]
       record_split(point_a, point_b, segment_km, split_km, state)
     end
+
+    accumulate_flat_equivalent(state, segment_km)
   end
 
   def record_split(point_a, point_b, segment_km, split_km, state)
     offset = (split_km * state[:split_number]) - (state[:accumulated_km] - segment_km)
+    accumulate_flat_equivalent(state, offset)
     boundary_time = interpolate_time(point_a, point_b, segment_km, offset)
     state[:splits] << build_split_entry(boundary_time, split_km, state)
     state[:split_start_time] = boundary_time
     state[:split_number] += 1
+    state[:flat_equivalent_km] = 0.0
   end
 
   def build_split_entry(boundary_time, split_km, state)
     split_elapsed = (boundary_time - state[:split_start_time]).round
-    {
+    entry = {
       km: (split_km * state[:split_number]).round(2),
       elapsed: (boundary_time - state[:start_time]).round,
       pace: seconds_to_pace(split_elapsed, split_km, compact: state[:compact])
     }
+    with_gap(entry, split_elapsed, state)
   end
 
   def append_partial_split(last_point, split_km, state)
@@ -295,11 +356,104 @@ module TrackCalculator
     return unless remaining_km > 0.001
 
     last_time = point_time(last_point)
-    state[:splits] << {
+    split_elapsed = (last_time - state[:split_start_time]).round
+    entry = {
       km: state[:accumulated_km].round(2),
       elapsed: (last_time - state[:start_time]).round,
-      pace: seconds_to_pace((last_time - state[:split_start_time]).round, remaining_km,
-                            compact: state[:compact])
+      pace: seconds_to_pace(split_elapsed, remaining_km, compact: state[:compact])
     }
+    state[:splits] << with_gap(entry, split_elapsed, state)
+  end
+
+  def segment_distance_km(point_a, point_b)
+    haversine_distance(dig_key(point_a, :lat), dig_key(point_a, :lon),
+                       dig_key(point_b, :lat), dig_key(point_b, :lon))
+  end
+
+  # Adds the flat-equivalent distance of the current segment up to
+  # distance_into_segment, for the part not yet credited to an earlier split
+  def accumulate_flat_equivalent(state, distance_into_segment)
+    segment = state[:segment]
+    return unless segment[:factor]
+
+    state[:flat_equivalent_km] += (distance_into_segment - segment[:assigned_km]) * segment[:factor]
+    segment[:assigned_km] = distance_into_segment
+  end
+
+  def with_gap(entry, split_elapsed, state)
+    return entry unless state[:grade_factors]
+
+    entry.merge(gap: seconds_to_pace(split_elapsed, state[:flat_equivalent_km], compact: state[:compact]))
+  end
+
+  # One grade factor per segment (consecutive point pair). Segments are grouped
+  # into grade segments of at least GRADE_SEGMENT_MIN_KM, each with one grade
+  # (net elevation change over horizontal distance); see
+  # #track_grade_adjusted_splits for the rules.
+  def segment_grade_factors(points)
+    factors = Array.new(points.size - 1, 1.0)
+    window = new_grade_window
+
+    points.each_cons(2).with_index do |(a, b), index|
+      window = extend_grade_window(window, factors, a, b, index)
+    end
+    close_grade_window(window, factors, final: true)
+    factors
+  end
+
+  def new_grade_window(previous = nil)
+    { indexes: [], km: 0.0, start_ele: nil, end_ele: nil, previous: previous }
+  end
+
+  def extend_grade_window(window, factors, point_a, point_b, index)
+    ele_a = fetch_ele(point_a)
+    ele_b = fetch_ele(point_b)
+    if ele_a.nil? || ele_b.nil?
+      close_grade_window(window, factors, final: true)
+      return new_grade_window
+    end
+
+    add_to_grade_window(window, index, segment_distance_km(point_a, point_b), ele_a, ele_b)
+    return window unless full_grade_window?(window)
+
+    close_grade_window(window, factors, final: false)
+    new_grade_window(window.except(:previous))
+  end
+
+  def add_to_grade_window(window, index, segment_km, ele_a, ele_b)
+    window[:start_ele] ||= ele_a
+    window[:end_ele] = ele_b
+    window[:indexes] << index
+    window[:km] += segment_km
+  end
+
+  # A full window gets its own grade. A short leftover — the end of the track
+  # or of a stretch with elevation — is merged into the full window before it,
+  # when there is one, rather than graded on its own over a few noisy metres.
+  def close_grade_window(window, factors, final:)
+    return if window[:indexes].empty?
+
+    window = merge_grade_windows(window[:previous], window) if final && short_with_previous?(window)
+    factor = grade_adjustment_factor(window_grade(window))
+    window[:indexes].each { |index| factors[index] = factor }
+  end
+
+  def short_with_previous?(window)
+    !full_grade_window?(window) && window[:previous]
+  end
+
+  def full_grade_window?(window)
+    window[:km] >= GRADE_SEGMENT_MIN_KM - GRADE_SEGMENT_TOLERANCE_KM
+  end
+
+  def merge_grade_windows(previous, window)
+    { indexes: previous[:indexes] + window[:indexes], km: previous[:km] + window[:km],
+      start_ele: previous[:start_ele], end_ele: window[:end_ele] }
+  end
+
+  def window_grade(window)
+    return 0.0 unless window[:km].positive?
+
+    (window[:end_ele] - window[:start_ele]) / (window[:km] * 1000.0)
   end
 end
