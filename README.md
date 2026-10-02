@@ -918,6 +918,10 @@ calc.convert_to_clocktime(3600)      # => "01:00:00"
 calc.check_time('01:00:00')          # => nil (valid)
 ```
 
+Every time or pace string the gem reads goes through `convert_to_seconds`, so
+the same clock rule holds in every method: `'05:99'` or `'1:60:00'` raise
+`Calcpace::InvalidTimeFormatError`, while `'75:00'` is a valid 75 minutes.
+
 `convert_to_clocktime` takes a `compact:` keyword for the format a runner reads
 on a screen — no zero hour, no leading zero on the most significant component:
 

@@ -18,14 +18,24 @@ return shapes are unchanged except where listed under Breaking; the
 `environmental_factors.yml` keys are unchanged.
 
 ### Breaking
-- **Invalid clocks raise.** `check_time` — and so every method that validates
-  a time string with it (`checked_*`, `estimate_vo2max`, `age_grade`,
-  `stride_length`, the personalized predictors…) — accepted any two digits per
-  field, so `'05:99'` or `'1:60:00'` passed and became the wrong number of
-  seconds. Seconds must now be below 60, and so must minutes when an hour
+- **Invalid clocks raise, everywhere.** Every method that takes a time or pace
+  string now validates it: `convert_to_seconds` itself, and so `checked_*`,
+  `race_time`/`race_pace` (and `_clock`), `race_splits` (`target_time:`),
+  `convert_pace`, `pace_km_to_mi`, `pace_mi_to_km`,
+  `predict_time`/`predict_pace` (and `_clock`), `equivalent_performance`,
+  `predict_time_adjusted`, every Cameron method, `riegel_exponent`,
+  `predict_time_personal`, `predict_marathon_from_training`,
+  `estimate_vo2max`, `estimate_detailed_vo2max`, `training_paces_from_race`,
+  `age_grade`, `stride_length`, `cadence_for_stride` and `grade_adjusted_pace`
+  (and `_clock`). Seconds must be below 60, and so must minutes when an hour
   field is present; anything else raises `Calcpace::InvalidTimeFormatError`.
-  `MM:SS` still counts minutes past the hour (`'75:00'` is 75 minutes), as the
-  padded paces `track_splits` emits (`'66:33'`) always have.
+  Before, `check_time` accepted any two digits per field (`'05:99'`,
+  `'1:60:00'`), and the methods that did not call it at all turned such
+  strings — or garbage like `'abc'` — into the wrong number of seconds,
+  `convert_to_seconds` returning `0` for anything it could not split. `MM:SS`
+  still counts minutes past the hour (`'75:00'` is 75 minutes), as the padded
+  paces `track_splits` emits (`'66:33'`) always have. Numeric (seconds) inputs
+  are unaffected.
 - **Cameron predictions are limited to 100 km.** `predict_time_cameron`,
   `predict_time_cameron_clock`, `predict_pace_cameron`,
   `predict_pace_cameron_clock` and `predict_time_cameron_adjusted` raise

@@ -77,24 +77,23 @@ module Converter
 
   # Converts a time string to total seconds
   #
+  # Every method in the gem that takes a time or pace string goes through
+  # here, so the clock rule of check_time applies to all of them: seconds below
+  # 60, and minutes too when hours are given. MM:SS keeps counting minutes past
+  # the hour ('75:00' is 4500 seconds).
+  #
   # @param time [String] time string in HH:MM:SS or MM:SS format
   # @return [Integer] total seconds
+  # @raise [Calcpace::InvalidTimeFormatError] if the string is not a valid clock
   #
   # @example
   #   convert_to_seconds('01:30:00') #=> 5400 (1 hour 30 minutes)
   #   convert_to_seconds('05:30')    #=> 330 (5 minutes 30 seconds)
+  #   convert_to_seconds('05:99')    #=> raises InvalidTimeFormatError
   def convert_to_seconds(time)
-    parts = time.split(':').map(&:to_i)
-    case parts.length
-    when 2
-      minute, seconds = parts
-      (minute * 60) + seconds
-    when 3
-      hour, minute, seconds = parts
-      (hour * 3600) + (minute * 60) + seconds
-    else
-      0
-    end
+    check_time(time)
+    hour, minute, seconds = time.split(':').map(&:to_i).unshift(0, 0).last(3)
+    (hour * 3600) + (minute * 60) + seconds
   end
 
   # Converts seconds to a clocktime string
