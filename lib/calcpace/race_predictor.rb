@@ -128,15 +128,20 @@ module RacePredictor
   # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
-  # @param options [Hash] environmental options:
+  # @param options [Hash] environmental options, forwarded to
+  #   EnvironmentalAdjuster#calculate_penalty:
   #   - :temperature [Numeric]
   #   - :temperature_unit [Symbol, String] :c or :f
   #   - :altitude [Numeric]
+  #   - :humidity [Numeric] relative humidity, 0–100 % (optional)
+  #   - :dew_point [Numeric] dew point in temperature_unit (optional, instead of :humidity)
   # @return [Hash] hash with adjusted prediction and penalty details
   #
   # @example Predict marathon time from 5K adjusted for heat (25C)
   #   predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)
-  #   #=> { adjusted_time: 13140.19, penalty_percent: 14.17, ... }
+  #   #=> { adjusted_time: 12483.01, penalty_percent: 8.46, ... }
+  #   calc.predict_time_adjusted('5k', '00:20:00', 'marathon', temperature: 25)[:penalty_percent] #=> 8.46
+  #   calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 25, humidity: 80)[:penalty_percent] #=> 4.87
   def predict_time_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)
