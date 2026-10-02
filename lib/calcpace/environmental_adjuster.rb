@@ -17,8 +17,13 @@ module EnvironmentalAdjuster
   # Heat duration scaling: [minutes, factor] points, joined by straight lines
   # and flat outside the first and last point. The base heat penalty in
   # environmental_factors.yml is for a 60-minute effort (factor 1.0).
-  # Rule based on Matthew Ely (2007) heat degradation curve.
-  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 3.0], [240.0, 4.5]].freeze
+  # - up to 3 h (3.0x): Ely et al. (2007) — a ~3 h marathoner loses ~9% at
+  #   20 °C WBGT and ~12% at 25 °C; 2.8 × 3.0 = 8.4%, 4.3 × 3.0 = 12.9%.
+  # - 4 h (3.5x, flat after): El Helou et al. (2012, 1.8 M finishers, Table S3).
+  #   Men's median (~3:58) loses 8.45% at 20 °C and 16.9% at 25 °C against the
+  #   optimum, i.e. 3.0x and 3.9x the 60-minute base; men's Q3 (~4:28) is no
+  #   worse (3.0x / 4.1x). The previous 4.5x at 4 h was above every group.
+  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 3.0], [240.0, 3.5]].freeze
 
   # Relative humidity (%) the temperature-only heat curve stands for
   # (see EnvironmentalAdjuster::Humidity)

@@ -5,7 +5,13 @@
 #   Ref: ~3.76% penalty for 1828.8m (6000ft).
 # - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
 #   NOTE: These heat factors are the BASELINE for a 60-minute effort.
-#   The final penalty is scaled by a DurationFactor (0.5x to 4.5x) based on total exposure time.
+#   The final penalty is scaled by a DurationFactor (0.5x at 30 min, 1.0x at
+#   60 min, 3.0x at 3 h, 3.5x at 4 h and beyond; see
+#   EnvironmentalAdjuster::HEAT_DURATION_FACTORS) based on total exposure time.
+# - Humidity: the points are read at air temperature with ~50% relative
+#   humidity (EnvironmentalAdjuster::REFERENCE_HUMIDITY). With humidity: or
+#   dew_point:, the temperature is first moved to the effective temperature
+#   with the same simplified WBGT (Australian Bureau of Meteorology).
 #
 # Interpolation: at or below threshold_meters the altitude penalty is 0; above it
 # both tables are interpolated linearly between points and clamped to the first and
@@ -42,6 +48,6 @@ heat:
     15: 0.0
     20: 2.8    # Base for 60m. For 3h (3.0x) = 8.4% (Ely: 9%)
     25: 4.3    # Base for 60m. For 3h (3.0x) = 12.9% (Ely: 12%)
-    30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%
+    30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%, for 4h (3.5x) = 22.75%
     35: 8.7    # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)
     40: 10.9   # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)

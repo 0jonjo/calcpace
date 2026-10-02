@@ -98,10 +98,41 @@ class TestEnvironmentalAdjuster < CalcpaceTest
 
   def test_calculate_penalty_with_long_duration
     # 25C at 240 min (Amateur Marathon)
-    # Factor: 4.5x
-    # Penalty: 4.3 * 4.5 = 19.35%
+    # Factor: 3.5x (El Helou et al. 2012, men's median ~3:58: 3.0-3.9x)
+    # Penalty: 4.3 * 3.5 = 15.05%
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 14_400)
-    assert_equal 19.35, result[:factors][:heat]
+    assert_equal 15.05, result[:factors][:heat]
+  end
+
+  # --- heat duration factor beyond 3 h ---
+
+  def test_duration_factor_keeps_the_three_hour_anchor
+    assert_in_delta 3.0, @calc.send(:duration_factor, 10_800), 1e-12
+  end
+
+  def test_duration_factor_reaches_three_and_a_half_at_four_hours
+    assert_in_delta 3.5, @calc.send(:duration_factor, 14_400), 1e-12
+    assert_in_delta 3.25, @calc.send(:duration_factor, 12_600), 1e-12
+  end
+
+  def test_duration_factor_is_flat_beyond_four_hours
+    assert_in_delta 3.5, @calc.send(:duration_factor, 18_000), 1e-12
+    assert_in_delta 3.5, @calc.send(:duration_factor, 36_000), 1e-12
+  end
+
+  def test_duration_factor_is_continuous_and_monotonic
+    factors = (0..21_600).step(30).map { |seconds| @calc.send(:duration_factor, seconds) }
+
+    factors.each_cons(2) do |a, b|
+      assert_operator b, :>=, a
+      assert_operator b - a, :<, 0.02
+    end
+  end
+
+  def test_extreme_heat_for_four_hours
+    # 35 °C / 4 h: 8.7 * 3.5 = 30.45% (was 39.15%); 40 °C / 4 h: 10.9 * 3.5 = 38.15% (was 49.05%)
+    assert_equal 30.45, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
+    assert_equal 38.15, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
   end
 
   # --- altitude curve (v1.19.0) ---
