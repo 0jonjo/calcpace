@@ -54,6 +54,57 @@ class TestTrainingZones < CalcpaceTest
     end
   end
 
+  # --- marathon band: fast end = VDOT-predicted marathon pace ---
+
+  def test_marathon_band_for_vo2max_fifty
+    zones = @calc.training_paces(50.0)
+
+    assert_equal 290, zones[:marathon].slow_seconds # 75% → 04:50/km (unchanged)
+    assert_equal 271, zones[:marathon].fast_seconds # VDOT 50 marathon pace, 04:31/km
+    assert_equal '00:04:31', zones[:marathon].fast_clock
+  end
+
+  def test_marathon_fast_end_is_the_predicted_marathon_pace
+    [30, 40, 50, 60, 70].each do |vo2|
+      predicted = @calc.predict_time_from_vo2max(vo2, 'marathon') / 42.195
+
+      assert_in_delta predicted, @calc.training_paces(vo2)[:marathon].fast_seconds, 1, "VO2 #{vo2}"
+    end
+  end
+
+  def test_marathon_fast_end_in_miles_is_the_predicted_marathon_pace_per_mile
+    predicted = @calc.predict_time_from_vo2max(50, 'marathon') / 42.195 * 1.609344
+
+    assert_in_delta predicted, @calc.training_paces(50, unit: :mi)[:marathon].fast_seconds, 1
+  end
+
+  def test_marathon_fast_end_is_never_faster_than_threshold
+    [10, 30, 50, 70, 100].each do |vo2|
+      zones = @calc.training_paces(vo2)
+
+      assert_operator zones[:marathon].fast_seconds, :>=, zones[:threshold].fast_seconds, "VO2 #{vo2}"
+    end
+  end
+
+  def test_marathon_band_works_outside_the_vdot_prediction_range
+    # predict_time_from_vo2max supports 10–100; outside it the race-pace
+    # intensity of the nearest bound is used
+    low = @calc.training_paces(5)[:marathon]
+    high = @calc.training_paces(120)[:marathon]
+
+    assert_operator low.slow_seconds, :>, low.fast_seconds
+    assert_operator high.slow_seconds, :>, high.fast_seconds
+    assert_operator high.fast_seconds, :<, @calc.training_paces(100)[:marathon].fast_seconds
+    assert_operator low.fast_seconds, :>, @calc.training_paces(10)[:marathon].fast_seconds
+  end
+
+  def test_marathon_band_is_continuous_at_the_range_bounds
+    [[10, 9.99], [100, 100.01]].each do |inside, outside|
+      assert_in_delta @calc.training_paces(inside)[:marathon].fast_seconds,
+                      @calc.training_paces(outside)[:marathon].fast_seconds, 1
+    end
+  end
+
   def test_training_paces_rejects_non_positive_vo2max
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(0) }
     assert_raises(Calcpace::NonPositiveInputError) { @calc.training_paces(-10) }
