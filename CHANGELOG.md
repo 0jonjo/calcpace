@@ -279,6 +279,32 @@ above 100 km (see Breaking).
   far from the input. Infinity now raises `Calcpace::NonPositiveInputError`
   ("must be a finite positive number"), like zero, negatives and NaN already
   did.
+- Grade-adjusted pace from the energy cost of running on gradients of
+  Minetti et al. (2002), J Appl Physiol 93:1039–1046:
+  `grade_adjustment_factor(grade)` (Cr(i)/Cr(0), grade as a fraction, clamped
+  to the measured ±0.45), `grade_adjusted_pace(pace, grade, unit: :km)` and
+  `grade_adjusted_pace_clock(pace, grade, unit: :km, compact: false)`.
+- `track_grade_adjusted_splits(points, split_km = 1.0, compact: false)`: the
+  `track_splits` splits with a `:gap` pace per split, computed segment by
+  segment from `:ele`. Grades are measured over segments of at least 100 m of
+  horizontal distance so GPS elevation noise does not become fake climbing;
+  stretches without `:ele` (or with a non-finite one), and stretches with
+  elevation too short to grade, are flat. `track_splits` output is unchanged.
+- VO2max norms by age and sex from the FRIEND registry (Kaminsky, Arena &
+  Myers, Mayo Clin Proc 2015;90(11):1515–1523, Table 3: treadmill, measured
+  VO2max), stored in `lib/calcpace/data/friend_2015_vo2max_percentiles.yml`:
+  - `vo2max_label(value, age: nil, sex: nil)` — optional keywords; with both, the
+    label comes from the percentile among the same sex and age decade (≥95th
+    Elite, ≥90th Excellent, ≥75th Very Good, ≥50th Good, ≥25th Fair, else
+    Beginner). Without them the fixed thresholds and labels are unchanged.
+  - `vo2max_percentile(value, age:, sex:)` — linearly interpolated percentile,
+    bounded to the table's 5–95. Ages 18–19 use the 20–29 row and 80+ the
+    70–79 row; under 18 is rejected.
+
+### Changed
+- The `vo2max_label` docstring now documents the error it actually raises for
+  a non-positive value (`Calcpace::NonPositiveInputError`, not `ArgumentError`).
+  Behaviour is unchanged.
 
 ## [1.18.1] - 2026-09-06
 

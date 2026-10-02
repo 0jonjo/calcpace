@@ -374,6 +374,62 @@ in both formats (`"-00:40"` / `"-0:40"`) rather than raising.
 
 **Haversine formula** — great-circle distance on a sphere (R = 6,371 km). Accuracy: ~0.3% of GPS/WGS84. Best for running and cycling distances; not for geodetic surveying.
 
+#### Grade-adjusted pace (GAP)
+
+The flat-ground pace that costs the same energy as a pace run on a slope, from
+the energy cost of running on gradients measured by **Minetti et al. (2002)**.
+The grade is a fraction (rise over horizontal distance): `0.05` is 5% uphill,
+`-0.05` is 5% downhill.
+
+```ruby
+calc.grade_adjustment_factor(0.1)   # => 1.6578372222222222  (a metre at +10% ≈ 1.66 flat metres)
+calc.grade_adjustment_factor(-0.1)  # => 0.5976961111111111
+
+calc.grade_adjusted_pace(360, 0.1)                       # => 217.1503903847952 (s/km)
+calc.grade_adjusted_pace_clock('06:00', 0.1)             # => "00:03:37"
+calc.grade_adjusted_pace_clock('06:00', 0.1, compact: true)  # => "3:37"
+calc.grade_adjusted_pace(480, 0.05, unit: :mi)           # => 368.82127811700303 (s/mi)
+
+# Per-split GAP for a GPS track: the track_splits fields plus :gap
+calc.track_grade_adjusted_splits(points, 1.0)
+# => [{ km: 1.0, elapsed: 415, pace: "06:55", gap: "06:50" },
+#     { km: 1.51, elapsed: 600, pace: "06:04", gap: "06:21" }]
+```
+
+| Grade | −10% | −5% | 0% | +5% | +10% |
+|-------|------|-----|----|-----|------|
+| Factor | 0.598 | 0.763 | 1.000 | 1.301 | 1.658 |
+
+**Formula** (J·kg⁻¹·m⁻¹, R² = 0.999):
+```
+Cr(i)  = 155.4·i⁵ − 30.4·i⁴ − 43.3·i³ + 46.3·i² + 19.5·i + 3.6
+factor = Cr(i) / Cr(0)
+GAP    = pace / factor
+```
+
+- Grades are clamped to **±45%**, the range Minetti et al. measured; nothing
+  is extrapolated beyond it. Running is cheapest near −20% and gets dearer
+  again on steeper descents.
+- It is a metabolic model: it does not see the muscular cost of long descents
+  or technical terrain, and field models fitted to heart rate (Strava's, for
+  instance) are gentler on steep climbs.
+- `track_grade_adjusted_splits` leaves `track_splits` untouched: it returns the
+  same `:km`, `:elapsed` and `:pace` with `:gap` added (formatted like `:pace`,
+  `compact:` applies to both). GPS elevation is noisy, so grades are measured
+  over **grade segments of at least 100 m** of horizontal distance — read
+  between fixes a metre apart, ±2 m of jitter would be a ±400% grade. A short
+  leftover at the end of a stretch joins the segment before it. Stretches
+  between points without `:ele` (or with a NaN/infinite one) count as flat,
+  so a track with no elevation has `:gap` equal to `:pace`; so does a stretch
+  with elevation shorter than 100 m that has no full segment before it to
+  join (between missing fixes, or a whole track that short).
+- Track distances are horizontal (Haversine), and the factor is applied to
+  them without the √(1 + grade²) slope-length correction — 0.5% at 10%.
+- `estimate_detailed_vo2max` keeps its own flat elevation heuristic (100 m of
+  gain = 600 m of flat), so its numbers do not change.
+
+*Minetti, A. E., Moia, C., Roi, G. S., Susta, D., & Ferretti, G. (2002). Energy cost of walking and running at extreme uphill and downhill slopes. Journal of Applied Physiology, 93(3), 1039–1046. https://doi.org/10.1152/japplphysiol.01177.2001*
+
 ---
 
 ### Age Grading (Road Races)
@@ -502,6 +558,49 @@ VO2max           = VO2 / %VO2max
 ```
 
 Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
+
+#### By age and sex
+
+The fixed thresholds above are the same for everyone. Give `vo2max_label` an
+age and a sex and it reads the value against people of the same sex and age
+decade instead, using the **FRIEND registry** percentiles of VO2max measured on
+a treadmill (Kaminsky, Arena & Myers, 2015):
+
+```ruby
+calc.vo2max_label(45)                         # => "Good"  (fixed thresholds, unchanged)
+calc.vo2max_label(45, age: 25, sex: :male)    # => "Fair"
+calc.vo2max_label(45, age: 60, sex: :male)    # => "Elite"
+calc.vo2max_label(45, age: 25, sex: :female)  # => "Very Good"
+calc.vo2max_label(45, age: 60, sex: :female)  # => "Elite"
+
+calc.vo2max_percentile(45, age: 25, sex: :male)    # => 40.5
+calc.vo2max_percentile(45, age: 25, sex: :female)  # => 75.7
+calc.vo2max_percentile(45, age: 60, sex: :male)    # => 95.0
+```
+
+| Percentile (same sex and age decade) | Level     |
+|--------------------------------------|-----------|
+| ≥ 95th                               | Elite     |
+| 90th–94th                            | Excellent |
+| 75th–89th                            | Very Good |
+| 50th–74th                            | Good      |
+| 25th–49th                            | Fair      |
+| < 25th                               | Beginner  |
+
+- The cuts sit on percentiles the table publishes (5th, 10th, 25th, 50th,
+  75th, 90th, 95th), so a label never depends on interpolation. They are
+  calcpace's choice: FRIEND publishes percentiles, not labels.
+- `vo2max_percentile` interpolates linearly between the published percentiles,
+  rounded to one decimal, and is bounded to the table: `5.0` means at or below
+  the 5th percentile, `95.0` at or above the 95th.
+- Age decades (20–29 … 70–79) are used as published, without blending, so a
+  29- and a 30-year-old read different rows. Ages 18–19 use the 20–29 row and
+  80+ the 70–79 row; under 18 raises `ArgumentError`, as does a sex other than
+  male/female. Age and sex must be given together.
+- The registry measured VO2max in a lab; a VO2max estimated from a race time
+  carries its own ±3–5 ml/kg/min on top.
+
+*Kaminsky, L. A., Arena, R., & Myers, J. (2015). Reference Standards for Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing: Data From the Fitness Registry and the Importance of Exercise National Database. Mayo Clinic Proceedings, 90(11), 1515–1523, Table 3 (rows "Men/Women from FRIEND"; 7,783 treadmill tests on adults free of known cardiovascular disease). https://doi.org/10.1016/j.mayocp.2015.07.026. The same table also lists the Cooper Clinic norms printed in ACSM's Guidelines for Exercise Testing and Prescription (9th ed., 2014); those are predicted from treadmill time rather than measured, and are not used here.*
 
 #### Contextualized estimation
 
