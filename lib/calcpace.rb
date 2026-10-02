@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative 'calcpace/version'
 require_relative 'calcpace/errors'
 require_relative 'calcpace/calculator'
 require_relative 'calcpace/cameron_predictor'
