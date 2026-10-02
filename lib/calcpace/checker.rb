@@ -32,12 +32,16 @@ module Checker
     raise Calcpace::NonPositiveInputError, "#{name} must be a finite positive number"
   end
 
-  # Validates that a time string is in the correct format
+  # Validates that a time string is a well-formed clock
   #
   # Accepted formats:
-  # - HH:MM:SS (hours:minutes:seconds) - e.g., "01:30:45"
-  # - MM:SS (minutes:seconds) - e.g., "05:30"
-  # - H:MM:SS or M:SS (single digit hours/minutes) - e.g., "1:30:45"
+  # - H:MM:SS / HH:MM:SS (hours:minutes:seconds) - e.g., "1:30:45", "01:30:45"
+  # - M:SS / MM:SS (minutes:seconds) - e.g., "5:30", "05:30"
+  #
+  # Seconds must be below 60 in both formats, and so must minutes once an
+  # hour field is present ("1:60:00" is not a clock). MM:SS keeps counting
+  # minutes past the hour, as the padded paces from track_splits do: "75:00"
+  # is a valid 75-minute time.
   #
   # @param time_string [String] the time string to validate
   # @raise [Calcpace::InvalidTimeFormatError] if format is invalid
@@ -46,14 +50,17 @@ module Checker
   # @example
   #   check_time('01:30:45') #=> nil (valid)
   #   check_time('5:30')     #=> nil (valid)
+  #   check_time('75:00')    #=> nil (valid, 75 minutes)
+  #   check_time('05:99')    #=> raises InvalidTimeFormatError
+  #   check_time('1:60:00')  #=> raises InvalidTimeFormatError
   #   check_time('invalid')  #=> raises InvalidTimeFormatError
   def check_time(time_string)
-    # Check if string is valid and matches expected patterns
     return if time_string.is_a?(String) &&
-              (time_string =~ /\A\d{1,2}:\d{2}:\d{2}\z/ ||
-               time_string =~ /\A\d{1,2}:\d{2}\z/)
+              (time_string.match?(/\A\d{1,2}:[0-5]\d:[0-5]\d\z/) ||
+               time_string.match?(/\A\d{1,2}:[0-5]\d\z/))
 
     raise Calcpace::InvalidTimeFormatError,
-          'It must be a valid time in the XX:XX:XX or XX:XX format'
+          'It must be a valid time in the XX:XX:XX or XX:XX format ' \
+          '(seconds below 60, and minutes too when hours are given)'
   end
 end
