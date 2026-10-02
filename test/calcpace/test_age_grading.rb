@@ -56,13 +56,26 @@ class TestAgeGrading < CalcpaceTest
     assert_equal result[:age_graded_time_seconds], (scaled / 100.0)
   end
 
-  def test_interpolates_factor_for_in_between_age
+  def test_factor_decreases_with_age_through_the_masters_years
     result_fifty_five = @calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
     result_fifty_seven = @calc.age_grade(10.0, '00:45:00', age: 57, sex: :male)
     result_sixty = @calc.age_grade(10.0, '00:45:00', age: 60, sex: :male)
 
     assert result_fifty_seven[:factor] < result_fifty_five[:factor]
     assert result_fifty_seven[:factor] > result_sixty[:factor]
+  end
+
+  def test_interpolates_linearly_between_the_ages_of_a_sparse_table
+    # The bundled table has every age from 18 to 100, so interpolation only
+    # matters for a replacement table with gaps (e.g. five-year steps)
+    sparse = { 30 => 1.0, 40 => 0.9, 50 => 0.8 }
+    @calc.define_singleton_method(:factor_table) { |_sex, _distance_m| sparse }
+
+    assert_equal 0.97, @calc.age_grade(10.0, '00:45:00', age: 33, sex: :male)[:factor]
+    assert_equal 0.85, @calc.age_grade(10.0, '00:45:00', age: 45, sex: :male)[:factor]
+    assert_equal 0.9, @calc.age_grade(10.0, '00:45:00', age: 40, sex: :male)[:factor]
+    assert_equal 1.0, @calc.age_grade(10.0, '00:45:00', age: 25, sex: :male)[:factor]
+    assert_equal 0.8, @calc.age_grade(10.0, '00:45:00', age: 70, sex: :male)[:factor]
   end
 
   # --- 2025 road tables (Alan Jones, USATF MLDR) ---

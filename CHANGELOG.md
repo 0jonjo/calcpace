@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+- The public `AgeGrading::WMA_DATA` constant no longer has the track keys
+  (`"1500"`, `"3000"`): each sex now holds only the road distances the gem
+  grades — `"5000"`, `"10000"`, `"21097"` and `"42195"`. Code that read
+  `WMA_DATA["M"]["1500"]` (or `"3000"`) directly gets a `KeyError` / `nil`.
+  Its factor tables also start at age 18 and end at 100 (they were 30–110).
+
 ### Changed
 - **Age grading now uses the 2025 road tables.** Age factors and open
   standards come from Alan Jones' 2025 road age-grading tables, approved on
   2025-01-10 by the USATF Masters Long Distance Running Council
-  ([source spreadsheets](https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/master/2025%20Files):
+  ([source spreadsheets](https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/4aac6737cb9f216c90a0a610355667cd3d921c61/2025%20Files):
   `MaleRoadStd2025.xlsx`, `FemaleRoadStd2025.xlsx`). The previous data,
   despite the `wma_2023_road.yml` name, came from the WMA 2023 **track and
   field** tables: track open standards (5000 m 12:35 / 14:06, 10 000 m
@@ -21,15 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   2:00:35; women: 5K 13:54, 10K 28:46, half 1:02:52, marathon 2:09:56.
 - One factor per year of age from 18 to 100. Runners under 30 now get the
   table's real factors instead of 1.0 (e.g. a male 18-year-old at 5K: 0.9995;
-  a female 30-year-old at 5K: 0.9959). Ages over 100 use the age-100 factor,
-  as ages over the table end did before.
+  a female 30-year-old at 5K: 0.9959). The old table ran to 110; the 2025
+  road tables end at 100, so ages 101 and over now use the age-100 factor.
 - `table_version` is now `"MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"` (was
   `"WMA_2023_ONE_YEAR_FACTORS_V1"`). The data files were renamed to
   `lib/calcpace/data/mldr_2025_road.yml` and
   `lib/calcpace/data/mldr_2025_road_open_standards.yml`; `DATA_PATH`,
   `OPEN_STANDARDS_DATA_PATH`, `WMA_DATA`, `OPEN_STANDARDS_DATA` and
-  `TABLE_VERSION` keep their names and shapes. The track-only keys
-  (`"1500"`, `"3000"`) are gone. Category labels are unchanged.
+  `TABLE_VERSION` keep their names and shapes (see Breaking for the keys
+  `WMA_DATA` lost). Category labels are unchanged.
 
   | Case | Before (WMA 2023 track) | After (2025 road) | Official 2025 |
   | --- | --- | --- | --- |

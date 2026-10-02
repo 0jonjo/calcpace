@@ -311,8 +311,9 @@ Age factors and open standards come from Alan Jones' **2025 road** age-grading
 tables, approved on 2025-01-10 by the USATF Masters Long Distance Running
 Council — the standard for road races, the same tables behind Howard Grubb's
 MLDR road calculator. The source spreadsheets are `MaleRoadStd2025.xlsx` and
-`FemaleRoadStd2025.xlsx` in
-https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/master/2025%20Files.
+`FemaleRoadStd2025.xlsx`, linked here at the commit the bundled data was
+taken from:
+https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/4aac6737cb9f216c90a0a610355667cd3d921c61/2025%20Files
 The bundled data has one factor per year of age from 18 to 100 (older ages use
 the age-100 factor) and lives in `lib/calcpace/data/mldr_2025_road.yml` (factors)
 and `lib/calcpace/data/mldr_2025_road_open_standards.yml` (open standards and
