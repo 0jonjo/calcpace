@@ -302,6 +302,8 @@ Summary of the other models:
   far from the input. Infinity now raises `Calcpace::NonPositiveInputError`
   ("must be a finite positive number"), like zero, negatives and NaN already
   did.
+- `Calcpace::VERSION` is defined after `require 'calcpace'`; before, it only
+  existed once the gemspec had been loaded.
 - The `vo2max_label` docstring now documents the error it actually raises for
   a non-positive value (`Calcpace::NonPositiveInputError`, not
   `ArgumentError`). Behaviour is unchanged.
