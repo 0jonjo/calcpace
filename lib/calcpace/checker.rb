@@ -7,22 +7,29 @@ require_relative 'errors'
 # This module provides validation methods for numeric inputs and time format strings
 # used throughout the Calcpace gem.
 module Checker
-  # Validates that a number is positive (greater than zero)
+  # Validates that a number is positive (greater than zero) and finite
+  #
+  # NaN and infinity are rejected too: NaN is not positive, and an infinite
+  # distance or time would flow through the formulas into nonsense (a finite
+  # "prediction") or a FloatDomainError far from the input that caused it.
   #
   # @param number [Numeric] the number to validate
   # @param name [String] the name of the parameter for error messages
-  # @raise [Calcpace::NonPositiveInputError] if number is not positive
+  # @raise [Calcpace::NonPositiveInputError] if number is not positive or not finite
   # @return [void]
   #
   # @example
-  #   check_positive(10, 'Distance') #=> nil (valid)
-  #   check_positive(-5, 'Time')     #=> raises NonPositiveInputError
-  #   check_positive(0, 'Speed')     #=> raises NonPositiveInputError
+  #   check_positive(10, 'Distance')              #=> nil (valid)
+  #   check_positive(-5, 'Time')                  #=> raises NonPositiveInputError
+  #   check_positive(0, 'Speed')                  #=> raises NonPositiveInputError
+  #   check_positive(Float::INFINITY, 'Distance') #=> raises NonPositiveInputError
   def check_positive(number, name = 'Input')
-    return if number.is_a?(Numeric) && number.positive?
+    unless number.is_a?(Numeric) && number.positive?
+      raise Calcpace::NonPositiveInputError, "#{name} must be a positive number"
+    end
+    return if number.finite?
 
-    raise Calcpace::NonPositiveInputError,
-          "#{name} must be a positive number"
+    raise Calcpace::NonPositiveInputError, "#{name} must be a finite positive number"
   end
 
   # Validates that a time string is in the correct format

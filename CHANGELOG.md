@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:time_clock] # => "03:38:03"
   ```
 
+### Fixed
+- `check_positive` let `Float::INFINITY` through, so every method guarded by it
+  accepted an infinite distance or time: an infinite weekly distance became a
+  finite (and fast) marathon prediction, an infinite pace a `FloatDomainError`
+  far from the input. Infinity now raises `Calcpace::NonPositiveInputError`
+  ("must be a finite positive number"), like zero, negatives and NaN already
+  did.
+
 ## [1.18.1] - 2026-09-06
 
 ### Fixed
