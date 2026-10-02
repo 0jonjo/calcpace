@@ -12,6 +12,7 @@ require_relative 'calcpace/fitness_predictor'
 require_relative 'calcpace/lap_analyzer'
 require_relative 'calcpace/pace_calculator'
 require_relative 'calcpace/pace_converter'
+require_relative 'calcpace/personalized_predictor'
 require_relative 'calcpace/race_predictor'
 require_relative 'calcpace/race_splits'
 require_relative 'calcpace/stride_calculator'
@@ -52,6 +53,7 @@ class Calcpace
   include LapAnalyzer
   include PaceCalculator
   include PaceConverter
+  include PersonalizedPredictor
   include RacePredictor
   include RaceSplits
   include StrideCalculator
