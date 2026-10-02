@@ -2,6 +2,7 @@
 
 require 'yaml'
 require_relative 'errors'
+require_relative 'checker'
 
 # Module for reading a VO2max against people of the same age and sex
 #
@@ -20,6 +21,9 @@ require_relative 'errors'
 # `lib/calcpace/data/friend_2015_vo2max_percentiles.yml`.
 # Vo2maxEstimator#vo2max_label uses it when given age and sex.
 module Vo2maxNorms
+  # check_positive, normalize_age and normalize_sex: the same rules as AgeGrading
+  include Checker
+
   # Percentile norms by age and sex: FRIEND registry, measured treadmill VO2max
   # (Kaminsky, Arena & Myers, Mayo Clin Proc 2015;90(11):1515–1523, Table 3).
   # See the data file for the full provenance.
@@ -93,7 +97,7 @@ module Vo2maxNorms
 
   # Unrounded percentile, so a label is decided against the published values
   # themselves rather than a rounded reading of them. normalize_age and
-  # normalize_sex are AgeGrading's — one rule for age and sex gem-wide.
+  # normalize_sex come from Checker — one rule for age and sex gem-wide.
   def raw_vo2max_percentile(value, age, sex)
     row = vo2max_norm_row(normalize_age(age), normalize_sex(sex))
     return VO2MAX_NORM_PERCENTILES.first if value <= row.first

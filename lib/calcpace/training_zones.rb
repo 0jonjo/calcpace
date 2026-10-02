@@ -9,6 +9,11 @@
 #
 # Heart rate zones use the Karvonen method (Heart Rate Reserve):
 #   target = hr_rest + pct * (hr_max - hr_rest)
+#
+# Not standalone: it is a part of Calcpace and calls into its siblings —
+# Vo2maxEstimator (estimate_vo2max, vo2_at_velocity), FitnessPredictor
+# (predict_time_from_vo2max, for the marathon band), PaceCalculator
+# (race_distance), Converter and Checker.
 module TrainingZones
   # Training intensities as fraction of VO2max (Daniels' Running Formula).
   # The marathon :high (0.84) is the nominal upper bound only: the band's fast
@@ -360,11 +365,6 @@ module TrainingZones
     seconds = predict_time_from_vo2max(vo2, 'marathon')
 
     vo2_at_velocity(race_distance('marathon') * Converter::Distance::KM_TO_METERS * 60.0 / seconds) / vo2
-  end
-
-  # Daniels & Gilbert oxygen cost (ml/kg/min) of running at v m/min
-  def vo2_at_velocity(velocity)
-    -4.60 + (0.182258 * velocity) + (0.000104 * (velocity**2))
   end
 
   # Inverts Daniels & Gilbert: velocity (m/min) that demands a given VO2

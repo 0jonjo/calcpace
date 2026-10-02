@@ -93,4 +93,27 @@ module Checker
           'It must be a valid time in the XX:XX:XX or XX:XX format ' \
           '(seconds below 60, and minutes too when hours are given)'
   end
+
+  # Age in whole years, 18 or over — the rule AgeGrading and Vo2maxNorms share
+  #
+  # @raise [ArgumentError] if age is not an integer or is under 18
+  def normalize_age(age)
+    age_value = Integer(age)
+  rescue ArgumentError, TypeError
+    raise ArgumentError, 'Age must be an integer greater than or equal to 18'
+  else
+    raise ArgumentError, 'Age must be at least 18' if age_value < 18
+
+    age_value
+  end
+
+  # :male or :female, from any case of a String or Symbol — shared like normalize_age
+  #
+  # @raise [ArgumentError] for anything else
+  def normalize_sex(sex)
+    normalized = sex.to_s.strip.downcase.to_sym
+    return normalized if %i[male female].include?(normalized)
+
+    raise ArgumentError, "Sex must be 'male' or 'female'"
+  end
 end

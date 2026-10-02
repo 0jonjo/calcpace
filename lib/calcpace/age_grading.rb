@@ -2,6 +2,7 @@
 
 require 'yaml'
 require_relative 'errors'
+require_relative 'checker'
 
 # Module for age-grading race performances with a versioned table
 #
@@ -27,6 +28,9 @@ require_relative 'errors'
 # - performance category
 # rubocop:disable Metrics/ModuleLength
 module AgeGrading
+  # normalize_age / normalize_sex live in Checker, shared with Vo2maxNorms
+  include Checker
+
   DATA_PATH = File.expand_path('data/mldr_2025_road.yml', __dir__).freeze
   OPEN_STANDARDS_DATA_PATH = File.expand_path('data/mldr_2025_road_open_standards.yml', __dir__).freeze
   WMA_DATA = YAML.safe_load_file(DATA_PATH, permitted_classes: [],
@@ -184,23 +188,6 @@ module AgeGrading
 
     check_time(time.to_s)
     convert_to_seconds(time.to_s)
-  end
-
-  def normalize_age(age)
-    age_value = Integer(age)
-  rescue ArgumentError, TypeError
-    raise ArgumentError, 'Age must be an integer greater than or equal to 18'
-  else
-    raise ArgumentError, 'Age must be at least 18' if age_value < 18
-
-    age_value
-  end
-
-  def normalize_sex(sex)
-    normalized = sex.to_s.strip.downcase.to_sym
-    return normalized if %i[male female].include?(normalized)
-
-    raise ArgumentError, "Sex must be 'male' or 'female'"
   end
 
   def interpolated_factor(sex, age, distance_m)
