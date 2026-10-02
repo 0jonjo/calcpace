@@ -146,15 +146,23 @@ class TestEnvironmentalAdjuster < CalcpaceTest
 
     points = EnvironmentalAdjuster::FACTORS.fetch('heat').fetch('data_points')
     points.each do |temperature, base|
-      expected = (4.3 * (((temperature - 15) / 10.0)**exponent.round(2))).round(2)
+      # Cap A: flat from 35 °C (beyond El Helou's hottest race, 25.2 °C)
+      capped = [temperature, 35].min
+      expected = (4.3 * (((capped - 15) / 10.0)**exponent.round(2))).round(2)
       assert_in_delta expected, base, 1e-9, "#{temperature} °C"
+    end
+  end
+
+  def test_heat_base_is_flat_from_thirty_five
+    [35, 36.3, 37.5, 40, 45].each do |temperature|
+      assert_equal 12.16, @calc.calculate_penalty(temperature: temperature, time_seconds: 3600)[:factors][:heat]
     end
   end
 
   def test_heat_base_points_track_the_power_law_within_a_tenth
     exponent = el_helou_exponent.round(2)
 
-    (1500..4000).each do |hundredths|
+    (1500..3500).each do |hundredths|
       temperature = hundredths / 100.0
       law = 4.3 * (((temperature - 15) / 10.0)**exponent)
       base = @calc.calculate_penalty(temperature: temperature, time_seconds: 3600)[:factors][:heat]
@@ -187,9 +195,9 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_extreme_heat_for_four_hours
-    # 35 °C / 4 h: 12.16 * 2.81 = 34.17%; 40 °C / 4 h: 17.0 * 2.81 = 47.77% (extrapolated)
+    # 35 °C / 4 h: 12.16 * 2.81 = 34.17%; 40 °C is capped at the 35 °C value
     assert_equal 34.17, @calc.calculate_penalty(temperature: 35, time_seconds: 14_400)[:factors][:heat]
-    assert_equal 47.77, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
+    assert_equal 34.17, @calc.calculate_penalty(temperature: 40, time_seconds: 14_400)[:factors][:heat]
   end
 
   # --- altitude curve (v1.19.0) ---
@@ -257,12 +265,12 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     assert_equal 12.16, at35
   end
 
-  def test_heat_at_forty_is_worse_than_at_thirty_five
-    assert_equal 17.0, @calc.calculate_penalty(temperature: 40, time_seconds: 3600)[:factors][:heat]
+  def test_heat_at_forty_reads_like_thirty_five
+    assert_equal 12.16, @calc.calculate_penalty(temperature: 40, time_seconds: 3600)[:factors][:heat]
   end
 
-  def test_heat_is_capped_at_forty
-    assert_equal 17.0, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
+  def test_heat_above_forty_stays_capped
+    assert_equal 12.16, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
   end
 
   # --- humidity / dew point (effective temperature) ---
@@ -321,12 +329,20 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_humid_air_raises_the_effective_temperature_and_the_penalty
-    # WBGT(30 °C, 90%) = WBGT(35.94 °C, 50%) → base 12.16 + 0.94/2.5 × 2.35 = 13.04
+    # WBGT(30 °C, 70%) = WBGT(33.0746 °C, 50%) → base 9.95 + 0.5746/2.5 × 2.21 = 10.46
+    result = @calc.calculate_penalty(temperature: 30, humidity: 70, time_seconds: 3600)
+
+    assert_in_delta 33.07, result[:factors][:effective_temperature_celsius], 0.01
+    assert_equal 10.46, result[:factors][:heat]
+    assert_equal 10.46, result[:total_penalty_percent]
+  end
+
+  def test_very_humid_air_reaches_the_heat_cap
+    # WBGT(30 °C, 90%) = WBGT(35.94 °C, 50%), above 35 °C → capped base 12.16
     result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 3600)
 
     assert_in_delta 35.94, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 13.04, result[:factors][:heat]
-    assert_equal 13.04, result[:total_penalty_percent]
+    assert_equal 12.16, result[:factors][:heat]
   end
 
   def test_dry_air_lowers_the_effective_temperature_and_the_penalty
@@ -340,7 +356,7 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   def test_humidity_scales_with_duration_like_temperature
     result = @calc.calculate_penalty(temperature: 30, humidity: 90, time_seconds: 7200)
 
-    assert_equal (13.04 * @calc.send(:duration_factor, 7200)).round(2), result[:factors][:heat]
+    assert_equal (12.16 * @calc.send(:duration_factor, 7200)).round(2), result[:factors][:heat]
   end
 
   def test_humid_air_can_lift_an_ideal_temperature_out_of_the_ideal_range
@@ -413,8 +429,8 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     adjusted = @calc.adjust_time(3600, temperature: 30, humidity: 90)
     normalized = @calc.normalize_time(3600, temperature: 30, humidity: 90)
 
-    assert_equal 13.04, adjusted[:penalty_percent]
-    assert_equal 13.04, normalized[:penalty_percent]
+    assert_equal 12.16, adjusted[:penalty_percent]
+    assert_equal 12.16, normalized[:penalty_percent]
     assert_in_delta 35.94, adjusted[:factors][:effective_temperature_celsius], 0.01
   end
 

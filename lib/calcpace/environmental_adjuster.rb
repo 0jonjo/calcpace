@@ -53,7 +53,7 @@ module EnvironmentalAdjuster
   #   temperature, both are given, or either is given without a temperature
   #
   # @example
-  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 13.04
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 12.16
   #   calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius] #=> 35.94
   #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 11.07
   def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil,

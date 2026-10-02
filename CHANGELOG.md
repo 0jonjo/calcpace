@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   | 30% RH | 26.69 °C | 5.46% | 15.34% |
   | 50% RH (= no humidity) | 30.0 °C | 7.9% | 22.2% |
   | 70% RH | 33.07 °C | 10.46% | 29.39% |
-  | 90% RH | 35.94 °C | 13.04% | 36.64% |
+  | 90% RH | 35.94 °C (capped at 35 °C) | 12.16% | 34.17% |
 
 ### Changed (numbers)
 Four models produced unrealistic numbers. The method names, signatures, return
@@ -72,9 +72,9 @@ above 100 km (see Breaking).
   marathon with `strategy: :negative` used to go through halfway in 1:33:36 (a
   7-minute negative split); it now splits 1:30:54 + 1:29:06.
 - **Heat above 30 °C keeps increasing.** 35 °C and 40 °C used to get the same
-  penalty as 30 °C. The base curve now continues to 40 °C (capped there):
-  12.16% at 35 °C and 17.0% at 40 °C for 60 minutes, extrapolating the fitted
-  law below. The ideal range is unchanged.
+  penalty as 30 °C. The base curve now continues to 35 °C (12.16% for 60
+  minutes, extrapolating the fitted law below) and is capped there: 35–40 °C
+  and hotter all read like 35 °C. The ideal range is unchanged.
 - **Heat base curve and duration scaling are fitted to marathon data.** The
   60-minute base was 2.8 / 4.3 / 6.5% at 20 / 25 / 30 °C (roughly linear) and
   the duration factor 1.0× (60 min) → 3.0× (3 h) → 4.5× (4 h), with the 3 h
@@ -92,8 +92,10 @@ above 100 km (see Breaking).
      original 25 °C / 60-minute anchor of 4.3% (the only value available for a
      60-minute effort), stored every 2.5 °C from 15 to 40 °C (linear
      interpolation stays within 0.08 points of the curve): 0, 0.54, 1.52,
-     2.79, 4.3, 6.01, 7.9, 9.95, 12.16, 14.51, 17.0. Above 25 °C this is an
-     extrapolation (El Helou's hottest race was 25.2 °C);
+     2.79, 4.3, 6.01, 7.9, 9.95, 12.16, then 12.16 and 12.16 at 37.5 and
+     40 °C. Above 25 °C this is an extrapolation (El Helou's hottest race was
+     25.2 °C), so the curve is deliberately capped at 35 °C: the uncapped law
+     (14.51 at 37.5 °C, 17.0 at 40 °C) gave 47.77% for 4 h at 40 °C;
   4. ratio = P ÷ base(T); finish time = 42195 m ÷ the group's speed at its
      optimum;
   5. **duration factor**: weighted least squares over the 15 ratios (men P1 at
@@ -119,7 +121,7 @@ above 100 km (see Breaking).
   residual in penalty points drops from 18.3 (linear base, 1.24×/2.18×) to
   8.8. What remains is mostly sex: with no sex input, men's slower groups are
   under-read at 25 °C (median 11.9% vs 14.76%) and women's over-read (median
-  12.08% vs 9.27%). Ely et al. (2007) remains a qualitative source (top men
+  12.08% vs 9.27%) — see Known limitations below. Ely et al. (2007) remains a qualitative source (top men
   1.7 / 2.5 / 3.3 / 4.5% off the course record across WBGT 5–10 … 20–25 °C,
   i.e. +2.8 points); the model gives a 2:10 effort 4.03% at 22.5 °C against
   0% at 7.5 °C, a little above that for elite runners. The duration points
@@ -133,7 +135,7 @@ above 100 km (see Breaking).
   | 25 °C | 2.15 → 2.15 | 4.3 → 4.3 | 8.6 → 5.93 | 12.9 → 7.57 | 19.35 → 12.08 | 19.35 → 12.08 |
   | 30 °C | 3.25 → 3.95 | 6.5 → 7.9 | 13.0 → 10.9 | 19.5 → 13.9 | 29.25 → 22.2 | 29.25 → 22.2 |
   | 35 °C | 3.25 → 6.08 | 6.5 → 12.16 | 13.0 → 16.78 | 19.5 → 21.4 | 29.25 → 34.17 | 29.25 → 34.17 |
-  | 40 °C | 3.25 → 8.5 | 6.5 → 17.0 | 13.0 → 23.46 | 19.5 → 29.92 | 29.25 → 47.77 | 29.25 → 47.77 |
+  | 40 °C | 3.25 → 6.08 | 6.5 → 12.16 | 13.0 → 16.78 | 19.5 → 21.4 | 29.25 → 34.17 | 29.25 → 34.17 |
 
 - **The marathon pace band ends at the runner's predicted marathon pace.**
   Daniels' M pace is the predicted marathon race pace, but
@@ -172,16 +174,23 @@ above 100 km (see Breaking).
 | Heat 20 °C, 60 min | 2.8% | 1.52% |
 | Heat 30 °C, 60 min | 6.5% | 7.9% |
 | Heat 35 °C, 60 min | 6.5% | 12.16% |
-| Heat 40 °C, 60 min | 6.5% | 17.0% |
+| Heat 40 °C, 60 min | 6.5% | 12.16% |
 | Heat 25 °C, 2 h | 8.6% | 5.93% |
 | Heat 25 °C, 3 h | 12.9% | 7.57% |
 | Heat 25 °C, 4 h | 19.35% | 12.08% |
 | Heat 30 °C, 4 h | 29.25% | 22.2% |
 | Heat 35 °C, 4 h | 29.25% | 34.17% |
-| Heat 40 °C, 4 h | 29.25% | 47.77% |
+| Heat 40 °C, 4 h | 29.25% | 34.17% |
 | Marathon band, VO2max 50 | 4:50–4:25/km | 4:50–4:31/km |
 | Splits marathon 3:00:00 `:negative` (halves) | 1:33:36 + 1:26:24 | 1:30:54 + 1:29:06 |
 | Splits marathon 3:00:00 `:positive` (halves) | 1:26:24 + 1:33:36 | 1:29:06 + 1:30:54 |
+
+### Known limitations
+- **The heat model has no sex term.** One curve serves everyone, and El Helou
+  et al. (2012) Table S3 shows men slowing more than women in the heat: at
+  25 °C the model reads men's slower groups low (men's median 11.9% vs 14.76%
+  observed, Q3 12.08% vs 16.10%) and women's high (women's median 12.08% vs
+  9.27%, Q1 12.08% vs 8.16%).
 
 ### Breaking
 - Removed `CameronPredictor::CAMERON_A`, `CAMERON_B` and `CAMERON_C`. They described

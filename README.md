@@ -47,7 +47,8 @@ simplified WBGT for humidity, NCAA standards for altitude).
   São Paulo (760 m) gets ~1.06%.
 - **Heat**: a 60-minute baseline `4.3 · ((T − 15) / 10)^1.5` (0% at 15 °C,
   1.52% at 20 °C, 4.3% at 25 °C, 7.9% at 30 °C; extrapolated to 12.16% at
-  35 °C and 17.0% at 40 °C, capped there), stored as points every 2.5 °C, then
+  35 °C and capped there, so 35–40 °C and hotter all read like 35 °C), stored
+  as points every 2.5 °C, then
   scaled by effort duration: 0.5× up to 30 min, 1.0× at 60 min, 1.76× at 3 h,
   2.81× at 4 h and beyond (linear in between, so 1.38× at 2 h). The exponent
   and the 3 h / 4 h points are fitted to El Helou et al. (2012, Table S3: eight
@@ -67,17 +68,19 @@ simplified WBGT for humidity, NCAA standards for altitude).
 | 25 °C | 2.15 | 4.3 | 5.93 | 7.57 | 12.08 | 12.08 |
 | 30 °C | 3.95 | 7.9 | 10.9 | 13.9 | 22.2 | 22.2 |
 | 35 °C | 6.08 | 12.16 | 16.78 | 21.4 | 34.17 | 34.17 |
-| 40 °C | 8.5 | 17.0 | 23.46 | 29.92 | 47.77 | 47.77 |
+| 40 °C | 6.08 | 12.16 | 16.78 | 21.4 | 34.17 | 34.17 |
 
 | 30 °C at | Effective temperature | 60 min | 4 h |
 | --- | --- | --- | --- |
 | 30% RH | 26.69 °C | 5.46% | 15.34% |
 | 50% RH (= no humidity) | 30.0 °C | 7.9% | 22.2% |
 | 70% RH | 33.07 °C | 10.46% | 29.39% |
-| 90% RH | 35.94 °C | 13.04% | 36.64% |
+| 90% RH | 35.94 °C (capped at 35 °C) | 12.16% | 34.17% |
 
 Above ~25 °C the numbers are extrapolations of the fitted curve: the marathon
-studies behind it have no data there (El Helou's hottest race was 25.2 °C).
+studies behind it have no data there (El Helou's hottest race was 25.2 °C). The
+cap at 35 °C is a deliberate choice for the same reason: the uncapped curve gave
+47.77% for 4 h at 40 °C.
 
 ```ruby
 # Calculate penalty for 25°C and 2000m altitude (Defaults to 60-min effort)
@@ -91,8 +94,8 @@ penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
 calc.calculate_penalty(temperature: 80, temperature_unit: :f)
 # => { total_penalty_percent: 5.44, ... }
 
-# Humidity: 30 °C at 90% hits like 35.94 °C at 50%
-calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 13.04
+# Humidity: 30 °C at 90% hits like 35.94 °C at 50% (which reads like the 35 °C cap)
+calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 12.16
 calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius]  # => 35.94
 calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 11.07
 

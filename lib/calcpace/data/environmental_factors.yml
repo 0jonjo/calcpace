@@ -88,8 +88,13 @@ altitude:
 #   group (2^1.497 = 2.82).
 # - anchor base(25) = 4.3: kept from the original model; it is the only value
 #   available for short efforts and has no direct published source.
-# - 30 °C and above: EXTRAPOLATION of the same law. The marathon data stop at
+# - 27.5-35 °C: EXTRAPOLATION of the same law. The marathon data stop at
 #   ~25 °C (El Helou's hottest race: 25.2 °C).
+# - Above 35 °C: CAPPED at the 35 °C value (12.16), a deliberate choice, not
+#   data. Everything beyond 25.2 °C is extrapolation, and the uncapped law
+#   (14.51 at 37.5 °C, 17.0 at 40 °C) gave 47.77% for 4 h at 40 °C. 37.5 °C and
+#   40 °C therefore read like 35 °C, and anything hotter is clamped to the last
+#   point as before.
 heat:
   ideal_range_celsius: [10.0, 15.0]
   data_points:
@@ -101,6 +106,6 @@ heat:
     27.5: 6.01 # EXTRAPOLATION from here on
     30: 7.9    # For 3h = 13.9%, for 4h = 22.2%
     32.5: 9.95
-    35: 12.16
-    37.5: 14.51
-    40: 17.0   # capped here; for 4h = 47.77%
+    35: 12.16  # For 3h = 21.4%, for 4h = 34.17%; the cap starts here
+    37.5: 12.16 # CAP: same as 35 °C (uncapped law: 14.51)
+    40: 12.16   # CAP: same as 35 °C (uncapped law: 17.0); clamped above
