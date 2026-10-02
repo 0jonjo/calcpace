@@ -103,4 +103,76 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     result = @calc.calculate_penalty(temperature: 25, time_seconds: 14_400)
     assert_equal 19.35, result[:factors][:heat]
   end
+
+  # --- altitude curve (v1.19.0) ---
+
+  def test_altitude_at_or_below_threshold_has_no_penalty
+    assert_equal 0.0, @calc.calculate_penalty(altitude: 0)[:factors][:altitude]
+    assert_equal 0.0, @calc.calculate_penalty(altitude: 300)[:factors][:altitude]
+  end
+
+  def test_altitude_is_continuous_just_above_the_threshold
+    assert_in_delta 0.0, @calc.calculate_penalty(altitude: 301)[:factors][:altitude], 0.01
+  end
+
+  def test_altitude_is_continuous_around_the_first_ncaa_point
+    below = @calc.calculate_penalty(altitude: 914)[:factors][:altitude]
+    at    = @calc.calculate_penalty(altitude: 914.4)[:factors][:altitude]
+    above = @calc.calculate_penalty(altitude: 915)[:factors][:altitude]
+
+    assert_equal 1.41, at
+    assert_in_delta at, below, 0.01
+    assert_in_delta at, above, 0.01
+  end
+
+  def test_altitude_sao_paulo
+    # 760 m: interpolated between 300 m (0.0) and 914.4 m (1.41)
+    assert_equal 1.06, @calc.calculate_penalty(altitude: 760)[:factors][:altitude]
+  end
+
+  def test_altitude_keeps_the_ncaa_points
+    assert_equal 2.15, @calc.calculate_penalty(altitude: 1219.2)[:factors][:altitude]
+    assert_equal 5.9, @calc.calculate_penalty(altitude: 2438.4)[:factors][:altitude]
+  end
+
+  def test_altitude_keeps_growing_beyond_the_ncaa_table
+    assert_equal 7.92, @calc.calculate_penalty(altitude: 3000)[:factors][:altitude]
+
+    result = @calc.calculate_penalty(altitude: 3600)[:factors][:altitude]
+    assert_operator result, :>, 9.97
+    assert_operator result, :<, 12.2
+  end
+
+  def test_altitude_is_capped_at_4000_meters
+    assert_equal 12.2, @calc.calculate_penalty(altitude: 4000)[:factors][:altitude]
+    assert_equal 12.2, @calc.calculate_penalty(altitude: 5000)[:factors][:altitude]
+  end
+
+  # --- heat beyond 30 °C (v1.19.0) ---
+
+  def test_heat_at_thirty_five_is_worse_than_at_thirty
+    at30 = @calc.calculate_penalty(temperature: 30, time_seconds: 3600)[:factors][:heat]
+    at35 = @calc.calculate_penalty(temperature: 35, time_seconds: 3600)[:factors][:heat]
+
+    assert_equal 6.5, at30
+    assert_equal 8.7, at35
+  end
+
+  def test_heat_at_forty_is_worse_than_at_thirty_five
+    assert_equal 10.9, @calc.calculate_penalty(temperature: 40, time_seconds: 3600)[:factors][:heat]
+  end
+
+  def test_heat_is_capped_at_forty
+    assert_equal 10.9, @calc.calculate_penalty(temperature: 45, time_seconds: 3600)[:factors][:heat]
+  end
+
+  def test_environmental_data_keeps_the_structure_the_site_reads
+    altitude = EnvironmentalAdjuster::FACTORS.fetch('altitude')
+    heat = EnvironmentalAdjuster::FACTORS.fetch('heat')
+
+    assert_kind_of Numeric, altitude.fetch('threshold_meters')
+    assert_kind_of Hash, altitude.fetch('data_points')
+    assert_equal [10.0, 15.0], heat.fetch('ideal_range_celsius')
+    assert_kind_of Hash, heat.fetch('data_points')
+  end
 end

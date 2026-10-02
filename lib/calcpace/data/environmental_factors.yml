@@ -6,18 +6,32 @@
 # - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
 #   NOTE: These heat factors are the BASELINE for a 60-minute effort.
 #   The final penalty is scaled by a DurationFactor (0.5x to 4.5x) based on total exposure time.
+#
+# Interpolation: at or below threshold_meters the altitude penalty is 0; above it
+# both tables are interpolated linearly between points and clamped to the first and
+# last point.
 
-# Altitude adjustments (NCAA standards)
+# Altitude adjustments
+# - 300 m: start of the curve. Below ~300 m altitude has no measurable effect; the
+#   ramp from 300 m to the first NCAA point (914.4 m) replaces the old step, where
+#   914 m gave 0% and 915 m gave 1.41%.
+# - 914.4 m .. 2438.4 m: NCAA table (3000 ft .. 8000 ft), unchanged.
+# - 3000 m, 3500 m, 4000 m: EXTRAPOLATION beyond the NCAA table, from a quadratic
+#   fit to the NCAA points: p = 0.3647·x² + 1.9482·x, with x = altitude_km − 0.3.
+#   The penalty is capped at the 4000 m value.
 altitude:
-  threshold_meters: 914.4
+  threshold_meters: 300
   data_points:
-    0: 0.0
+    300: 0.0
     914.4: 1.41
     1219.2: 2.15
     1524.0: 2.90
     1828.8: 3.76
     2133.6: 4.75
     2438.4: 5.90
+    3000: 7.92     # extrapolated (quadratic fit), not NCAA
+    3500: 9.97     # extrapolated (quadratic fit), not NCAA
+    4000: 12.2     # extrapolated (quadratic fit), not NCAA
 
 # Heat adjustments (60-minute baseline)
 # These values represent the penalty for a 1-hour run.
@@ -29,3 +43,5 @@ heat:
     20: 2.8    # Base for 60m. For 3h (3.0x) = 8.4% (Ely: 9%)
     25: 4.3    # Base for 60m. For 3h (3.0x) = 12.9% (Ely: 12%)
     30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%
+    35: 8.7    # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)
+    40: 10.9   # EXTRAPOLATION: continues the 25→30 slope (0.44 points/°C)

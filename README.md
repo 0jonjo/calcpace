@@ -40,6 +40,13 @@ calc.checked_distance('01:21:32', '00:06:27') # => 12.64
 Adjust race performance based on heat and altitude. Calculations are based on scientific models
 (Matthew Ely 2007 for heat, NCAA standards for altitude).
 
+- **Altitude**: no penalty up to 300 m, then a linear ramp to the first NCAA point
+  (914.4 m → 1.41%), the NCAA table up to 2438.4 m (5.90%), and an extrapolated
+  curve beyond it (3000 m → 7.92%, 3500 m → 9.97%, 4000 m → 12.2%, capped there).
+  São Paulo (760 m) gets ~1.06%.
+- **Heat**: 60-minute baseline from 15 °C (0%) to 30 °C (6.5%), extrapolated to
+  35 °C (8.7%) and 40 °C (10.9%, capped there), then scaled by effort duration.
+
 ```ruby
 # Calculate penalty for 25°C and 2000m altitude (Defaults to 60-min effort)
 penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
@@ -68,7 +75,7 @@ calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 28)
 
 # Predicted adjusted times (Cameron formula)
 calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 80, temperature_unit: :f)
-# => { adjusted_time: 11585.88, adjusted_time_clock: "03:13:05", penalty_percent: 14.18, ... }
+# => { adjusted_time: 13045.91, adjusted_time_clock: "03:37:25", penalty_percent: 16.02, ... }
 ```
 
 ---
@@ -139,8 +146,10 @@ calc.race_splits('half_marathon', target_time: '01:30:00', split_distance: '5k')
 # => ["00:21:20", "00:42:40", "01:03:59", "01:25:19", "01:30:00"]
 
 # Strategies: :even (default), :negative (second half faster), :positive (first half faster)
+# :negative runs the first half 1% slower than average pace and the second half 1% faster;
+# :positive is the mirror image. A 3:00:00 marathon splits 1:30:54 + 1:29:06 (:negative).
 calc.race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
-# => ["00:20:48", "00:40:00"]
+# => ["00:20:12", "00:40:00"]
 
 # The race may be a plain distance too; the last split is always the finish
 calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
@@ -160,11 +169,16 @@ calc.equivalent_performance('10k', '00:42:00', '5k')
 # => { time: 1208.67, time_clock: "00:20:08", pace: 241.73, pace_clock: "00:04:01" }
 ```
 
-**Cameron formula** (exponential correction — tends to be more conservative from short distances):
+**Cameron formula** (Dave Cameron's velocity-ratio model, fitted to world bests from
+800 m to the marathon — more conservative than Riegel when predicting the marathon
+from shorter races):
+
+`T2 = T1 × (D2/D1) × f(D1)/f(D2)`, with `f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905`
+and `d` in metres (distances are still passed in km or as race names).
 
 ```ruby
-calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "02:57:34"
-calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')  # => "00:04:12"
+calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')  # => "03:16:46"
+calc.predict_pace_cameron_clock('10k', '00:42:00', 'marathon')  # => "00:04:39"
 ```
 
 **Any distance, on either end.** Both formulas are arithmetic on two distances,
@@ -173,7 +187,7 @@ so neither end has to be a standard race:
 ```ruby
 # From a 7.79 km club race in 26:59
 calc.predict_time_clock(7.79, '00:26:59', 'half_marathon')          # => "01:17:34"
-calc.predict_time_cameron_clock(7.79, '00:26:59', 'half_marathon')  # => "01:13:44"
+calc.predict_time_cameron_clock(7.79, '00:26:59', 'half_marathon')  # => "01:17:26"
 
 # To an unnamed distance, and between two of them
 calc.predict_time_clock('10k', '00:42:00', 15)    # => "01:04:33"

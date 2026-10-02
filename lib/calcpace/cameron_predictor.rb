@@ -2,25 +2,33 @@
 
 # Module for predicting race times using the Cameron formula
 #
-# An alternative to the Riegel formula (RacePredictor module) that uses an
-# exponential correction to better account for physiological differences across
-# distances. The correction is larger when predicting from shorter races, where
-# anaerobic contribution is greater, and diminishes as the known distance approaches
-# the target distance.
+# An alternative to the Riegel formula (RacePredictor module). Dave Cameron fitted
+# a velocity-ratio function to world-best times from 800 m to the marathon; unlike
+# Riegel's single power law, the drop-off it predicts grows with distance, so it is
+# more conservative than Riegel when predicting the marathon from shorter races.
 #
-# Formula: T2 = T1 × (D2/D1) × [(a + b × e^(-D1/c)) / (a + b × e^(-D2/c))]
+# Formula (distances in metres, times in seconds):
+#   f(d) = 13.49681 − 0.000030363 × d + 835.7114 / d^0.7905
+#   T2   = T1 × (D2/D1) × f(D1) / f(D2)
 #
-# Constants (calibrated for distances in km):
-#   a = 0.000495
-#   b = 0.000985
-#   c = 1.4485
+# Distances are accepted in kilometres (or as race names) like every other method
+# in this gem, and converted to metres before f(d) is evaluated.
 #
-# Reference: Dave Cameron, "A Critical Examination of Racing Predictions" (1997)
+# References:
+# - Dave Cameron, metric version of his model posted to the t-and-f mailing list,
+#   20 Jun 2001: https://www.mail-archive.com/t-and-f@lists.uoregon.edu/msg11312.html
+# - had2know.org Cameron calculator (same constants, distances in metres; worked
+#   example 3.5 mi in 51:30 → 5 mi in ~75:08):
+#   https://www.had2know.org/sports/race-performance-prediction-calculator-cameron.html
 module CameronPredictor
-  # Cameron formula constants (calibrated for distances in km)
-  CAMERON_A = 0.000495
-  CAMERON_B = 0.000985
-  CAMERON_C = 1.4485
+  # Constant term of Cameron's velocity-ratio function f(d)
+  CAMERON_CONSTANT = 13.49681
+  # Linear coefficient of f(d), per metre
+  CAMERON_LINEAR_COEFFICIENT = 0.000030363
+  # Numerator of the power term of f(d)
+  CAMERON_POWER_COEFFICIENT = 835.7114
+  # Exponent of the power term of f(d)
+  CAMERON_POWER_EXPONENT = 0.7905
 
   # Predicts race time using the Cameron formula
   #
@@ -34,11 +42,11 @@ module CameronPredictor
   #
   # @example Predict marathon time from 10K
   #   predict_time_cameron('10k', '00:42:00', 'marathon')
-  #   #=> ~10,654 seconds (approximately 2:57:34)
+  #   #=> ~11,807 seconds (approximately 3:16:46)
   #
   # @example Predict 10K time from 5K
   #   predict_time_cameron('5k', '00:20:00', '10k')
-  #   #=> ~2,546 seconds (approximately 42:26)
+  #   #=> ~2,500 seconds (approximately 41:39)
   def predict_time_cameron(from_race, from_time, to_race)
     from_distance = race_distance(from_race)
     to_distance   = race_distance(to_race)
@@ -48,7 +56,7 @@ module CameronPredictor
     time_seconds = from_time.is_a?(String) ? convert_to_seconds(from_time) : from_time
     check_positive(time_seconds, 'Time')
 
-    # Cameron formula: T2 = T1 × (D2/D1) × [cameron_factor(D1) / cameron_factor(D2)]
+    # Cameron formula: T2 = T1 × (D2/D1) × [f(D1) / f(D2)]
     time_seconds * (to_distance / from_distance) *
       (cameron_factor(from_distance) / cameron_factor(to_distance))
   end
@@ -62,7 +70,7 @@ module CameronPredictor
   #
   # @example
   #   predict_time_cameron_clock('10k', '00:42:00', 'marathon')
-  #   #=> '02:57:34'
+  #   #=> '03:16:46'
   def predict_time_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_time_cameron(from_race, from_time, to_race))
   end
@@ -76,7 +84,7 @@ module CameronPredictor
   #
   # @example
   #   predict_pace_cameron('5k', '00:20:00', 'marathon')
-  #   #=> ~255.1 (approximately 4:15/km)
+  #   #=> ~277.6 (approximately 4:37/km)
   def predict_pace_cameron(from_race, from_time, to_race)
     predict_time_cameron(from_race, from_time, to_race) / race_distance(to_race)
   end
@@ -90,7 +98,7 @@ module CameronPredictor
   #
   # @example
   #   predict_pace_cameron_clock('5k', '00:20:00', 'marathon')
-  #   #=> '00:04:15'
+  #   #=> '00:04:37'
   def predict_pace_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_pace_cameron(from_race, from_time, to_race))
   end
@@ -109,11 +117,14 @@ module CameronPredictor
 
   private
 
-  # Computes the Cameron exponential correction factor for a given distance
+  # Evaluates Cameron's velocity-ratio function f(d) for a given distance
   #
-  # @param distance_km [Float] distance in kilometers
-  # @return [Float] correction factor value
+  # @param distance_km [Float] distance in kilometers (converted to metres, the
+  #   unit Cameron's constants are calibrated for)
+  # @return [Float] value of f(d)
   def cameron_factor(distance_km)
-    CAMERON_A + (CAMERON_B * Math.exp(-distance_km / CAMERON_C))
+    meters = distance_km * 1000.0
+    CAMERON_CONSTANT - (CAMERON_LINEAR_COEFFICIENT * meters) +
+      (CAMERON_POWER_COEFFICIENT / (meters**CAMERON_POWER_EXPONENT))
   end
 end

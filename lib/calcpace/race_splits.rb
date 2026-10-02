@@ -22,7 +22,7 @@ module RaceSplits
   #
   # @example Negative splits (second half faster)
   #   race_splits('10k', target_time: '00:40:00', split_distance: '5k', strategy: :negative)
-  #   #=> ["00:20:48", "00:40:00"] (first 5k slower, second 5k faster)
+  #   #=> ["00:20:12", "00:40:00"] (first 5k 1% slower, second 5k 1% faster)
   def race_splits(race, target_time:, split_distance:, strategy: :even)
     total_distance = race_distance(race)
     target_seconds = target_time.is_a?(String) ? convert_to_seconds(target_time) : target_time
@@ -133,25 +133,27 @@ module RaceSplits
   end
 
   # Calculates negative splits (second half faster than first half)
-  # First half is ~4% slower, second half is ~4% faster
+  # First half is run at a pace 1% slower than average, second half 1% faster
+  # (e.g. a 3:00:00 marathon goes through halfway in 1:30:54, then 1:29:06)
   #
   # @param total_distance [Float] total race distance in kilometers
   # @param target_seconds [Float] target finish time in seconds
   # @param split_km [Float] split distance in kilometers
   # @return [Array<String>] array of cumulative split times
   def calculate_negative_splits(total_distance, target_seconds, split_km)
-    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 1.04, second_factor: 0.96)
+    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 1.01, second_factor: 0.99)
   end
 
   # Calculates positive splits (first half faster than second half)
-  # First half is ~4% faster, second half is ~4% slower
+  # First half is run at a pace 1% faster than average, second half 1% slower
+  # (e.g. a 3:00:00 marathon goes through halfway in 1:29:06, then 1:30:54)
   #
   # @param total_distance [Float] total race distance in kilometers
   # @param target_seconds [Float] target finish time in seconds
   # @param split_km [Float] split distance in kilometers
   # @return [Array<String>] array of cumulative split times
   def calculate_positive_splits(total_distance, target_seconds, split_km)
-    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 0.96, second_factor: 1.04)
+    calculate_variable_splits(total_distance, target_seconds, split_km, first_factor: 0.99, second_factor: 1.01)
   end
 
   # Shared logic for variable pace split strategies
