@@ -77,24 +77,29 @@ module Converter
 
   # Converts a time string to total seconds
   #
+  # Every method in the gem that takes a time or pace string goes through
+  # here, so they all read the same clocks: the ones Checker#check_time
+  # accepts, which cover every clock the gem writes — signed track_splits
+  # paces ('-0:40' is -40), minutes past the hour ('75:00'), any number of
+  # hours ('400:00:00') and the day prefix of convert_to_clocktime
+  # ('1 03:46:40'). Methods that need a positive time reject a negative one
+  # afterwards.
+  #
   # @param time [String] time string in HH:MM:SS or MM:SS format
-  # @return [Integer] total seconds
+  # @return [Integer] total seconds (negative for a '-' clock)
+  # @raise [Calcpace::InvalidTimeFormatError] if the string is not a valid clock
   #
   # @example
-  #   convert_to_seconds('01:30:00') #=> 5400 (1 hour 30 minutes)
-  #   convert_to_seconds('05:30')    #=> 330 (5 minutes 30 seconds)
+  #   convert_to_seconds('01:30:00')   #=> 5400 (1 hour 30 minutes)
+  #   convert_to_seconds('05:30')      #=> 330 (5 minutes 30 seconds)
+  #   convert_to_seconds('1 03:46:40') #=> 100000
+  #   convert_to_seconds('-0:40')      #=> -40
+  #   convert_to_seconds('05:99')      #=> raises InvalidTimeFormatError
   def convert_to_seconds(time)
-    parts = time.split(':').map(&:to_i)
-    case parts.length
-    when 2
-      minute, seconds = parts
-      (minute * 60) + seconds
-    when 3
-      hour, minute, seconds = parts
-      (hour * 3600) + (minute * 60) + seconds
-    else
-      0
-    end
+    clock = clock_match(time)
+    minutes = clock[:total_minutes] || clock[:minutes]
+    total = (clock[:days].to_i * 86_400) + (clock[:hours].to_i * 3600) + (minutes.to_i * 60) + clock[:seconds].to_i
+    clock[:sign] ? -total : total
   end
 
   # Converts seconds to a clocktime string

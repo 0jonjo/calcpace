@@ -2,6 +2,7 @@
 
 require 'yaml'
 require_relative 'errors'
+require_relative 'checker'
 
 # Module for age-grading race performances with a versioned table
 #
@@ -11,8 +12,14 @@ require_relative 'errors'
 # Current scope:
 # - Common road distances: 5K, 10K, half marathon, marathon
 # - Sex: male/female
-# - Age: 18+
-# - Data file is versioned and replaceable (`lib/calcpace/data/wma_2023_road.yml`)
+# - Age: 18+, one factor per year up to 100 (older ages use the age-100 factor)
+# - Data: Alan Jones' 2025 road age-grading tables, approved by the USATF
+#   Masters Long Distance Running Council (github.com/AlanLyttonJones/Age-Grade-Tables).
+#   The files are versioned and replaceable: factors in
+#   `lib/calcpace/data/mldr_2025_road.yml`, open standards and category labels in
+#   `lib/calcpace/data/mldr_2025_road_open_standards.yml`
+#
+# The WMA_DATA constant keeps its historical name: it now holds the road table
 #
 # Returned values include:
 # - age grade percentage
@@ -21,8 +28,11 @@ require_relative 'errors'
 # - performance category
 # rubocop:disable Metrics/ModuleLength
 module AgeGrading
-  DATA_PATH = File.expand_path('data/wma_2023_road.yml', __dir__).freeze
-  OPEN_STANDARDS_DATA_PATH = File.expand_path('data/wma_2023_open_standards.yml', __dir__).freeze
+  # normalize_age / normalize_sex live in Checker, shared with Vo2maxNorms
+  include Checker
+
+  DATA_PATH = File.expand_path('data/mldr_2025_road.yml', __dir__).freeze
+  OPEN_STANDARDS_DATA_PATH = File.expand_path('data/mldr_2025_road_open_standards.yml', __dir__).freeze
   WMA_DATA = YAML.safe_load_file(DATA_PATH, permitted_classes: [],
                                             aliases: false).freeze
   OPEN_STANDARDS_DATA = YAML.safe_load_file(OPEN_STANDARDS_DATA_PATH, permitted_classes: [],
@@ -60,7 +70,7 @@ module AgeGrading
   # How far a distance may sit from a standard and still be graded as it. 2% is
   # the same window calcpace.app uses to decide a run "is a 5K", so the gem and
   # the site never disagree about the same run. It stays a matching tolerance,
-  # not an interpolation: a distance outside it has no WMA factor and is refused
+  # not an interpolation: a distance outside it has no table factor and is refused
   STANDARD_DISTANCE_TOLERANCE_RATIO = 0.02
 
   # Floor for the window above, so a future shorter standard still matches
@@ -178,23 +188,6 @@ module AgeGrading
 
     check_time(time.to_s)
     convert_to_seconds(time.to_s)
-  end
-
-  def normalize_age(age)
-    age_value = Integer(age)
-  rescue ArgumentError, TypeError
-    raise ArgumentError, 'Age must be an integer greater than or equal to 18'
-  else
-    raise ArgumentError, 'Age must be at least 18' if age_value < 18
-
-    age_value
-  end
-
-  def normalize_sex(sex)
-    normalized = sex.to_s.strip.downcase.to_sym
-    return normalized if %i[male female].include?(normalized)
-
-    raise ArgumentError, "Sex must be 'male' or 'female'"
   end
 
   def interpolated_factor(sex, age, distance_m)

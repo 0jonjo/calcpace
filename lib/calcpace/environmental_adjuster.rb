@@ -1,15 +1,38 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'humidity'
 
 # Module for adjusting race performance based on environmental conditions
 #
 # Scientific basis:
-# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+# - Heat: Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+#   (qualitative: slowing grows with WBGT, more for slower runners) and
+#   El Helou et al. (2012) "Impact of Environmental Parameters on Marathon
+#   Running Performance" (duration scaling, see HEAT_DURATION_FACTORS)
 # - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
+# - Humidity: Australian Bureau of Meteorology simplified WBGT
+#   (WBGT = 0.567·Ta + 0.393·e + 3.94, e = vapour pressure in hPa)
 module EnvironmentalAdjuster
   DATA_PATH = File.expand_path('data/environmental_factors.yml', __dir__).freeze
   FACTORS = YAML.safe_load_file(DATA_PATH, permitted_classes: [], aliases: false).freeze
+
+  # Heat duration scaling: [minutes, factor] points, joined by straight lines
+  # and flat outside the first and last point. The base heat penalty in
+  # environmental_factors.yml is for a 60-minute effort (factor 1.0).
+  # - 30 min (0.5x) and 60 min (1.0x): kept from the original model; no
+  #   marathon dataset covers efforts this short.
+  # - 3 h (1.76x) and 4 h (2.81x, flat after): weighted least-squares fit to
+  #   El Helou et al. (2012) Table S3 — the time penalty against 15 °C at
+  #   20 °C and 25 °C for eight finisher groups (2:41–4:54) divided by the
+  #   60-minute base (itself fitted to the same table). The 2 h value (1.38x)
+  #   is the straight line 60 → 180 min: no group finishes between 1 h and
+  #   2:41. Derivation table in environmental_factors.yml.
+  HEAT_DURATION_FACTORS = [[30.0, 0.5], [60.0, 1.0], [180.0, 1.76], [240.0, 2.81]].freeze
+
+  # Relative humidity (%) the temperature-only heat curve stands for
+  # (see EnvironmentalAdjuster::Humidity)
+  REFERENCE_HUMIDITY = Humidity::REFERENCE_HUMIDITY
 
   # Calculates the performance penalty percentage for given environmental conditions
   #
@@ -17,18 +40,32 @@ module EnvironmentalAdjuster
   # @param temperature_unit [Symbol, String] :c (Celsius) or :f (Fahrenheit)
   # @param altitude [Numeric, nil] altitude in meters
   # @param time_seconds [Numeric, nil] duration of the effort in seconds
-  # @return [Hash] hash with :total_penalty_percent and breakdown in :factors
-  def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil)
-    heat_penalty = calculate_heat_penalty(temperature, temperature_unit, time_seconds)
+  # @param humidity [Numeric, nil] relative humidity in % (0–100). Optional;
+  #   without it (and without dew_point) the heat curve assumes
+  #   REFERENCE_HUMIDITY. With it, the temperature is replaced by the effective
+  #   temperature that has the same simplified WBGT at REFERENCE_HUMIDITY.
+  # @param dew_point [Numeric, nil] dew point, in temperature_unit. Alternative
+  #   to humidity (pass one or the other), must not exceed the temperature
+  # @return [Hash] hash with :total_penalty_percent and breakdown in :factors;
+  #   when humidity or dew_point is given, :factors also carries
+  #   :effective_temperature_celsius
+  # @raise [ArgumentError] if humidity is outside 0–100, dew_point is above the
+  #   temperature, both are given, or either is given without a temperature
+  #
+  # @example
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 12.16
+  #   calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius] #=> 35.94
+  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 11.07
+  def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil,
+                        humidity: nil, dew_point: nil)
+    effective = effective_temperature(temperature, temperature_unit, humidity, dew_point)
+    heat_penalty = calculate_heat_penalty(effective, time_seconds)
     altitude_penalty = calculate_altitude_penalty(altitude)
 
-    {
-      total_penalty_percent: (heat_penalty + altitude_penalty).round(2),
-      factors: {
-        heat: heat_penalty,
-        altitude: altitude_penalty
-      }
-    }
+    factors = { heat: heat_penalty, altitude: altitude_penalty }
+    factors[:effective_temperature_celsius] = effective.round(2) unless humidity.nil? && dew_point.nil?
+
+    { total_penalty_percent: (heat_penalty + altitude_penalty).round(2), factors: factors }
   end
 
   # Adjusts a given time based on environmental conditions
@@ -71,10 +108,19 @@ module EnvironmentalAdjuster
 
   private
 
-  def calculate_heat_penalty(temp, unit, time_seconds)
-    return 0.0 if temp.nil?
+  # Air temperature in °C, moved to the temperature that has the same
+  # simplified WBGT at REFERENCE_HUMIDITY when humidity or dew point is known
+  def effective_temperature(temp, unit, humidity, dew_point)
+    Humidity.check_inputs!(temp, humidity, dew_point)
+    temp_c = temp && normalize_temperature(temp, unit)
+    return temp_c if temp_c.nil? || (humidity.nil? && dew_point.nil?)
 
-    temp_c = normalize_temperature(temp, unit)
+    Humidity.effective_temperature(temp_c, humidity: humidity,
+                                           dew_point_c: dew_point && normalize_temperature(dew_point, unit))
+  end
+
+  def calculate_heat_penalty(temp_c, time_seconds)
+    return 0.0 if temp_c.nil?
 
     data = FACTORS.fetch('heat')
     ideal_min, ideal_max = data.fetch('ideal_range_celsius')
@@ -89,23 +135,11 @@ module EnvironmentalAdjuster
   def duration_factor(time_seconds)
     return 1.0 if time_seconds.nil?
 
-    minutes = time_seconds / 60.0
+    minutes = (time_seconds / 60.0).clamp(HEAT_DURATION_FACTORS.first.first, HEAT_DURATION_FACTORS.last.first)
+    (from_minutes, from_factor), (to_minutes, to_factor) =
+      HEAT_DURATION_FACTORS.each_cons(2).find { |_, (upper, _)| minutes <= upper }
 
-    # Rule based on Matthew Ely (2007) heat degradation curve.
-    # Scaled for piecewise linear interpolation to avoid jumps.
-    if minutes <= 30
-      0.5
-    elsif minutes <= 60
-      # Scale from 0.5x (30m) up to 1.0x (60m)
-      0.5 + (((minutes - 30.0) / 30.0) * 0.5)
-    elsif minutes <= 180
-      # Scale from 1.0x (60m) up to 3.0x (180m / 3h)
-      1.0 + (((minutes - 60.0) / 120.0) * 2.0)
-    else
-      # Scale from 3.0x (3h) up to 4.5x (4h)
-      capped_minutes = [minutes, 240.0].min
-      3.0 + (((capped_minutes - 180.0) / 60.0) * 1.5)
-    end
+    from_factor + (((minutes - from_minutes) / (to_minutes - from_minutes)) * (to_factor - from_factor))
   end
 
   def normalize_temperature(temp, unit)

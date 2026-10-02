@@ -8,10 +8,10 @@ class TestCameronPredictor < CalcpaceTest
 
   def test_predict_time_5k_to_10k
     # 5K in 20:00 → 10K
-    # Cameron formula: 1200 × (10/5) × [factor(5) / factor(10)] ≈ 2544s ≈ 42:24
+    # Cameron formula: 1200 × (10000/5000) × [f(5000) / f(10000)] ≈ 2499.66s ≈ 41:39
     result = @calc.predict_time_cameron('5k', '00:20:00', '10k')
 
-    assert_in_delta 2544, result, 10
+    assert_in_delta 2499.66, result, 0.01
   end
 
   def test_predict_time_10k_to_half_marathon
@@ -23,10 +23,10 @@ class TestCameronPredictor < CalcpaceTest
   end
 
   def test_predict_time_10k_to_marathon
-    # 10K in 42:00 → marathon
+    # 10K in 42:00 → marathon ≈ 11,806.76s (3:16:46)
     result = @calc.predict_time_cameron('10k', '00:42:00', 'marathon')
 
-    assert_in_delta 10_666, result, 100
+    assert_in_delta 11_806.76, result, 0.01
   end
 
   def test_predict_time_half_to_marathon
@@ -71,10 +71,7 @@ class TestCameronPredictor < CalcpaceTest
   end
 
   def test_predict_time_clock_10k_to_marathon
-    result = @calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')
-
-    parts = result.split(':').map(&:to_i)
-    assert_equal 2, parts[0], 'Should be 2 hours'
+    assert_equal '03:16:46', @calc.predict_time_cameron_clock('10k', '00:42:00', 'marathon')
   end
 
   # ── predict_pace_cameron ──────────────────────────────────────────────────
@@ -105,6 +102,51 @@ class TestCameronPredictor < CalcpaceTest
     assert riegel > 9_000
     assert riegel < 18_000
     refute_in_delta cameron, riegel, 1, 'Cameron and Riegel should produce different predictions'
+  end
+
+  def test_cameron_is_more_conservative_than_riegel_for_the_marathon_from_5k
+    cameron = @calc.predict_time_cameron('5k', '00:20:00', 'marathon')
+    riegel  = @calc.predict_time('5k', '00:20:00', 'marathon')
+
+    assert_operator cameron, :>, riegel, 'Cameron 5K→marathon should be slower than Riegel'
+  end
+
+  def test_cameron_is_more_conservative_than_riegel_for_the_marathon_from_10k
+    cameron = @calc.predict_time_cameron('10k', '00:42:00', 'marathon')
+    riegel  = @calc.predict_time('10k', '00:42:00', 'marathon')
+
+    assert_operator cameron, :>, riegel, 'Cameron 10K→marathon should be slower than Riegel'
+  end
+
+  # ── reference predictions (Cameron's metric model) ───────────────────────
+
+  def test_reference_5k_to_marathon
+    # 5K 20:00 → marathon ≈ 3:15:11
+    assert_in_delta 11_711.47, @calc.predict_time_cameron('5k', '00:20:00', 'marathon'), 0.01
+  end
+
+  def test_reference_half_marathon_to_marathon
+    # Half 1:30:00 → marathon ≈ 3:11:15
+    assert_in_delta 11_475.12, @calc.predict_time_cameron('half_marathon', '01:30:00', 'marathon'), 0.01
+  end
+
+  def test_reference_marathon_to_5k
+    # Marathon 3:30:00 → 5K ≈ 21:31
+    assert_in_delta 1291.04, @calc.predict_time_cameron('marathon', '03:30:00', '5k'), 0.01
+  end
+
+  def test_reference_matches_had2know_worked_example
+    # had2know.org Cameron page: 3.5 mi (5632.704 m) in 51:30 → 5 mi (8046.72 m) ≈ 75:08
+    result = @calc.predict_time_cameron(5.632704, '00:51:30', 8.04672)
+
+    assert_equal '01:15:08', @calc.convert_to_clocktime(result)
+  end
+
+  def test_velocity_function_matches_published_constants
+    # f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905, d in metres
+    expected = 13.49681 - (0.000030363 * 10_000) + (835.7114 / (10_000**0.7905))
+
+    assert_in_delta expected, @calc.send(:cameron_factor, 10.0), 1e-12
   end
 
   # ── consistency ──────────────────────────────────────────────────────────
@@ -150,18 +192,68 @@ class TestCameronPredictor < CalcpaceTest
     end
   end
 
+  # ── valid distance range ─────────────────────────────────────────────────
+  # f(d) crosses zero near 445 km, so beyond the fitted range the formula returns
+  # negative or absurd times. Distances above CAMERON_MAX_DISTANCE_KM raise.
+
+  CAMERON_VARIANTS = %i[predict_time_cameron predict_time_cameron_clock
+                        predict_pace_cameron predict_pace_cameron_clock
+                        predict_time_cameron_adjusted].freeze
+
+  def test_max_distance_constant
+    assert_in_delta 100.0, CameronPredictor::CAMERON_MAX_DISTANCE_KM, 0.0
+  end
+
+  def test_max_distance_is_accepted_as_source_and_target
+    CAMERON_VARIANTS.each do |method|
+      @calc.public_send(method, 100, '08:00:00', 'marathon')
+      @calc.public_send(method, '100k', '08:00:00', 'marathon')
+      @calc.public_send(method, 'marathon', '03:30:00', 100)
+      @calc.public_send(method, 'marathon', '03:30:00', '100k')
+    end
+  end
+
+  def test_max_distance_prediction_is_sane
+    # Marathon 3:30:00 → 100 km should be slower than 2.37× the marathon time
+    result = @calc.predict_time_cameron('marathon', '03:30:00', '100k')
+
+    assert_operator result, :>, 12_600 * (100 / 42.195)
+  end
+
+  def test_distances_above_the_max_raise_as_source
+    [100.1, 445.5, 1000].each do |distance|
+      CAMERON_VARIANTS.each do |method|
+        error = assert_raises(ArgumentError, "#{method} from #{distance} km") do
+          @calc.public_send(method, distance, '10:00:00', 'marathon')
+        end
+        assert_match(/Cameron.*100\.0 km/, error.message)
+      end
+    end
+  end
+
+  def test_distances_above_the_max_raise_as_target
+    [100.1, 445.5, 1000].each do |distance|
+      CAMERON_VARIANTS.each do |method|
+        error = assert_raises(ArgumentError, "#{method} to #{distance} km") do
+          @calc.public_send(method, '10k', '00:42:00', distance)
+        end
+        assert_match(/Cameron.*100\.0 km/, error.message)
+      end
+    end
+  end
+
   # ── adjusted predictions ───────────────────────────────────────────────────
 
   def test_predict_time_cameron_adjusted_with_heat
     # 5K in 20:00 to 10K
-    # Normal Cameron: ~2544s
-    # Duration factor for ~42:24 (2544s) is ~0.707x
-    # Adjusted for 20°C (Base 2.8% * 0.707 ≈ 1.98% penalty): 2544 * 1.0198 ≈ 2594.4s
+    # Normal Cameron: ~2499.66s
+    # Duration factor for ~41:40 (2499.66s) is ~0.694x
+    # Adjusted for 20°C (Base 1.52% * 0.694 ≈ 1.06% penalty): 2499.66 * 1.0106 ≈ 2526.16s
     result = @calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 20)
 
     assert_kind_of Hash, result
-    assert_in_delta 2594.4, result[:adjusted_time], 10
-    assert_equal 1.98, result[:penalty_percent]
+    assert_in_delta 2526.16, result[:adjusted_time], 0.01
+    assert_equal 1.06, result[:penalty_percent]
   end
 
   # --- free distances (v1.15.0) ---
@@ -170,7 +262,7 @@ class TestCameronPredictor < CalcpaceTest
     # Alagoas Abel: 7.79 km in 26:59 -> half marathon
     result = @calc.predict_time_cameron(7.79, '00:26:59', 'half_marathon')
 
-    assert_in_delta 4424.99, result, 0.01
+    assert_in_delta 4646.36, result, 0.01
   end
 
   def test_predict_time_cameron_numeric_distance_matches_the_named_race

@@ -8,7 +8,7 @@ class TestAgeGrading < CalcpaceTest
     result = @calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
 
     assert_kind_of Hash, result
-    assert_equal 'WMA_2023_ONE_YEAR_FACTORS_V1', result[:table_version]
+    assert_equal 'MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1', result[:table_version]
     assert_includes result.keys, :age_grade_percent
     assert_includes result.keys, :category
     assert_includes result.keys, :age_graded_time_seconds
@@ -56,13 +56,104 @@ class TestAgeGrading < CalcpaceTest
     assert_equal result[:age_graded_time_seconds], (scaled / 100.0)
   end
 
-  def test_interpolates_factor_for_in_between_age
+  def test_factor_decreases_with_age_through_the_masters_years
     result_fifty_five = @calc.age_grade(10.0, '00:45:00', age: 55, sex: :male)
     result_fifty_seven = @calc.age_grade(10.0, '00:45:00', age: 57, sex: :male)
     result_sixty = @calc.age_grade(10.0, '00:45:00', age: 60, sex: :male)
 
     assert result_fifty_seven[:factor] < result_fifty_five[:factor]
     assert result_fifty_seven[:factor] > result_sixty[:factor]
+  end
+
+  def test_interpolates_linearly_between_the_ages_of_a_sparse_table
+    # The bundled table has every age from 18 to 100, so interpolation only
+    # matters for a replacement table with gaps (e.g. five-year steps)
+    sparse = { 30 => 1.0, 40 => 0.9, 50 => 0.8 }
+    @calc.define_singleton_method(:factor_table) { |_sex, _distance_m| sparse }
+
+    assert_equal 0.97, @calc.age_grade(10.0, '00:45:00', age: 33, sex: :male)[:factor]
+    assert_equal 0.85, @calc.age_grade(10.0, '00:45:00', age: 45, sex: :male)[:factor]
+    assert_equal 0.9, @calc.age_grade(10.0, '00:45:00', age: 40, sex: :male)[:factor]
+    assert_equal 1.0, @calc.age_grade(10.0, '00:45:00', age: 25, sex: :male)[:factor]
+    assert_equal 0.8, @calc.age_grade(10.0, '00:45:00', age: 70, sex: :male)[:factor]
+  end
+
+  # --- 2025 road tables (Alan Jones, USATF MLDR) ---
+  #
+  # Expected values come from the official spreadsheets in
+  # github.com/AlanLyttonJones/Age-Grade-Tables, "2025 Files": the factor from
+  # sheet "Age Factors" and the percentage as age standard / time, with the age
+  # standard from sheet "AgeStdSec" (MaleRoadStd2025.xlsx /
+  # FemaleRoadStd2025.xlsx). Percentages are compared at the gem's one decimal.
+  OFFICIAL_2025_ROAD_CASES = [
+    { race: :marathon, time: '03:30:00', age: 40, sex: :male,
+      factor: 0.9783, open_standard: 7235.0, age_standard: 7395, percent: 58.7 },
+    { race: :marathon, time: '04:00:00', age: 50, sex: :female,
+      factor: 0.8998, open_standard: 7796.0, age_standard: 8664, percent: 60.2 },
+    { race: :'5k', time: '00:25:00', age: 30, sex: :female,
+      factor: 0.9959, open_standard: 834.0, age_standard: 837, percent: 55.8 },
+    { race: :half_marathon, time: '01:50:00', age: 60, sex: :male,
+      factor: 0.8082, open_standard: 3451.0, age_standard: 4270, percent: 64.7 }
+  ].freeze
+
+  def test_matches_the_official_2025_road_tables
+    OFFICIAL_2025_ROAD_CASES.each do |official|
+      result = @calc.age_grade(official[:race], official[:time], age: official[:age], sex: official[:sex])
+      label = official.values_at(:sex, :age, :race, :time).join(' ')
+      official_percent = official[:age_standard] * 100.0 / @calc.convert_to_seconds(official[:time])
+
+      assert_equal official[:factor], result[:factor], label
+      assert_equal official[:open_standard], result[:open_standard_seconds], label
+      assert_equal official[:percent], official_percent.round(1), label
+      assert_equal official[:percent], result[:age_grade_percent], label
+    end
+  end
+
+  def test_uses_the_2025_road_open_standards
+    expected = {
+      male: { '5k' => 769.0, '10k' => 1584.0, 'half_marathon' => 3451.0, 'marathon' => 7235.0 },
+      female: { '5k' => 834.0, '10k' => 1726.0, 'half_marathon' => 3772.0, 'marathon' => 7796.0 }
+    }
+
+    expected.each do |sex, races|
+      races.each do |race, seconds|
+        assert_equal seconds, @calc.age_grade(race, '01:00:00', age: 25, sex: sex)[:open_standard_seconds],
+                     "#{sex} #{race}"
+      end
+    end
+  end
+
+  def test_open_standard_clock_for_the_marathon
+    assert_equal '02:00:35', @calc.age_grade(:marathon, '03:00:00', age: 25, sex: :male)[:open_standard_clock]
+    assert_equal '02:09:56', @calc.age_grade(:marathon, '03:00:00', age: 25, sex: :female)[:open_standard_clock]
+  end
+
+  def test_young_adults_get_their_own_road_factors
+    # The road table has real factors under 30: the peak is in the twenties and
+    # an 18-year-old is graded slightly up, like a masters runner
+    assert_equal 0.9995, @calc.age_grade(:'5k', '00:20:00', age: 18, sex: :male)[:factor]
+    assert_equal 0.9680, @calc.age_grade(:marathon, '03:00:00', age: 18, sex: :male)[:factor]
+    assert_equal 0.9217, @calc.age_grade(:marathon, '03:00:00', age: 18, sex: :female)[:factor]
+    assert_equal 1.0, @calc.age_grade(:'10k', '00:45:00', age: 25, sex: :male)[:factor]
+    assert_equal 0.9959, @calc.age_grade(:'5k', '00:25:00', age: 30, sex: :female)[:factor]
+  end
+
+  def test_factor_table_covers_every_age_from_eighteen_to_one_hundred
+    AgeGrading::WMA_DATA.each do |sex, distances|
+      assert_equal %w[5000 10000 21097 42195], distances.keys, sex
+      distances.each do |distance, table|
+        assert_equal (18..100).to_a, table.keys.sort, "#{sex} #{distance}"
+        assert table.values.all? { |factor| factor.positive? && factor <= 1.0 }, "#{sex} #{distance}"
+      end
+    end
+  end
+
+  def test_ages_past_the_table_end_use_the_last_factor
+    at_hundred = @calc.age_grade(:'10k', '01:30:00', age: 100, sex: :female)
+    beyond = @calc.age_grade(:'10k', '01:30:00', age: 104, sex: :female)
+
+    assert_equal 0.1477, at_hundred[:factor]
+    assert_equal at_hundred, beyond
   end
 
   def test_label_classification
@@ -85,7 +176,7 @@ class TestAgeGrading < CalcpaceTest
     assert_equal 'Intermediate', @calc.age_grade_label(59.9886)
     assert_equal 'Local Class', @calc.age_grade_label(59.9886.round(1))
 
-    result = @calc.age_grade(10.0, 2750, age: 40, sex: :male)
+    result = @calc.age_grade(10.0, 2741, age: 40, sex: :male)
     assert_equal 60.0, result[:age_grade_percent]
     assert_equal 'Local Class', result[:category]
   end
@@ -208,7 +299,7 @@ class TestAgeGrading < CalcpaceTest
   end
 
   def test_age_grade_still_rejects_a_non_standard_distance
-    # 7.79 km is 22% off a 10K. The WMA publishes a factor per specific
+    # 7.79 km is 22% off a 10K. The road table publishes a factor per specific
     # distance, so there is no honest number to return here: interpolating one
     # would invent a value with the look of an official standard
     error = assert_raises(ArgumentError) do

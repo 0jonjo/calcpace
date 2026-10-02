@@ -2,25 +2,40 @@
 
 # Module for predicting race times using the Cameron formula
 #
-# An alternative to the Riegel formula (RacePredictor module) that uses an
-# exponential correction to better account for physiological differences across
-# distances. The correction is larger when predicting from shorter races, where
-# anaerobic contribution is greater, and diminishes as the known distance approaches
-# the target distance.
+# An alternative to the Riegel formula (RacePredictor module). Dave Cameron fitted
+# a velocity-ratio function to world-best times from 800 m to the marathon; unlike
+# Riegel's single power law, the drop-off it predicts grows with distance, so it is
+# more conservative than Riegel when predicting the marathon from shorter races.
 #
-# Formula: T2 = T1 × (D2/D1) × [(a + b × e^(-D1/c)) / (a + b × e^(-D2/c))]
+# Formula (distances in metres, times in seconds):
+#   f(d) = 13.49681 − 0.000030363 × d + 835.7114 / d^0.7905
+#   T2   = T1 × (D2/D1) × f(D1) / f(D2)
 #
-# Constants (calibrated for distances in km):
-#   a = 0.000495
-#   b = 0.000985
-#   c = 1.4485
+# Distances are accepted in kilometres (or as race names) like every other method
+# in this gem, and converted to metres before f(d) is evaluated.
 #
-# Reference: Dave Cameron, "A Critical Examination of Racing Predictions" (1997)
+# Valid range: the model was fitted from 800 m to the marathon, and f(d) crosses
+# zero near 445 km, beyond which it returns negative or absurd times. Distances
+# above CAMERON_MAX_DISTANCE_KM (100 km, so the standard '100k' race stays usable)
+# raise ArgumentError on either end of the prediction.
+#
+# References:
+# - Dave Cameron, metric version of his model posted to the t-and-f mailing list,
+#   20 Jun 2001: https://www.mail-archive.com/t-and-f@lists.uoregon.edu/msg11312.html
+# - had2know.org Cameron calculator (same constants, distances in metres; worked
+#   example 3.5 mi in 51:30 → 5 mi in ~75:08):
+#   https://www.had2know.org/sports/race-performance-prediction-calculator-cameron.html
 module CameronPredictor
-  # Cameron formula constants (calibrated for distances in km)
-  CAMERON_A = 0.000495
-  CAMERON_B = 0.000985
-  CAMERON_C = 1.4485
+  # Constant term of Cameron's velocity-ratio function f(d)
+  CAMERON_CONSTANT = 13.49681
+  # Linear coefficient of f(d), per metre
+  CAMERON_LINEAR_COEFFICIENT = 0.000030363
+  # Numerator of the power term of f(d)
+  CAMERON_POWER_COEFFICIENT = 835.7114
+  # Exponent of the power term of f(d)
+  CAMERON_POWER_EXPONENT = 0.7905
+  # Longest distance (km), on either end, a Cameron prediction accepts
+  CAMERON_MAX_DISTANCE_KM = 100.0
 
   # Predicts race time using the Cameron formula
   #
@@ -29,26 +44,28 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance (HH:MM:SS or seconds)
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted time in seconds
-  # @raise [ArgumentError] if a race name is invalid or the distances are the same
+  # @raise [ArgumentError] if a race name is invalid, the distances are the same,
+  #   or either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   # @raise [Calcpace::NonPositiveInputError] if a numeric distance is not positive
   #
   # @example Predict marathon time from 10K
   #   predict_time_cameron('10k', '00:42:00', 'marathon')
-  #   #=> ~10,654 seconds (approximately 2:57:34)
+  #   #=> ~11,807 seconds (approximately 3:16:46)
   #
   # @example Predict 10K time from 5K
   #   predict_time_cameron('5k', '00:20:00', '10k')
-  #   #=> ~2,546 seconds (approximately 42:26)
+  #   #=> ~2,500 seconds (approximately 41:39)
   def predict_time_cameron(from_race, from_time, to_race)
     from_distance = race_distance(from_race)
     to_distance   = race_distance(to_race)
 
+    ensure_cameron_range!(from_distance, to_distance)
     ensure_different_distances!(from_distance, to_distance)
 
     time_seconds = from_time.is_a?(String) ? convert_to_seconds(from_time) : from_time
     check_positive(time_seconds, 'Time')
 
-    # Cameron formula: T2 = T1 × (D2/D1) × [cameron_factor(D1) / cameron_factor(D2)]
+    # Cameron formula: T2 = T1 × (D2/D1) × [f(D1) / f(D2)]
     time_seconds * (to_distance / from_distance) *
       (cameron_factor(from_distance) / cameron_factor(to_distance))
   end
@@ -59,10 +76,11 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted time in HH:MM:SS format
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_time_cameron_clock('10k', '00:42:00', 'marathon')
-  #   #=> '02:57:34'
+  #   #=> '03:16:46'
   def predict_time_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_time_cameron(from_race, from_time, to_race))
   end
@@ -73,10 +91,11 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [Float] predicted pace in seconds per kilometer
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_pace_cameron('5k', '00:20:00', 'marathon')
-  #   #=> ~255.1 (approximately 4:15/km)
+  #   #=> ~277.6 (approximately 4:37/km)
   def predict_pace_cameron(from_race, from_time, to_race)
     predict_time_cameron(from_race, from_time, to_race) / race_distance(to_race)
   end
@@ -87,10 +106,11 @@ module CameronPredictor
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
   # @return [String] predicted pace in HH:MM:SS format
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
   #
   # @example
   #   predict_pace_cameron_clock('5k', '00:20:00', 'marathon')
-  #   #=> '00:04:15'
+  #   #=> '00:04:37'
   def predict_pace_cameron_clock(from_race, from_time, to_race)
     convert_to_clocktime(predict_pace_cameron(from_race, from_time, to_race))
   end
@@ -100,8 +120,19 @@ module CameronPredictor
   # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
-  # @param options [Hash] environmental options (temperature, altitude, etc.)
+  # @param options [Hash] environmental options, forwarded to
+  #   EnvironmentalAdjuster#calculate_penalty:
+  #   - :temperature [Numeric]
+  #   - :temperature_unit [Symbol, String] :c or :f
+  #   - :altitude [Numeric]
+  #   - :humidity [Numeric] relative humidity, 0–100 % (optional)
+  #   - :dew_point [Numeric] dew point in temperature_unit (optional, instead of :humidity)
   # @return [Hash] hash with adjusted prediction and penalty details
+  # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
+  #
+  # @example
+  #   calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 25, humidity: 80)[:adjusted_time_clock]
+  #   #=> '00:43:41'
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)
@@ -109,11 +140,26 @@ module CameronPredictor
 
   private
 
-  # Computes the Cameron exponential correction factor for a given distance
+  # Rejects distances outside the range where Cameron's model is meaningful
   #
-  # @param distance_km [Float] distance in kilometers
-  # @return [Float] correction factor value
+  # @param distances [Array<Float>] distances in kilometers
+  # @raise [ArgumentError] if any distance exceeds CAMERON_MAX_DISTANCE_KM
+  def ensure_cameron_range!(*distances)
+    too_long = distances.find { |distance| distance > CAMERON_MAX_DISTANCE_KM }
+    return unless too_long
+
+    raise ArgumentError,
+          "Cameron formula is only valid up to #{CAMERON_MAX_DISTANCE_KM} km (got #{too_long} km)"
+  end
+
+  # Evaluates Cameron's velocity-ratio function f(d) for a given distance
+  #
+  # @param distance_km [Float] distance in kilometers (converted to metres, the
+  #   unit Cameron's constants are calibrated for)
+  # @return [Float] value of f(d)
   def cameron_factor(distance_km)
-    CAMERON_A + (CAMERON_B * Math.exp(-distance_km / CAMERON_C))
+    meters = distance_km * 1000.0
+    CAMERON_CONSTANT - (CAMERON_LINEAR_COEFFICIENT * meters) +
+      (CAMERON_POWER_COEFFICIENT / (meters**CAMERON_POWER_EXPONENT))
   end
 end

@@ -9,8 +9,15 @@
 #
 # Heart rate zones use the Karvonen method (Heart Rate Reserve):
 #   target = hr_rest + pct * (hr_max - hr_rest)
+#
+# Not standalone: it is a part of Calcpace and calls into its siblings —
+# Vo2maxEstimator (estimate_vo2max, vo2_at_velocity), FitnessPredictor
+# (predict_time_from_vo2max, for the marathon band), PaceCalculator
+# (race_distance), Converter and Checker.
 module TrainingZones
-  # Training intensities as fraction of VO2max (Daniels' Running Formula)
+  # Training intensities as fraction of VO2max (Daniels' Running Formula).
+  # The marathon :high (0.84) is the nominal upper bound only: the band's fast
+  # end is the predicted race pace (see PREDICTED_RACE_PACE_ZONES).
   TRAINING_INTENSITIES = {
     easy: { low: 0.59, high: 0.74 },
     marathon: { low: 0.75, high: 0.84 },
@@ -18,6 +25,14 @@ module TrainingZones
     interval: { low: 0.95, high: 1.00 },
     repetition: { low: 1.05, high: 1.10 }
   }.freeze
+
+  # Zones whose fast end is the VDOT-predicted race pace instead of
+  # TRAINING_INTENSITIES[zone][:high]. Daniels' M pace is the runner's
+  # predicted marathon race pace (FitnessPredictor#predict_time_from_vo2max),
+  # which is 0.800–0.849 of VO2max across VO2max 10–100 (0.805 at 30, 0.830
+  # at 70). That keeps the marathon band slower than the threshold band
+  # (from 0.83) below VO2max ~69.5.
+  PREDICTED_RACE_PACE_ZONES = %i[marathon].freeze
 
   # A pace band for one training zone (paces per kilometre or mile).
   # slow = lower-intensity end of the band, fast = higher-intensity end.
@@ -46,27 +61,27 @@ module TrainingZones
   # @param vo2max [Numeric] VO2max in ml/kg/min (must be > 0)
   # @param unit [Symbol] pace unit — :km (default) or :mi
   # @return [Hash{Symbol => PaceBand}] keys: :easy, :marathon, :threshold,
-  #   :interval, :repetition — paces per chosen unit
+  #   :interval, :repetition — paces per chosen unit. The marathon band runs
+  #   from 75% of VO2max to the VDOT-predicted marathon pace; the prediction
+  #   covers VO2max 10–100, and outside that range the race-pace intensity of
+  #   the nearest bound is used
   # @raise [Calcpace::NonPositiveInputError] if vo2max is not positive
   # @raise [Calcpace::UnsupportedUnitError] if unit is not :km or :mi
   #
   # @example
   #   calc.training_paces(50.0)[:threshold].fast_clock             #=> "00:04:15"
   #   calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  #=> "00:06:51"
+  #   calc.training_paces(50.0)[:marathon].fast_clock              #=> "00:04:31"
   def training_paces(vo2max, unit: :km)
     check_positive(vo2max.to_f, 'VO2max')
     meters = pace_unit_meters(unit)
 
-    TRAINING_INTENSITIES.transform_values do |band|
+    TRAINING_INTENSITIES.to_h do |zone, band|
       slow = pace_seconds_at_pct(vo2max.to_f, band[:low], meters)
-      fast = pace_seconds_at_pct(vo2max.to_f, band[:high], meters)
+      fast = pace_seconds_at_pct(vo2max.to_f, fast_intensity(zone, band, vo2max.to_f), meters)
 
-      PaceBand.new(
-        slow_seconds: slow,
-        fast_seconds: fast,
-        slow_clock: convert_to_clocktime(slow),
-        fast_clock: convert_to_clocktime(fast)
-      )
+      [zone, PaceBand.new(slow_seconds: slow, fast_seconds: fast,
+                          slow_clock: convert_to_clocktime(slow), fast_clock: convert_to_clocktime(fast))]
     end
   end
 
@@ -334,6 +349,22 @@ module TrainingZones
 
     raise Calcpace::Error,
           "Resting heart rate (#{hr_rest}) must be lower than maximum heart rate (#{hr_max})"
+  end
+
+  def fast_intensity(zone, band, vo2max)
+    PREDICTED_RACE_PACE_ZONES.include?(zone) ? marathon_race_intensity(vo2max) : band[:high]
+  end
+
+  # Fraction of VO2max a runner holds at the VDOT-predicted marathon pace.
+  # The prediction only covers FitnessPredictor::SUPPORTED_VO2MAX_RANGE, so
+  # beyond it the fraction of the nearest bound is used (it barely moves
+  # there: 0.800 at VO2max 10, 0.849 at 100).
+  def marathon_race_intensity(vo2max)
+    range = FitnessPredictor::SUPPORTED_VO2MAX_RANGE
+    vo2 = vo2max.clamp(range.min, range.max)
+    seconds = predict_time_from_vo2max(vo2, 'marathon')
+
+    vo2_at_velocity(race_distance('marathon') * Converter::Distance::KM_TO_METERS * 60.0 / seconds) / vo2
   end
 
   # Inverts Daniels & Gilbert: velocity (m/min) that demands a given VO2

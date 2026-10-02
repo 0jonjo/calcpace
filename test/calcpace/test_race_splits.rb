@@ -102,6 +102,25 @@ class TestRaceSplits < CalcpaceTest
     assert_equal '00:40:00', result[1]
   end
 
+  # Negative/positive splits are ±1% pace per half (v1.19.0)
+  def test_race_splits_negative_marathon_is_one_percent_per_half
+    result = @calc.race_splits('marathon', target_time: '03:00:00', split_distance: 21.0975, strategy: :negative)
+
+    assert_equal %w[01:30:54 03:00:00], result
+  end
+
+  def test_race_splits_positive_marathon_is_one_percent_per_half
+    result = @calc.race_splits('marathon', target_time: '03:00:00', split_distance: 21.0975, strategy: :positive)
+
+    assert_equal %w[01:29:06 03:00:00], result
+  end
+
+  def test_race_splits_negative_10k_by_5k
+    result = @calc.race_splits('10k', target_time: '00:50:00', split_distance: '5k', strategy: :negative)
+
+    assert_equal %w[00:25:15 00:50:00], result
+  end
+
   # Test with string time format
   def test_race_splits_with_string_time
     result = @calc.race_splits('5k', target_time: '25:00', split_distance: '1k')

@@ -3,29 +3,109 @@
 # Sources:
 # - Altitude: NCAA Altitude Adjustment Factors (TFRRS)
 #   Ref: ~3.76% penalty for 1828.8m (6000ft).
-# - Heat: Matthew Ely et al. (2007) "Impact of Weather on Marathon-Running Performance"
+# - Heat: Ely et al. (2007) "Impact of Weather on Marathon-Running Performance",
+#   MSSE 39(3):487-493 — qualitative source: marathon times slow progressively
+#   from 5 to 25 °C WBGT, and more for slower runners (top men 1.7 / 2.5 / 3.3 /
+#   4.5% off the course record in WBGT 5-10 / 10-15 / 15-20 / 20-25 °C).
 #   NOTE: These heat factors are the BASELINE for a 60-minute effort.
-#   The final penalty is scaled by a DurationFactor (0.5x to 4.5x) based on total exposure time.
+#   The final penalty is scaled by a DurationFactor (0.5x at 30 min, 1.0x at
+#   60 min, 1.76x at 3 h, 2.81x at 4 h and beyond; see
+#   EnvironmentalAdjuster::HEAT_DURATION_FACTORS) based on total exposure time.
+#   Both the shape of the base curve and the 3 h / 4 h factors are fitted to
+#   El Helou et al. (2012), PLoS One 7(5):e37407, Table S3 (1.79 M finishers of
+#   Berlin, Boston, Chicago, London, New York and Paris, 2001-2010).
+#   Derivation (reproduced by the El Helou tests in test_environmental_adjuster.rb):
+#   1. Speed loss (%) at 15, 20 and 25 °C: straight line between the table's
+#      points (each group's optimum -10 ... +20 °C, every 5 °C).
+#   2. Time penalty against 15 °C (where the curve is zero):
+#      P = ((1 - loss15) / (1 - lossT) - 1) x 100.
+#   3. Base shape: P25 / P20 is 2.70-2.97 in all seven groups that have both
+#      (table below). With P ∝ (T - 15)^p, p = log2(P25 / P20); the sex-weighted
+#      mean (each sex half the weight) is p = 1.497 -> 1.5. The base is
+#      4.3 · ((T - 15) / 10)^1.5, anchored at the original base(25) = 4.3,
+#      which is the only value available for a 60-minute effort.
+#   4. Ratio = P / base(T) (1.52 at 20 °C, 4.3 at 25 °C); finish time =
+#      42195 m / the group's speed at its optimum.
+#   5. Weighted least squares over the 15 ratios (men P1 at 25 °C is beyond
+#      the table), each sex half the weight (men 7, women 8), 1.0x at 60 min
+#      fixed, 180 and 240 min free, flat after 240: 1.761 and 2.814 -> 1.76 and
+#      2.81. An extra free point at 150 min cut the weighted residual by 1%
+#      only; one at 210 min made the curve non-monotonic (2.97 at 210 > 2.73
+#      at 240). Neither was kept.
+#
+#   | Group        | Finish | loss@15 | loss@20 | loss@25 | P20  | P25   | P25/P20 | ratio @20 | @25  |
+#   | men P1       | 2:41   | 1.88    | 3.93    | n/a*    | 2.14 | n/a*  | n/a*    | 1.41      | n/a* |
+#   | women P1     | 3:06   | 0.79    | 3.13    | 7.27    | 2.42 | 6.99  | 2.89    | 1.59      | 1.63 |
+#   | men Q1       | 3:31   | 2.86    | 7.00    | 13.58   | 4.46 | 12.41 | 2.78    | 2.93      | 2.89 |
+#   | men median   | 3:57   | 3.18    | 7.93    | 15.63   | 5.17 | 14.76 | 2.86    | 3.40      | 3.43 |
+#   | women Q1     | 4:00   | 1.86    | 4.73    | 9.26    | 3.02 | 8.16  | 2.70    | 1.99      | 1.90 |
+#   | women median | 4:25   | 2.09    | 5.30    | 10.40   | 3.39 | 9.27  | 2.73    | 2.23      | 2.16 |
+#   | men Q3       | 4:28   | 2.92    | 7.91    | 16.38   | 5.42 | 16.10 | 2.97    | 3.57      | 3.74 |
+#   | women Q3     | 4:54   | 2.03    | 5.37    | 10.80   | 3.54 | 9.83  | 2.78    | 2.33      | 2.29 |
+#   * men P1's optimum is 3.81 °C, so 25 °C is beyond its last point (+20 °C).
+#   (P1 = first percentile, Q1/Q3 = quartiles; losses and P in %.)
+#   Caveat: the model has no sex input. With one curve, men's slower groups are
+#   under-read at 25 °C (median 11.9% vs 14.76% observed) and women's over-read
+#   (median 12.08% vs 9.27%).
+# - Humidity: the points are read at air temperature with ~50% relative
+#   humidity (EnvironmentalAdjuster::REFERENCE_HUMIDITY). With humidity: or
+#   dew_point:, the temperature is first moved to the effective temperature
+#   with the same simplified WBGT (Australian Bureau of Meteorology).
+#
+# Interpolation: at or below threshold_meters the altitude penalty is 0; above it
+# both tables are interpolated linearly between points and clamped to the first and
+# last point.
 
-# Altitude adjustments (NCAA standards)
+# Altitude adjustments
+# - 300 m: start of the curve. Below ~300 m altitude has no measurable effect; the
+#   ramp from 300 m to the first NCAA point (914.4 m) replaces the old step, where
+#   914 m gave 0% and 915 m gave 1.41%.
+# - 914.4 m .. 2438.4 m: NCAA table (3000 ft .. 8000 ft), unchanged.
+# - 3000 m, 3500 m, 4000 m: EXTRAPOLATION beyond the NCAA table, from a quadratic
+#   fit to the NCAA points: p = 0.3647·x² + 1.9482·x, with x = altitude_km − 0.3.
+#   The penalty is capped at the 4000 m value.
 altitude:
-  threshold_meters: 914.4
+  threshold_meters: 300
   data_points:
-    0: 0.0
+    300: 0.0
     914.4: 1.41
     1219.2: 2.15
     1524.0: 2.90
     1828.8: 3.76
     2133.6: 4.75
     2438.4: 5.90
+    3000: 7.92     # extrapolated (quadratic fit), not NCAA
+    3500: 9.97     # extrapolated (quadratic fit), not NCAA
+    4000: 12.2     # extrapolated (quadratic fit), not NCAA
 
 # Heat adjustments (60-minute baseline)
 # These values represent the penalty for a 1-hour run.
 # For longer/shorter runs, the DurationFactor will scale these up/down.
+# Points follow base(T) = 4.3 · ((T − 15) / 10)^1.5, every 2.5 °C so that the
+# straight lines between them stay within 0.08 points of the curve:
+# - exponent 1.5: El Helou et al. (2012) Table S3, see the derivation above;
+#   the penalty against 15 °C grows 2.70-2.97x from 20 to 25 °C in every
+#   group (2^1.497 = 2.82).
+# - anchor base(25) = 4.3: kept from the original model; it is the only value
+#   available for short efforts and has no direct published source.
+# - 27.5-35 °C: EXTRAPOLATION of the same law. The marathon data stop at
+#   ~25 °C (El Helou's hottest race: 25.2 °C).
+# - Above 35 °C: CAPPED at the 35 °C value (12.16), a deliberate choice, not
+#   data. Everything beyond 25.2 °C is extrapolation, and the uncapped law
+#   (14.51 at 37.5 °C, 17.0 at 40 °C) gave 47.77% for 4 h at 40 °C. 37.5 °C and
+#   40 °C therefore read like 35 °C, and anything hotter is clamped to the last
+#   point as before.
 heat:
   ideal_range_celsius: [10.0, 15.0]
   data_points:
     15: 0.0
-    20: 2.8    # Base for 60m. For 3h (3.0x) = 8.4% (Ely: 9%)
-    25: 4.3    # Base for 60m. For 3h (3.0x) = 12.9% (Ely: 12%)
-    30: 6.5    # Base for 60m. For 3h (3.0x) = 19.5%
+    17.5: 0.54
+    20: 1.52   # Base for 60m. For 3h (1.76x) = 2.68%, for 4h (2.81x) = 4.27%
+    22.5: 2.79
+    25: 4.3    # Base for 60m (anchor). For 3h = 7.57%, for 4h = 12.08%
+    27.5: 6.01 # EXTRAPOLATION from here on
+    30: 7.9    # For 3h = 13.9%, for 4h = 22.2%
+    32.5: 9.95
+    35: 12.16  # For 3h = 21.4%, for 4h = 34.17%; the cap starts here
+    37.5: 12.16 # CAP: same as 35 °C (uncapped law: 14.51)
+    40: 12.16   # CAP: same as 35 °C (uncapped law: 17.0); clamped above

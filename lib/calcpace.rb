@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative 'calcpace/version'
 require_relative 'calcpace/errors'
 require_relative 'calcpace/calculator'
 require_relative 'calcpace/cameron_predictor'
@@ -9,15 +10,18 @@ require_relative 'calcpace/checker'
 require_relative 'calcpace/converter'
 require_relative 'calcpace/converter_chain'
 require_relative 'calcpace/fitness_predictor'
+require_relative 'calcpace/grade_adjusted_pace'
 require_relative 'calcpace/lap_analyzer'
 require_relative 'calcpace/pace_calculator'
 require_relative 'calcpace/pace_converter'
+require_relative 'calcpace/personalized_predictor'
 require_relative 'calcpace/race_predictor'
 require_relative 'calcpace/race_splits'
 require_relative 'calcpace/stride_calculator'
 require_relative 'calcpace/track_calculator'
 require_relative 'calcpace/training_zones'
 require_relative 'calcpace/vo2max_estimator'
+require_relative 'calcpace/vo2max_norms'
 
 # Calcpace - A Ruby gem for pace, distance, and time calculations
 #
@@ -49,15 +53,18 @@ class Calcpace
   include Converter
   include ConverterChain
   include FitnessPredictor
+  include GradeAdjustedPace
   include LapAnalyzer
   include PaceCalculator
   include PaceConverter
+  include PersonalizedPredictor
   include RacePredictor
   include RaceSplits
   include StrideCalculator
   include TrackCalculator
   include TrainingZones
   include Vo2maxEstimator
+  include Vo2maxNorms
 
   # Creates a new Calcpace instance
   #
