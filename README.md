@@ -1,13 +1,13 @@
 # Calcpace [![Gem Version](https://badge.fury.io/rb/calcpace.svg)](https://badge.fury.io/rb/calcpace)
 
-A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions, GPS track analysis, age grading, VO2max estimation, and training zones.
+A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions (including personalized ones), GPS track analysis with grade-adjusted pace, heat, humidity and altitude adjustments, age grading, VO2max estimation and norms, and training zones.
 
 > **See it in action:** [calcpace.app](https://calcpace.app) — free running calculators, race predictors and a training log, all powered by this gem.
 
 ## Installation
 
 ```ruby
-gem 'calcpace', '~> 1.18.1'
+gem 'calcpace', '~> 2.0'
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ calc.pace(3665, 12)                 # => 305.4  (time / distance)
 calc.time(210, 12)                  # => 2520   (pace × distance)
 calc.distance(9660, 120)            # => 80.5   (velocity × time)
 
-# Clocktime input/output (HH:MM:SS or MM:SS)
+# Clocktime input/output (HH:MM:SS or MM:SS; seconds below 60, and minutes too when hours are given)
 calc.clock_pace('01:00:00', 10)     # => "00:06:00"
 calc.clock_time('00:05:31', 12.6)   # => "01:09:30"
 calc.checked_distance('01:21:32', '00:06:27') # => 12.64
@@ -206,7 +206,7 @@ calc.race_splits(7.79, target_time: '00:26:59', split_distance: '1k')
 calc.predict_time_clock('5k', '00:20:00', 'marathon')   # => "03:11:49"
 calc.predict_pace_clock('5k', '00:20:00', 'marathon')   # => "00:04:32"
 calc.equivalent_performance('10k', '00:42:00', '5k')
-# => { time: 1208.67, time_clock: "00:20:08", pace: 241.73, pace_clock: "00:04:01" }
+# => { time: 1208.6727903498331, time_clock: "00:20:08", pace: 241.73455806996662, pace_clock: "00:04:01" }
 ```
 
 **Cameron formula** (Dave Cameron's velocity-ratio model, fitted to world bests from
@@ -943,8 +943,11 @@ call without it returns exactly what it returned before.
 
 All errors inherit from `Calcpace::Error`:
 
-- `Calcpace::NonPositiveInputError` — numeric input is zero or negative
-- `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format
+- `Calcpace::NonPositiveInputError` — numeric input is zero, negative, NaN or infinite
+- `Calcpace::InvalidTimeFormatError` — time string not in `HH:MM:SS` or `MM:SS` format,
+  or not a valid clock: seconds must be below 60, and so must minutes when hours are
+  given (`'05:99'` and `'1:60:00'` raise). `MM:SS` keeps counting minutes past the
+  hour, so `'75:00'` is 75 minutes
 - `Calcpace::UnsupportedUnitError` — unknown conversion (`convert`) or unknown
   `unit:` / `distance_unit:` keyword
 - `Calcpace::InvalidDataError` — the bundled data table failed its load-time
@@ -961,7 +964,7 @@ unknown race names, unsupported age-grading distances, and invalid `age` / `sex`
 bundle exec rake
 ```
 
-Requires Ruby >= 3.2.0. Tested with Ruby 3.2, 3.3, 3.4, and 4.0.
+Requires Ruby >= 3.3.0. Tested with Ruby 3.3, 3.4, and 4.0.
 
 ## Contributing
 
