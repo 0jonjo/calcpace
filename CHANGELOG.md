@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `predict_marathon_from_training(weekly_distance:, training_pace:, unit: :km)`
+  predicts a marathon from the mean weekly distance and mean training pace of
+  the 8 weeks before the race, with Tanda (2011), *Journal of Human Sport and
+  Exercise* 6(3):511–520: `Pm = 17.1 + 140.0 · exp(−0.0053 · K) + 0.55 · P`.
+  Returns `:time`, `:time_clock`, `:pace`, `:pace_clock` (in `unit`, `:km` or
+  `:mi`), `:within_validated_range` and `:out_of_range`, which lists any of
+  `:weekly_distance` (sample: 40.4–110.7 km/week), `:training_pace`
+  (253.3–330.6 s/km) and `:marathon_time` (167–216 min) that fall outside the
+  paper's sample. Out of range is a flag, not an error.
+
+  ```ruby
+  calc.predict_marathon_from_training(weekly_distance: 60, training_pace: '05:00')[:time_clock] # => "03:19:41"
+  ```
+- `riegel_exponent(race1, time1, race2, time2)` fits a personal Riegel
+  exponent, `ln(t2/t1) / ln(d2/d1)`, to two performances.
+- `predict_time_personal(race1, time1, race2, time2, to_race)` predicts with
+  that exponent, clamped to 1.01–1.20, from whichever performance is closer to
+  the target in log-distance. Returns `:time`, `:time_clock`, `:exponent`,
+  `:raw_exponent` and `:clamped`; an exponent that needed clamping usually
+  means one of the races was not all-out.
+
+  ```ruby
+  calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:time_clock] # => "03:38:03"
+  ```
+
 ## [1.18.1] - 2026-09-06
 
 ### Fixed
