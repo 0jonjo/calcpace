@@ -7,81 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Humidity in the heat penalty.** `calculate_penalty` — and therefore
-  `adjust_time`, `normalize_time`, `predict_time_adjusted` and
-  `predict_time_cameron_adjusted`, which forward their options — accepts
-  `humidity:` (relative humidity, 0–100 %) or `dew_point:` (in
-  `temperature_unit`). 30 °C dry and 30 °C at 80% (typical of coastal Brazil)
-  used to get the same penalty. The temperature is replaced by an effective
-  temperature: the air temperature that, at `REFERENCE_HUMIDITY` (50%), has the
-  same simplified WBGT (Australian Bureau of Meteorology:
-  `WBGT = 0.567·Ta + 0.393·e + 3.94`, `e` = vapour pressure in hPa) as the real
-  temperature and humidity, solved exactly (by bisection). The existing heat
-  curve and the `base(temperature) × duration_factor(seconds)` shape are
-  untouched; the curve is read at the unrounded effective temperature, so
-  `humidity: 50` gives exactly the temperature-only numbers. 50% is the
-  humidity at which that WBGT equals the air temperature between 20 °C and
-  35 °C (51–56%), i.e. how the temperature-only points already read. `factors`
-  gains `:effective_temperature_celsius` (rounded to 2 decimals) when humidity
-  or dew point is given. `ArgumentError` for humidity outside 0–100, NaN,
-  Complex or non-numeric; a dew point above the temperature, below −100 °C or
-  not a finite real number; both keywords together; or either without a
-  finite temperature. The marathon outcome studies (El Helou 2012, Vihma 2010)
-  found no humidity effect independent of temperature, so the size of this
-  adjustment rests on the WBGT index, not on race data.
+## [2.0.0] - 2026-10-02
 
-  | 30 °C at | Effective temperature | 60 min | 4 h |
-  | --- | --- | --- | --- |
-  | 30% RH | 26.69 °C | 5.46% | 15.34% |
-  | 50% RH (= no humidity) | 30.0 °C | 7.9% | 22.2% |
-  | 70% RH | 33.07 °C | 10.46% | 29.39% |
-  | 90% RH | 35.94 °C (capped at 35 °C) | 12.16% | 34.17% |
+A major release. Four physiological models gave unrealistic numbers and now
+give different ones (Cameron prediction, altitude, race splits, heat), the
+marathon pace band and age grading move to their proper sources, input
+validation is stricter, and there are new personalized predictions,
+humidity, grade-adjusted pace and VO2max norms. Method names, signatures and
+return shapes are unchanged except where listed under Breaking; the
+`environmental_factors.yml` keys are unchanged.
+
+### Breaking
+- **Invalid clocks raise.** `check_time` — and so every method that validates
+  a time string with it (`checked_*`, `estimate_vo2max`, `age_grade`,
+  `stride_length`, the personalized predictors…) — accepted any two digits per
+  field, so `'05:99'` or `'1:60:00'` passed and became the wrong number of
+  seconds. Seconds must now be below 60, and so must minutes when an hour
+  field is present; anything else raises `Calcpace::InvalidTimeFormatError`.
+  `MM:SS` still counts minutes past the hour (`'75:00'` is 75 minutes), as the
+  padded paces `track_splits` emits (`'66:33'`) always have.
+- **Cameron predictions are limited to 100 km.** `predict_time_cameron`,
+  `predict_time_cameron_clock`, `predict_pace_cameron`,
+  `predict_pace_cameron_clock` and `predict_time_cameron_adjusted` raise
+  `ArgumentError` when either distance exceeds `CAMERON_MAX_DISTANCE_KM`
+  (100 km, which keeps the standard `'100k'` race usable). Cameron's model is
+  fitted from 800 m to the marathon and its `f(d)` crosses zero near 445 km:
+  without the limit a 500 km target got a negative time.
+- **Removed `CameronPredictor::CAMERON_A`, `CAMERON_B` and `CAMERON_C`.** They
+  described the wrong formula (see Changed). The model's constants are now
+  `CAMERON_CONSTANT`, `CAMERON_LINEAR_COEFFICIENT`, `CAMERON_POWER_COEFFICIENT`
+  and `CAMERON_POWER_EXPONENT`.
+- **`AgeGrading::WMA_DATA` lost its track keys and changed its age range.**
+  Each sex now holds only the road distances the gem grades — `"5000"`,
+  `"10000"`, `"21097"` and `"42195"`; code that read `WMA_DATA["M"]["1500"]`
+  (or `"3000"`) gets `nil` / `KeyError`. Its factor tables run from age 18 to
+  100 (they were 30–110). `table_version` is now
+  `"MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"` (was
+  `"WMA_2023_ONE_YEAR_FACTORS_V1"`), and the data files were renamed to
+  `lib/calcpace/data/mldr_2025_road.yml` and
+  `lib/calcpace/data/mldr_2025_road_open_standards.yml`. `DATA_PATH`,
+  `OPEN_STANDARDS_DATA_PATH`, `WMA_DATA`, `OPEN_STANDARDS_DATA` and
+  `TABLE_VERSION` keep their names.
 
 ### Changed (numbers)
-Four models produced unrealistic numbers. The method names, signatures, return
-shapes and the structure of `environmental_factors.yml` are unchanged; only the
-values they return move, except that Cameron predictions now reject distances
-above 100 km (see Breaking).
-
-- **Cameron prediction now uses Dave Cameron's actual model.** The previous
-  constants (`a + b·e^(−d/c)` with a = 0.000495, b = 0.000985, c = 1.4485) were
-  not Cameron's formula and were far more optimistic than Riegel for the
-  marathon, while the real model is more conservative. `predict_time_cameron`
-  and friends now use Cameron's velocity-ratio function, with distances in
-  metres as in his own metric version (t-and-f mailing list, 20 Jun 2001) and
-  the had2know.org calculator:
-  `f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905`,
-  `T2 = T1 · (D2/D1) · f(D1)/f(D2)`. Distances are still passed in km or as race
-  names. The model is fitted from 800 m to the marathon and f(d) crosses zero
-  near 445 km, so distances above `CAMERON_MAX_DISTANCE_KM` (100 km, which keeps
-  the standard `'100k'` race usable) now raise `ArgumentError` on either end,
-  in every Cameron method. Without that limit the formula returns a negative
-  time for a 500 km target, and sources from 400 km up give nonsense or raise
-  from the clock conversion.
+- **Cameron prediction uses Dave Cameron's actual model.** The previous
+  constants (`a + b·e^(−d/c)` with a = 0.000495, b = 0.000985, c = 1.4485)
+  were not Cameron's formula and were far more optimistic than Riegel for the
+  marathon, while the real model is more conservative. The Cameron methods now
+  use his velocity-ratio function with distances in metres, as in his own
+  metric version (t-and-f mailing list, 20 Jun 2001) and the had2know.org
+  calculator: `f(d) = 13.49681 − 0.000030363·d + 835.7114 / d^0.7905`,
+  `T2 = T1 · (D2/D1) · f(D1)/f(D2)`. Distances are still passed in km or as
+  race names.
 - **Altitude no longer jumps at 914 m and no longer stops at 2438 m.** The
-  threshold moves from 914.4 m to 300 m with a new `300: 0.0` point, so the
-  penalty ramps linearly up to the first NCAA point (914.4 m → 1.41%) instead of
-  jumping from 0% at 914 m to 1.41% at 915 m. The NCAA points are unchanged.
-  Above 2438.4 m, where everything used to be capped at 5.90%, three points are
-  extrapolated from a quadratic fit to the NCAA table
-  (`p = 0.3647·x² + 1.9482·x`, `x = km − 0.3`): 3000 m → 7.92%,
-  3500 m → 9.97%, 4000 m → 12.2% (capped there). The redundant `0: 0.0` point is
-  gone; the YAML keys are the same.
-- **Negative/positive race splits are ±1% per half instead of ±4%.** A 3:00:00
-  marathon with `strategy: :negative` used to go through halfway in 1:33:36 (a
-  7-minute negative split); it now splits 1:30:54 + 1:29:06.
-- **Heat above 30 °C keeps increasing.** 35 °C and 40 °C used to get the same
-  penalty as 30 °C. The base curve now continues to 35 °C (12.16% for 60
-  minutes, extrapolating the fitted law below) and is capped there: 35–40 °C
-  and hotter all read like 35 °C. The ideal range is unchanged.
-- **Heat base curve and duration scaling are fitted to marathon data.** The
-  60-minute base was 2.8 / 4.3 / 6.5% at 20 / 25 / 30 °C (roughly linear) and
-  the duration factor 1.0× (60 min) → 3.0× (3 h) → 4.5× (4 h), with the 3 h
-  point justified by Ely 2007 percentages for a 3 h runner (~9% at 20 °C,
-  ~12% at 25 °C) that the paper's abstract does not contain. Both are now
-  fitted to El Helou et al. (2012, PLoS One 7(5):e37407, Table S3; 1.79 M
-  finishers of six majors, 2001–2010):
+  penalty starts at 300 m (new `300: 0.0` point) and ramps linearly to the
+  first NCAA point (914.4 m → 1.41%) instead of jumping from 0% at 914 m to
+  1.41% at 915 m. The NCAA points up to 2438.4 m (5.90%) are unchanged. Above
+  it, where everything used to be capped at 5.90%, three points come from a
+  quadratic fit to the NCAA table (`p = 0.3647·x² + 1.9482·x`,
+  `x = km − 0.3`): 3000 m → 7.92%, 3500 m → 9.97%, 4000 m → 12.2% (capped
+  there). The redundant `0: 0.0` point is gone.
+- **Negative and positive race splits are ±1% per half instead of ±4%.** A
+  3:00:00 marathon with `strategy: :negative` used to go through halfway in
+  1:33:36 (a 7-minute negative split); it now splits 1:30:54 + 1:29:06.
+- **Heat: base curve and duration factor fitted jointly to marathon data, and
+  capped at 35 °C.** The 60-minute base was 2.8 / 4.3 / 6.5% at
+  20 / 25 / 30 °C, flat from 30 °C up (35 °C and 40 °C read like 30 °C), and
+  the duration factor was 1.0× (60 min) → 3.0× (3 h) → 4.5× (4 h), its 3 h
+  point justified by Ely 2007 percentages that the paper's abstract does not
+  contain. Both are now fitted to El Helou et al. (2012, PLoS One
+  7(5):e37407, Table S3; 1.79 M finishers of six majors, 2001–2010):
   1. speed loss at 15, 20 and 25 °C, straight line between the table's points
      (each group's optimum −10 … +20 °C);
   2. time penalty against 15 °C, where the gem's curve is zero:
@@ -89,21 +84,21 @@ above 100 km (see Breaking).
   3. **base shape**: P25/P20 is 2.70–2.97 in every group, so `P ∝ (T − 15)^p`
      with `p = log2(P25/P20)`; the sex-weighted mean (each sex half the
      weight) is 1.497 → **1.5**. Base = `4.3 · ((T − 15)/10)^1.5`, keeping the
-     original 25 °C / 60-minute anchor of 4.3% (the only value available for a
-     60-minute effort), stored every 2.5 °C from 15 to 40 °C (linear
-     interpolation stays within 0.08 points of the curve): 0, 0.54, 1.52,
-     2.79, 4.3, 6.01, 7.9, 9.95, 12.16, then 12.16 and 12.16 at 37.5 and
-     40 °C. Above 25 °C this is an extrapolation (El Helou's hottest race was
-     25.2 °C), so the curve is deliberately capped at 35 °C: the uncapped law
-     (14.51 at 37.5 °C, 17.0 at 40 °C) gave 47.77% for 4 h at 40 °C;
+     25 °C / 60-minute anchor of 4.3%, stored every 2.5 °C from 15 to 40 °C
+     (linear interpolation stays within 0.08 points of the curve): 0, 0.54,
+     1.52, 2.79, 4.3, 6.01, 7.9, 9.95, 12.16, then 12.16 and 12.16 at 37.5
+     and 40 °C. **Capped at 35 °C**: 35–40 °C and hotter all read like 35 °C,
+     because above 25 °C the curve is an extrapolation (El Helou's hottest
+     race was 25.2 °C) and the uncapped law (14.51 at 37.5 °C, 17.0 at 40 °C)
+     gave 47.77% for 4 h at 40 °C;
   4. ratio = P ÷ base(T); finish time = 42195 m ÷ the group's speed at its
      optimum;
   5. **duration factor**: weighted least squares over the 15 ratios (men P1 at
      25 °C is beyond the table), each sex half the weight, 0.5× (≤30 min) and
      1.0× (60 min) kept, 180 and 240 min free, flat after 240: 1.761 / 2.814 →
-     **1.76× at 3 h, 2.81× at 4 h** (1.38× at 2 h on the straight line). A free
-     150-min point cut the weighted residual by 1%; a free 210-min point made
-     the curve non-monotonic (2.97 > 2.73 at 240). Neither was kept.
+     **1.76× at 3 h, 2.81× at 4 h** (1.38× at 2 h on the straight line). A
+     free 150-min point cut the weighted residual by 1%; a free 210-min point
+     made the curve non-monotonic (2.97 > 2.73 at 240). Neither was kept.
 
   | Group | Finish | loss@15 | loss@20 | loss@25 | P20 | P25 | P25/P20 | ratio @20 | ratio @25 |
   | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -116,20 +111,18 @@ above 100 km (see Breaking).
   | men Q3 | 4:28 | 2.92 | 7.91 | 16.38 | 5.42 | 16.10 | 2.97 | 3.57 | 3.74 |
   | women Q3 | 4:54 | 2.03 | 5.37 | 10.80 | 3.54 | 9.83 | 2.78 | 2.33 | 2.29 |
 
-  Losses and P in %. With the new base, each group's ratio is almost the same
+  Losses and P in %. With the new base each group's ratio is almost the same
   at 20 and 25 °C, so `base(T) × duration_factor(seconds)` fits; the weighted
   residual in penalty points drops from 18.3 (linear base, 1.24×/2.18×) to
-  8.8. What remains is mostly sex: with no sex input, men's slower groups are
-  under-read at 25 °C (median 11.9% vs 14.76%) and women's over-read (median
-  12.08% vs 9.27%) — see Known limitations below. Ely et al. (2007) remains a qualitative source (top men
-  1.7 / 2.5 / 3.3 / 4.5% off the course record across WBGT 5–10 … 20–25 °C,
-  i.e. +2.8 points); the model gives a 2:10 effort 4.03% at 22.5 °C against
-  0% at 7.5 °C, a little above that for elite runners. The duration points
-  live in `EnvironmentalAdjuster::HEAT_DURATION_FACTORS`;
-  `duration_factor(time_seconds)` and the `environmental_factors.yml` keys are
-  unchanged.
+  8.8, and what remains is mostly sex (see Known limitations). Ely et al.
+  (2007) stays a qualitative source (top men 1.7 / 2.5 / 3.3 / 4.5% off the
+  course record across WBGT 5–10 … 20–25 °C, i.e. +2.8 points); the model
+  gives a 2:10 effort 4.03% at 22.5 °C against 0% at 7.5 °C, a little above
+  that for elite runners. The duration points live in the new
+  `EnvironmentalAdjuster::HEAT_DURATION_FACTORS`; `duration_factor(time_seconds)`
+  is unchanged.
 
-  | Heat penalty (%), 1.18.1 → now | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
+  | Heat penalty (%), 1.18.1 → 2.0.0 | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
   | --- | --- | --- | --- | --- | --- | --- |
   | 20 °C | 1.4 → 0.76 | 2.8 → 1.52 | 5.6 → 2.1 | 8.4 → 2.68 | 12.6 → 4.27 | 12.6 → 4.27 |
   | 25 °C | 2.15 → 2.15 | 4.3 → 4.3 | 8.6 → 5.93 | 12.9 → 7.57 | 19.35 → 12.08 | 19.35 → 12.08 |
@@ -143,14 +136,14 @@ above 100 km (see Breaking).
   while the VDOT marathon prediction for VO2max 50 is 3:10:39, 4:31/km. The
   fast end now comes from `predict_time_from_vo2max(vo2max, 'marathon')`
   (0.800–0.849 of VO2max across VO2max 10–100; 0.805 at 30, 0.830 at 70); the
-  slow end stays at 75%. The prediction covers VO2max 10–100, and beyond it
-  the race-pace fraction of the nearest bound is used, so `training_paces`
-  still accepts any positive VO2max. `TRAINING_INTENSITIES` stays all-numeric
+  slow end stays at 75%. Beyond VO2max 10–100 the race-pace fraction of the
+  nearest bound is used, so `training_paces` still accepts any positive
+  VO2max. `TRAINING_INTENSITIES` stays all-numeric
   (`marathon: { low: 0.75, high: 0.84 }`, the nominal upper bound); the new
   `PREDICTED_RACE_PACE_ZONES` (`%i[marathon]`) names the zones whose fast end
-  is the predicted race pace. As a result the marathon and threshold bands no
-  longer overlap below VO2max ~69.5 (the threshold band starts at 0.83): M
-  pace is slower than T pace, as in Daniels. At VO2max 70 they touch (3:24).
+  is the predicted race pace. The marathon and threshold bands no longer
+  overlap below VO2max ~69.5 (the threshold band starts at 0.83): M pace is
+  slower than T pace, as in Daniels. At VO2max 70 they touch (3:24).
 
   | VO2max | M band before | M band after | Predicted marathon pace |
   | --- | --- | --- | --- |
@@ -160,7 +153,36 @@ above 100 km (see Breaking).
   | 60 | 4:11–3:49/km | 4:11–3:52/km | 3:52/km |
   | 70 | 3:41–3:22/km | 3:41–3:24/km | 3:24/km |
 
-| Case | Before (1.18.1) | After |
+- **Age grading uses the 2025 road tables.** Age factors and open standards
+  come from Alan Jones' 2025 road age-grading tables, approved on 2025-01-10
+  by the USATF Masters Long Distance Running Council
+  ([source spreadsheets](https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/4aac6737cb9f216c90a0a610355667cd3d921c61/2025%20Files):
+  `MaleRoadStd2025.xlsx`, `FemaleRoadStd2025.xlsx`). The previous data,
+  despite the `wma_2023_road.yml` name, came from the WMA 2023 **track and
+  field** tables: track open standards (5000 m 12:35 / 14:06, 10 000 m
+  26:11 / 29:01), an outdated women's marathon standard (2:14:04) and no
+  factors under age 30, so road age grades were off by about 1–3%. New open
+  standards — men: 5K 12:49, 10K 26:24, half 57:31, marathon 2:00:35; women:
+  5K 13:54, 10K 28:46, half 1:02:52, marathon 2:09:56. There is one factor
+  per year of age from 18 to 100: runners under 30 get the table's real
+  factors instead of 1.0 (a male 18-year-old at 5K: 0.9995; a female
+  30-year-old at 5K: 0.9959), and ages 101 and over use the age-100 factor.
+  Category labels are unchanged.
+
+  | Case | 1.18.1 (WMA 2023 track) | 2.0.0 (2025 road) | Official 2025 |
+  | --- | --- | --- | --- |
+  | Male 40, marathon 3:30:00 | 58.8% (factor 0.9804) | 58.7% (0.9783) | 58.7% |
+  | Female 50, marathon 4:00:00 | 62.7% (0.8915) | 60.2% (0.8998) | 60.2% |
+  | Female 30, 5K 25:00 | 56.4% (1.0) | 55.8% (0.9959) | 55.8% |
+  | Male 60, half 1:50:00 | 63.3% (0.8264) | 64.7% (0.8082) | 64.7% |
+  | Male 55, 10K 45:00 | 69.0% (0.8438) | 68.9% (0.8511) | 68.9% |
+
+  "Official" is age standard / time from the spreadsheets' `AgeStdSec` sheet,
+  at one decimal.
+
+Summary of the other models:
+
+| Case | 1.18.1 | 2.0.0 |
 | --- | --- | --- |
 | Cameron 10K 42:00 → marathon | 02:57:34 | 03:16:46 (Riegel 03:13:12) |
 | Cameron 5K 20:00 → marathon | 02:59:25 | 03:15:11 (Riegel 03:11:49) |
@@ -173,78 +195,44 @@ above 100 km (see Breaking).
 | Altitude 3600 m | 5.9% | 10.42% |
 | Heat 20 °C, 60 min | 2.8% | 1.52% |
 | Heat 30 °C, 60 min | 6.5% | 7.9% |
-| Heat 35 °C, 60 min | 6.5% | 12.16% |
-| Heat 40 °C, 60 min | 6.5% | 12.16% |
-| Heat 25 °C, 2 h | 8.6% | 5.93% |
-| Heat 25 °C, 3 h | 12.9% | 7.57% |
-| Heat 25 °C, 4 h | 19.35% | 12.08% |
+| Heat 35 °C / 40 °C, 60 min | 6.5% | 12.16% |
+| Heat 25 °C, 2 h / 3 h / 4 h | 8.6% / 12.9% / 19.35% | 5.93% / 7.57% / 12.08% |
 | Heat 30 °C, 4 h | 29.25% | 22.2% |
-| Heat 35 °C, 4 h | 29.25% | 34.17% |
-| Heat 40 °C, 4 h | 29.25% | 34.17% |
+| Heat 35 °C / 40 °C, 4 h | 29.25% | 34.17% |
 | Marathon band, VO2max 50 | 4:50–4:25/km | 4:50–4:31/km |
 | Splits marathon 3:00:00 `:negative` (halves) | 1:33:36 + 1:26:24 | 1:30:54 + 1:29:06 |
 | Splits marathon 3:00:00 `:positive` (halves) | 1:26:24 + 1:33:36 | 1:29:06 + 1:30:54 |
 
-### Known limitations
-- **The heat model has no sex term.** One curve serves everyone, and El Helou
-  et al. (2012) Table S3 shows men slowing more than women in the heat: at
-  25 °C the model reads men's slower groups low (men's median 11.9% vs 14.76%
-  observed, Q3 12.08% vs 16.10%) and women's high (women's median 12.08% vs
-  9.27%, Q1 12.08% vs 8.16%).
+### Added
+- **Humidity in the heat penalty.** `calculate_penalty` — and therefore
+  `adjust_time`, `normalize_time`, `predict_time_adjusted` and
+  `predict_time_cameron_adjusted`, which forward their options — accepts
+  `humidity:` (relative humidity, 0–100 %) or `dew_point:` (in
+  `temperature_unit`). 30 °C dry and 30 °C at 80% (typical of coastal Brazil)
+  used to get the same penalty. The temperature is replaced by an effective
+  temperature: the air temperature that, at `REFERENCE_HUMIDITY` (50%), has
+  the same simplified WBGT (Australian Bureau of Meteorology:
+  `WBGT = 0.567·Ta + 0.393·e + 3.94`, `e` = vapour pressure in hPa) as the
+  real temperature and humidity, solved exactly by bisection. The heat curve
+  is read at the unrounded effective temperature, so `humidity: 50` gives
+  exactly the temperature-only numbers: 50% is the humidity at which that
+  WBGT equals the air temperature between 20 °C and 35 °C (51–56%), i.e. how
+  the temperature-only points already read. `factors` gains
+  `:effective_temperature_celsius` (rounded to 2 decimals) when humidity or
+  dew point is given. `ArgumentError` for humidity outside 0–100, NaN,
+  Complex or non-numeric; a dew point above the temperature, below −100 °C or
+  not a finite real number; both keywords together; or either without a
+  finite temperature.
 
-### Breaking
-- Removed `CameronPredictor::CAMERON_A`, `CAMERON_B` and `CAMERON_C`. They described
-  the wrong formula, and keeping them would suggest they still drive the
-  prediction. The new model's constants are `CAMERON_CONSTANT`,
-  `CAMERON_LINEAR_COEFFICIENT`, `CAMERON_POWER_COEFFICIENT` and
-  `CAMERON_POWER_EXPONENT`.
-- Cameron predictions (`predict_time_cameron`, `_clock`, `predict_pace_cameron`,
-  `_clock`, `predict_time_cameron_adjusted`) raise `ArgumentError` when either
-  distance exceeds `CAMERON_MAX_DISTANCE_KM` (100 km). 1.18.1 accepted any
-  distance, but Cameron's model is only fitted up to the marathon and breaks
-  down past ~445 km.
-### Breaking
-- The public `AgeGrading::WMA_DATA` constant no longer has the track keys
-  (`"1500"`, `"3000"`): each sex now holds only the road distances the gem
-  grades — `"5000"`, `"10000"`, `"21097"` and `"42195"`. Code that read
-  `WMA_DATA["M"]["1500"]` (or `"3000"`) directly gets a `KeyError` / `nil`.
-  Its factor tables also start at age 18 and end at 100 (they were 30–110).
-
-### Changed
-- **Age grading now uses the 2025 road tables.** Age factors and open
-  standards come from Alan Jones' 2025 road age-grading tables, approved on
-  2025-01-10 by the USATF Masters Long Distance Running Council
-  ([source spreadsheets](https://github.com/AlanLyttonJones/Age-Grade-Tables/tree/4aac6737cb9f216c90a0a610355667cd3d921c61/2025%20Files):
-  `MaleRoadStd2025.xlsx`, `FemaleRoadStd2025.xlsx`). The previous data,
-  despite the `wma_2023_road.yml` name, came from the WMA 2023 **track and
-  field** tables: track open standards (5000 m 12:35 / 14:06, 10 000 m
-  26:11 / 29:01), an outdated women's marathon standard (2:14:04), and no
-  factors under age 30. Road age grades were off by about 1–3%.
-- New open standards — men: 5K 12:49, 10K 26:24, half 57:31, marathon
-  2:00:35; women: 5K 13:54, 10K 28:46, half 1:02:52, marathon 2:09:56.
-- One factor per year of age from 18 to 100. Runners under 30 now get the
-  table's real factors instead of 1.0 (e.g. a male 18-year-old at 5K: 0.9995;
-  a female 30-year-old at 5K: 0.9959). The old table ran to 110; the 2025
-  road tables end at 100, so ages 101 and over now use the age-100 factor.
-- `table_version` is now `"MLDR_2025_ROAD_ONE_YEAR_FACTORS_V1"` (was
-  `"WMA_2023_ONE_YEAR_FACTORS_V1"`). The data files were renamed to
-  `lib/calcpace/data/mldr_2025_road.yml` and
-  `lib/calcpace/data/mldr_2025_road_open_standards.yml`; `DATA_PATH`,
-  `OPEN_STANDARDS_DATA_PATH`, `WMA_DATA`, `OPEN_STANDARDS_DATA` and
-  `TABLE_VERSION` keep their names and shapes (see Breaking for the keys
-  `WMA_DATA` lost). Category labels are unchanged.
-
-  | Case | Before (WMA 2023 track) | After (2025 road) | Official 2025 |
+  | 30 °C at | Effective temperature | 60 min | 4 h |
   | --- | --- | --- | --- |
-  | Male 40, marathon 3:30:00 | 58.8% (factor 0.9804) | 58.7% (0.9783) | 58.7% |
-  | Female 50, marathon 4:00:00 | 62.7% (0.8915) | 60.2% (0.8998) | 60.2% |
-  | Female 30, 5K 25:00 | 56.4% (1.0) | 55.8% (0.9959) | 55.8% |
-  | Male 60, half 1:50:00 | 63.3% (0.8264) | 64.7% (0.8082) | 64.7% |
-  | Male 55, 10K 45:00 | 69.0% (0.8438) | 68.9% (0.8511) | 68.9% |
+  | 30% RH | 26.69 °C | 5.46% | 15.34% |
+  | 50% RH (= no humidity) | 30.0 °C | 7.9% | 22.2% |
+  | 70% RH | 33.07 °C | 10.46% | 29.39% |
+  | 90% RH | 35.94 °C (capped at 35 °C) | 12.16% | 34.17% |
 
-  "Official" is age standard / time from the spreadsheets' `AgeStdSec` sheet,
-  at one decimal.
-- `predict_marathon_from_training(weekly_distance:, training_pace:, unit: :km)`
+- **Marathon from training volume.**
+  `predict_marathon_from_training(weekly_distance:, training_pace:, unit: :km)`
   predicts a marathon from the mean weekly distance and mean training pace of
   the 8 weeks before the race, with Tanda (2011), *Journal of Human Sport and
   Exercise* 6(3):511–520: `Pm = 17.1 + 140.0 · exp(−0.0053 · K) + 0.55 · P`.
@@ -257,20 +245,45 @@ above 100 km (see Breaking).
   ```ruby
   calc.predict_marathon_from_training(weekly_distance: 60, training_pace: '05:00')[:time_clock] # => "03:19:41"
   ```
-- `riegel_exponent(race1, time1, race2, time2)` fits a personal Riegel
-  exponent, `ln(t2/t1) / ln(d2/d1)`, to two performances.
-- `predict_time_personal(race1, time1, race2, time2, to_race)` predicts with
-  that exponent. A target between the two races is interpolated along the
-  curve through both, with the raw exponent (never clamped, independent of
-  argument order); a target outside the pair is extrapolated from the closer
-  performance in log-distance, with the exponent clamped to 1.01–1.20.
-  Returns `:time`, `:time_clock`, `:exponent`, `:raw_exponent` and
-  `:clamped`; an exponent that needed clamping usually means one of the races
-  was not all-out.
+- **Personal Riegel exponent.** `riegel_exponent(race1, time1, race2, time2)`
+  fits `ln(t2/t1) / ln(d2/d1)` to two performances, and
+  `predict_time_personal(race1, time1, race2, time2, to_race)` predicts with
+  it. A target between the two races is interpolated along the curve through
+  both, with the raw exponent (never clamped, independent of argument order);
+  a target outside the pair is extrapolated from the closer performance in
+  log-distance, with the exponent clamped to 1.01–1.20. Returns `:time`,
+  `:time_clock`, `:exponent`, `:raw_exponent` and `:clamped`; an exponent
+  that needed clamping usually means one of the races was not all-out.
 
   ```ruby
   calc.predict_time_personal('10k', '00:45:00', 'half_marathon', '01:42:00', 'marathon')[:time_clock] # => "03:38:03"
   ```
+- **Grade-adjusted pace** from the energy cost of running on gradients of
+  Minetti et al. (2002), J Appl Physiol 93:1039–1046:
+  `grade_adjustment_factor(grade)` (Cr(i)/Cr(0), grade as a fraction, clamped
+  to the measured ±0.45), `grade_adjusted_pace(pace, grade, unit: :km)` and
+  `grade_adjusted_pace_clock(pace, grade, unit: :km, compact: false)`.
+- **`track_grade_adjusted_splits(points, split_km = 1.0, compact: false)`**:
+  the `track_splits` splits with a `:gap` pace per split, computed segment by
+  segment from `:ele`. Grades are measured over segments of at least 100 m of
+  horizontal distance so GPS elevation noise does not become fake climbing;
+  stretches without `:ele` (or with a non-finite one), and stretches with
+  elevation too short to grade, are flat. `track_splits` output is unchanged.
+- **VO2max norms by age and sex** from the FRIEND registry (Kaminsky, Arena &
+  Myers, Mayo Clin Proc 2015;90(11):1515–1523, Table 3: treadmill, measured
+  VO2max), stored in `lib/calcpace/data/friend_2015_vo2max_percentiles.yml`:
+  - `vo2max_label(value, age: nil, sex: nil)` — optional keywords; with both,
+    the label comes from the percentile among the same sex and age decade
+    (≥95th Elite, ≥90th Excellent, ≥75th Very Good, ≥50th Good, ≥25th Fair,
+    else Beginner). Without them the fixed thresholds and labels are
+    unchanged.
+  - `vo2max_percentile(value, age:, sex:)` — linearly interpolated percentile,
+    bounded to the table's 5–95. Ages 18–19 use the 20–29 row and 80+ the
+    70–79 row; under 18 is rejected.
+- New public constants: `CameronPredictor::CAMERON_MAX_DISTANCE_KM`,
+  `EnvironmentalAdjuster::REFERENCE_HUMIDITY`,
+  `EnvironmentalAdjuster::HEAT_DURATION_FACTORS` and
+  `TrainingZones::PREDICTED_RACE_PACE_ZONES`.
 
 ### Fixed
 - `check_positive` let `Float::INFINITY` through, so every method guarded by it
@@ -279,32 +292,30 @@ above 100 km (see Breaking).
   far from the input. Infinity now raises `Calcpace::NonPositiveInputError`
   ("must be a finite positive number"), like zero, negatives and NaN already
   did.
-- Grade-adjusted pace from the energy cost of running on gradients of
-  Minetti et al. (2002), J Appl Physiol 93:1039–1046:
-  `grade_adjustment_factor(grade)` (Cr(i)/Cr(0), grade as a fraction, clamped
-  to the measured ±0.45), `grade_adjusted_pace(pace, grade, unit: :km)` and
-  `grade_adjusted_pace_clock(pace, grade, unit: :km, compact: false)`.
-- `track_grade_adjusted_splits(points, split_km = 1.0, compact: false)`: the
-  `track_splits` splits with a `:gap` pace per split, computed segment by
-  segment from `:ele`. Grades are measured over segments of at least 100 m of
-  horizontal distance so GPS elevation noise does not become fake climbing;
-  stretches without `:ele` (or with a non-finite one), and stretches with
-  elevation too short to grade, are flat. `track_splits` output is unchanged.
-- VO2max norms by age and sex from the FRIEND registry (Kaminsky, Arena &
-  Myers, Mayo Clin Proc 2015;90(11):1515–1523, Table 3: treadmill, measured
-  VO2max), stored in `lib/calcpace/data/friend_2015_vo2max_percentiles.yml`:
-  - `vo2max_label(value, age: nil, sex: nil)` — optional keywords; with both, the
-    label comes from the percentile among the same sex and age decade (≥95th
-    Elite, ≥90th Excellent, ≥75th Very Good, ≥50th Good, ≥25th Fair, else
-    Beginner). Without them the fixed thresholds and labels are unchanged.
-  - `vo2max_percentile(value, age:, sex:)` — linearly interpolated percentile,
-    bounded to the table's 5–95. Ages 18–19 use the 20–29 row and 80+ the
-    70–79 row; under 18 is rejected.
-
-### Changed
 - The `vo2max_label` docstring now documents the error it actually raises for
-  a non-positive value (`Calcpace::NonPositiveInputError`, not `ArgumentError`).
-  Behaviour is unchanged.
+  a non-positive value (`Calcpace::NonPositiveInputError`, not
+  `ArgumentError`). Behaviour is unchanged.
+
+### Known limitations
+- **The heat model has no sex term.** One curve serves everyone, and El Helou
+  et al. (2012) Table S3 shows men slowing more than women in the heat: at
+  25 °C the model reads men's slower groups low (men's median 11.9% vs 14.76%
+  observed, Q3 12.08% vs 16.10%) and women's high (women's median 12.08% vs
+  9.27%, Q1 12.08% vs 8.16%).
+- **Heat above ~25 °C is extrapolated.** The marathon data behind the curve
+  stops at 25.2 °C; the 35 °C cap is a deliberate choice, not a measurement.
+  The 25 °C / 60-minute anchor (4.3%) and the 30- and 60-minute duration
+  factors have no direct published source.
+- **The size of the humidity adjustment rests on the WBGT index, not on race
+  data.** The marathon outcome studies (El Helou 2012, Vihma 2010) found no
+  humidity effect independent of temperature.
+- **Tanda's equation is validated only inside its sample** (22 experienced
+  runners, 21 of them men): outside it the prediction is still returned and
+  `out_of_range` says what fell outside.
+- **Grade-adjusted pace is a metabolic model.** It does not see the muscular
+  cost of long descents or technical terrain, and the factor is applied to
+  horizontal (Haversine) distance without the √(1 + grade²) slope-length
+  correction (0.5% at 10%).
 
 ## [1.18.1] - 2026-09-06
 

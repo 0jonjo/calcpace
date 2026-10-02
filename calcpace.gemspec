@@ -8,12 +8,16 @@ Gem::Specification.new do |spec|
   spec.authors       = ['João Gilberto Saraiva']
   spec.email         = ['joaogilberto@tuta.io']
 
-  spec.summary       = 'Running calculations: pace, race predictions, GPS track analysis, VO2max, and training zones.'
+  spec.summary       = 'Running calculations: pace, race predictions, GPS track analysis, ' \
+                       'heat and altitude adjustments, age grading, VO2max, and training zones.'
   spec.description   = 'Ruby gem for runners: pace, time, and distance calculations, ' \
-                       'unit conversions (30+ units), race time predictions (Riegel & Cameron), ' \
-                       'GPS track analysis (Haversine, elevation gain, per-km splits), ' \
-                       'age grading (2025 road tables), VO2max estimation (Daniels & Gilbert), and ' \
-                       'personalized training zones (Daniels paces & Karvonen heart-rate zones).'
+                       'unit conversions (30+ units), race time predictions (Riegel, Cameron, ' \
+                       'personal Riegel exponent, and Tanda marathon from training volume), ' \
+                       'GPS track analysis (Haversine, elevation gain, per-km splits, ' \
+                       'Minetti grade-adjusted pace), heat, humidity, and altitude adjustments, ' \
+                       'age grading (2025 road tables), VO2max estimation (Daniels & Gilbert) ' \
+                       'with FRIEND age/sex norms, and personalized training zones ' \
+                       '(Daniels paces & Karvonen heart-rate zones).'
   spec.homepage      = 'https://github.com/0jonjo/calcpace'
   spec.metadata['source_code_uri'] = spec.homepage
   spec.license = 'MIT'

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 class Calcpace
-  VERSION = '1.18.1'
+  VERSION = '2.0.0'
 end
