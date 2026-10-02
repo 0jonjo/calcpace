@@ -88,7 +88,7 @@ calc.calculate_penalty(temperature: 80, temperature_unit: :f)
 # Humidity: 30 °C at 90% hits like 35.94 °C at 50%
 calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 9.11
 calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius]  # => 35.94
-calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 8.15
+calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 8.16
 
 # Adjust a 3:30 marathon time (12600s) for these conditions (High exposure penalty)
 result = calc.adjust_time(12600, temperature: 25, altitude: 2000)

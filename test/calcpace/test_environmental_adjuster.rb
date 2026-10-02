@@ -219,6 +219,46 @@ class TestEnvironmentalAdjuster < CalcpaceTest
     end
   end
 
+  def test_humidity_at_the_reference_is_exact_for_random_inputs
+    rng = Random.new(20_261_002)
+
+    5000.times do
+      temperature = (rng.rand * 50) - 5
+      seconds = rng.rand * 20_000
+      plain = @calc.calculate_penalty(temperature: temperature, time_seconds: seconds)
+      humid = @calc.calculate_penalty(temperature: temperature, humidity: 50, time_seconds: seconds)
+
+      assert_equal plain[:total_penalty_percent], humid[:total_penalty_percent], "T=#{temperature} s=#{seconds}"
+    end
+  end
+
+  def test_penalty_is_interpolated_on_the_unrounded_effective_temperature
+    # 30.42271454 °C used to be rounded to 30.42 before interpolating
+    plain = @calc.calculate_penalty(temperature: 30.42271454, time_seconds: 3600)
+    humid = @calc.calculate_penalty(temperature: 30.42271454, humidity: 50, time_seconds: 3600)
+
+    assert_equal plain[:factors][:heat], humid[:factors][:heat]
+    assert_in_delta 30.42, humid[:factors][:effective_temperature_celsius], 0.0
+  end
+
+  def test_dew_point_below_minus_one_hundred_is_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, dew_point: -240) }
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, dew_point: -100.01) }
+    assert_kind_of Hash, @calc.calculate_penalty(temperature: 30, dew_point: -100)
+  end
+
+  def test_complex_humidity_or_dew_point_is_rejected
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, humidity: Complex(80, 0)) }
+    assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: 30, dew_point: Complex(20, 0)) }
+  end
+
+  def test_non_finite_temperature_with_humidity_is_rejected
+    [Float::NAN, Float::INFINITY, -Float::INFINITY].each do |temperature|
+      assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: temperature, humidity: 50) }
+      assert_raises(ArgumentError) { @calc.calculate_penalty(temperature: temperature, dew_point: 10) }
+    end
+  end
+
   def test_reference_humidity_constant
     assert_in_delta 50.0, EnvironmentalAdjuster::REFERENCE_HUMIDITY, 0.0
   end
@@ -233,11 +273,11 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_dry_air_lowers_the_effective_temperature_and_the_penalty
-    # WBGT(30 °C, 30%) = WBGT(26.69 °C, 50%) → base 4.3 + 1.69/5 × 2.2 = 5.04
+    # WBGT(30 °C, 30%) = WBGT(26.6946 °C, 50%) → base 4.3 + 1.6946/5 × 2.2 = 5.05
     result = @calc.calculate_penalty(temperature: 30, humidity: 30, time_seconds: 3600)
 
     assert_in_delta 26.69, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 5.04, result[:factors][:heat]
+    assert_equal 5.05, result[:factors][:heat]
   end
 
   def test_humidity_scales_with_duration_like_temperature
@@ -247,11 +287,11 @@ class TestEnvironmentalAdjuster < CalcpaceTest
   end
 
   def test_humid_air_can_lift_an_ideal_temperature_out_of_the_ideal_range
-    # 15 °C at 90% behaves like 18.33 °C at 50% → 3.33/5 × 2.8 = 1.86
+    # 15 °C at 90% behaves like 18.3304 °C at 50% → 3.3304/5 × 2.8 = 1.87
     result = @calc.calculate_penalty(temperature: 15, humidity: 90, time_seconds: 3600)
 
     assert_in_delta 18.33, result[:factors][:effective_temperature_celsius], 0.01
-    assert_equal 1.86, result[:factors][:heat]
+    assert_equal 1.87, result[:factors][:heat]
   end
 
   def test_dry_cool_air_stays_penalty_free

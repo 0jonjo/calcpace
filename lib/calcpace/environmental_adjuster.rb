@@ -50,7 +50,7 @@ module EnvironmentalAdjuster
   # @example
   #   calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent] #=> 9.11
   #   calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius] #=> 35.94
-  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 8.15
+  #   calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent] #=> 8.16
   def calculate_penalty(temperature: nil, temperature_unit: :c, altitude: nil, time_seconds: nil,
                         humidity: nil, dew_point: nil)
     effective = effective_temperature(temperature, temperature_unit, humidity, dew_point)
@@ -58,7 +58,7 @@ module EnvironmentalAdjuster
     altitude_penalty = calculate_altitude_penalty(altitude)
 
     factors = { heat: heat_penalty, altitude: altitude_penalty }
-    factors[:effective_temperature_celsius] = effective unless humidity.nil? && dew_point.nil?
+    factors[:effective_temperature_celsius] = effective.round(2) unless humidity.nil? && dew_point.nil?
 
     { total_penalty_percent: (heat_penalty + altitude_penalty).round(2), factors: factors }
   end
