@@ -120,9 +120,19 @@ module CameronPredictor
   # @param from_race [Numeric, String, Symbol] known distance in kilometers or race name
   # @param from_time [String, Numeric] time achieved at known distance
   # @param to_race [Numeric, String, Symbol] target distance in kilometers or race name
-  # @param options [Hash] environmental options (temperature, altitude, etc.)
+  # @param options [Hash] environmental options, forwarded to
+  #   EnvironmentalAdjuster#calculate_penalty:
+  #   - :temperature [Numeric]
+  #   - :temperature_unit [Symbol, String] :c or :f
+  #   - :altitude [Numeric]
+  #   - :humidity [Numeric] relative humidity, 0–100 % (optional)
+  #   - :dew_point [Numeric] dew point in temperature_unit (optional, instead of :humidity)
   # @return [Hash] hash with adjusted prediction and penalty details
   # @raise [ArgumentError] if either distance exceeds CAMERON_MAX_DISTANCE_KM (100 km)
+  #
+  # @example
+  #   calc.predict_time_cameron_adjusted('5k', '00:20:00', '10k', temperature: 25, humidity: 80)[:adjusted_time_clock]
+  #   #=> '00:43:23'
   def predict_time_cameron_adjusted(from_race, from_time, to_race, **)
     predicted_seconds = predict_time_cameron(from_race, from_time, to_race)
     adjust_time(predicted_seconds, **)

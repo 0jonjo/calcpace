@@ -19,12 +19,12 @@ module EnvironmentalAdjuster
   # pressure rising with temperature, as it does along the temperature-only
   # curve; the shortcut would roughly double the humidity effect at 30 °C.
   module Humidity
-    # Relative humidity (%) the temperature-only heat curve stands for. The heat
-    # points were calibrated against Ely et al.'s WBGT figures while the input
-    # is air temperature, and the simplified WBGT equals the air temperature at
-    # 51–56% RH between 20 °C and 35 °C — so a temperature-only reading is a
-    # reading at about 50% humidity. humidity: 50 gives the same numbers as no
-    # humidity at all.
+    # Relative humidity (%) the temperature-only heat curve stands for. The
+    # simplified WBGT equals the air temperature at 51–56% RH between 20 °C and
+    # 35 °C, so at 50% the curve reads the same whether its input is taken as
+    # air temperature or as WBGT; 50% is also mid-range for the marathons
+    # behind the duration factor (El Helou et al. 2012: mean race-day RH
+    # 51–78%). humidity: 50 gives the same numbers as no humidity at all.
     REFERENCE_HUMIDITY = 50.0
 
     # Simplified WBGT coefficients (Australian Bureau of Meteorology)

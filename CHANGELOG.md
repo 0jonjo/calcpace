@@ -17,22 +17,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   temperature: the air temperature that, at `REFERENCE_HUMIDITY` (50%), has the
   same simplified WBGT (Australian Bureau of Meteorology:
   `WBGT = 0.567·Ta + 0.393·e + 3.94`, `e` = vapour pressure in hPa) as the real
-  temperature and humidity. The existing heat curve and the
-  `base(temperature) × duration_factor(seconds)` shape are untouched, and
+  temperature and humidity, solved exactly (by bisection). The existing heat
+  curve and the `base(temperature) × duration_factor(seconds)` shape are
+  untouched; the curve is read at the unrounded effective temperature, so
   `humidity: 50` gives exactly the temperature-only numbers. 50% is the
   humidity at which that WBGT equals the air temperature between 20 °C and
-  35 °C (51–56%), which is how the temperature points — calibrated on Ely et
-  al.'s WBGT figures — already read. `factors` gains
-  `:effective_temperature_celsius` when humidity or dew point is given.
-  `ArgumentError` for humidity outside 0–100 or non-numeric, a dew point above
-  the temperature, both keywords together, or either without a temperature.
+  35 °C (51–56%), i.e. how the temperature-only points already read. `factors`
+  gains `:effective_temperature_celsius` (rounded to 2 decimals) when humidity
+  or dew point is given. `ArgumentError` for humidity outside 0–100, NaN,
+  Complex or non-numeric; a dew point above the temperature, below −100 °C or
+  not a finite real number; both keywords together; or either without a
+  finite temperature. The marathon outcome studies (El Helou 2012, Vihma 2010)
+  found no humidity effect independent of temperature, so the size of this
+  adjustment rests on the WBGT index, not on race data.
 
   | 30 °C at | Effective temperature | 60 min | 4 h |
   | --- | --- | --- | --- |
-  | 30% RH | 26.69 °C | 5.04% | 17.64% |
-  | 50% RH (= no humidity) | 30.0 °C | 6.5% | 22.75% |
-  | 70% RH | 33.07 °C | 7.85% | 27.48% |
-  | 90% RH | 35.94 °C | 9.11% | 31.89% |
+  | 30% RH | 26.69 °C | 5.05% | 11.01% |
+  | 50% RH (= no humidity) | 30.0 °C | 6.5% | 14.17% |
+  | 70% RH | 33.07 °C | 7.85% | 17.11% |
+  | 90% RH | 35.94 °C | 9.11% | 19.86% |
 
 ### Changed (numbers)
 Four models produced unrealistic numbers. The method names, signatures, return
@@ -71,37 +75,67 @@ above 100 km (see Breaking).
   penalty as 30 °C. Two points extrapolate the 25→30 °C slope (0.44 points/°C):
   35 °C → 8.7% and 40 °C → 10.9% at the 60-minute baseline (capped at 40 °C).
   The ideal range is unchanged.
-- **Heat penalty grows less between 3 h and 4 h.** The duration factor went
-  from 3.0× at 3 h to 4.5× at 4 h (+50% heat penalty for one more hour); it now
-  ends at 3.5× at 4 h and stays flat after. El Helou et al. (2012, PLoS One,
-  1.8 million finishers, Table S3) give, against the optimum temperature,
-  8.45% at 20 °C and 16.9% at 25 °C for the men's median (~3:58) — 3.0× and
-  3.9× the 60-minute base — and no more for the men's Q3 (~4:28); 4.5× was
-  above every group, men or women. The 3 h anchor (Ely et al. 2007: ~9% for a
-  3 h runner at 20 °C WBGT) and everything up to 3 h are unchanged. The
-  duration points now live in `EnvironmentalAdjuster::HEAT_DURATION_FACTORS`;
-  `duration_factor(time_seconds)` keeps its name and signature.
+- **Heat duration scaling is fitted to marathon data and is much flatter.**
+  The factor went 1.0× (60 min) → 3.0× (3 h) → 4.5× (4 h), with the 3 h point
+  justified by Ely 2007 percentages for a 3 h runner (~9% at 20 °C, ~12% at
+  25 °C) that the paper's abstract does not contain. It is now 0.5× (≤30 min),
+  1.0× (60 min), 1.24× (3 h) and 2.18× (4 h and beyond), linear in between
+  (1.12× at 2 h). The 30/60-minute points are kept (no marathon dataset covers
+  them); 3 h and 4 h are a weighted least-squares fit to El Helou et al.
+  (2012, PLoS One 7(5):e37407, Table S3; 1.79 M finishers of six majors,
+  2001–2010):
+  1. speed loss at 15, 20 and 25 °C, straight line between the table's points
+     (each group's optimum −10 … +20 °C);
+  2. time penalty against 15 °C, where the gem's curve is zero:
+     `((1 − loss15) / (1 − lossT) − 1) × 100`;
+  3. ratio = that penalty ÷ the 60-minute base (2.8 at 20 °C, 4.3 at 25 °C);
+  4. finish time = 42195 m ÷ the group's speed at its optimum;
+  5. least squares with 1.0× at 60 min fixed, 180 and 240 min free, flat after
+     240, each sex carrying half the weight (men 7 observations, women 8;
+     men P1 at 25 °C is beyond the table): 1.239 and 2.180.
 
-  | Heat penalty (%) | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
+  | Group | Finish | loss@15 | loss@20 | loss@25 | vs 15 °C @20 | vs 15 °C @25 | ratio @20 | ratio @25 |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | men P1 | 2:41 | 1.88 | 3.93 | n/a | 2.14 | n/a | 0.76 | n/a |
+  | women P1 | 3:06 | 0.79 | 3.13 | 7.27 | 2.42 | 6.99 | 0.86 | 1.63 |
+  | men Q1 | 3:31 | 2.86 | 7.00 | 13.58 | 4.46 | 12.41 | 1.59 | 2.89 |
+  | men median | 3:57 | 3.18 | 7.93 | 15.63 | 5.17 | 14.76 | 1.85 | 3.43 |
+  | women Q1 | 4:00 | 1.86 | 4.73 | 9.26 | 3.02 | 8.16 | 1.08 | 1.90 |
+  | women median | 4:25 | 2.09 | 5.30 | 10.40 | 3.39 | 9.27 | 1.21 | 2.16 |
+  | men Q3 | 4:28 | 2.92 | 7.91 | 16.38 | 5.42 | 16.10 | 1.94 | 3.74 |
+  | women Q3 | 4:54 | 2.03 | 5.37 | 10.80 | 3.54 | 9.83 | 1.26 | 2.29 |
+
+  Losses and penalties in %. Ely et al. (2007) remains a qualitative source
+  (slowing grows from 5 to 25 °C WBGT, more for slower runners; top men 1.7 /
+  2.5 / 3.3 / 4.5% off the course record across the WBGT quartiles). The
+  duration points live in `EnvironmentalAdjuster::HEAT_DURATION_FACTORS`;
+  `duration_factor(time_seconds)` keeps its name and signature. Caveat: El
+  Helou's penalty grows 2.5–2.9× from 20 to 25 °C while the base grows 1.54×,
+  so for the slower groups one factor per duration over-reads 20 °C and
+  under-reads 25 °C.
+
+  | Heat penalty (%), 1.18.1 → now | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
   | --- | --- | --- | --- | --- | --- | --- |
-  | 20 °C | 1.4 | 2.8 | 5.6 | 8.4 | 12.6 → 9.8 | 12.6 → 9.8 |
-  | 25 °C | 2.15 | 4.3 | 8.6 | 12.9 | 19.35 → 15.05 | 19.35 → 15.05 |
-  | 30 °C | 3.25 | 6.5 | 13.0 | 19.5 | 29.25 → 22.75 | 29.25 → 22.75 |
-  | 35 °C | 4.35 | 8.7 | 17.4 | 26.1 | 39.15 → 30.45 | 39.15 → 30.45 |
-  | 40 °C | 5.45 | 10.9 | 21.8 | 32.7 | 49.05 → 38.15 | 49.05 → 38.15 |
+  | 20 °C | 1.4 → 1.4 | 2.8 → 2.8 | 5.6 → 3.14 | 8.4 → 3.47 | 12.6 → 6.1 | 12.6 → 6.1 |
+  | 25 °C | 2.15 → 2.15 | 4.3 → 4.3 | 8.6 → 4.82 | 12.9 → 5.33 | 19.35 → 9.37 | 19.35 → 9.37 |
+  | 30 °C | 3.25 → 3.25 | 6.5 → 6.5 | 13.0 → 7.28 | 19.5 → 8.06 | 29.25 → 14.17 | 29.25 → 14.17 |
+  | 35 °C | 3.25 → 4.35 | 6.5 → 8.7 | 13.0 → 9.74 | 19.5 → 10.79 | 29.25 → 18.97 | 29.25 → 18.97 |
+  | 40 °C | 3.25 → 5.45 | 6.5 → 10.9 | 13.0 → 12.21 | 19.5 → 13.52 | 29.25 → 23.76 | 29.25 → 23.76 |
 
-  (35 °C and 40 °C columns compare against the extrapolated points above; in
-  1.18.1 both were capped at the 30 °C values.)
 - **The marathon pace band ends at the runner's predicted marathon pace.**
   Daniels' M pace is the predicted marathon race pace, but
   `training_paces(50)[:marathon]` ran from 4:50 to 4:25/km (75–84% VO2max)
   while the VDOT marathon prediction for VO2max 50 is 3:10:39, 4:31/km. The
   fast end now comes from `predict_time_from_vo2max(vo2max, 'marathon')`
-  (about 80–83% VO2max); the slow end stays at 75%. The prediction covers
-  VO2max 10–100, and beyond it the race-pace fraction of the nearest bound
-  is used, so `training_paces` still accepts any positive VO2max.
-  `TRAINING_INTENSITIES[:marathon][:high]` is now `:race_pace` instead of
-  `0.84`.
+  (0.800–0.849 of VO2max across VO2max 10–100; 0.805 at 30, 0.830 at 70); the
+  slow end stays at 75%. The prediction covers VO2max 10–100, and beyond it
+  the race-pace fraction of the nearest bound is used, so `training_paces`
+  still accepts any positive VO2max. `TRAINING_INTENSITIES` stays all-numeric
+  (`marathon: { low: 0.75, high: 0.84 }`, the nominal upper bound); the new
+  `PREDICTED_RACE_PACE_ZONES` (`%i[marathon]`) names the zones whose fast end
+  is the predicted race pace. As a result the marathon and threshold bands no
+  longer overlap below VO2max ~69.5 (the threshold band starts at 0.83): M
+  pace is slower than T pace, as in Daniels. At VO2max 70 they touch (3:24).
 
   | VO2max | M band before | M band after | Predicted marathon pace |
   | --- | --- | --- | --- |
@@ -124,10 +158,12 @@ above 100 km (see Breaking).
 | Altitude 3600 m | 5.9% | 10.42% |
 | Heat 35 °C, 60 min | 6.5% | 8.7% |
 | Heat 40 °C, 60 min | 6.5% | 10.9% |
-| Heat 25 °C, 4 h | 19.35% | 15.05% |
-| Heat 30 °C, 4 h | 29.25% | 22.75% |
-| Heat 35 °C, 4 h | 29.25% | 30.45% |
-| Heat 40 °C, 4 h | 29.25% | 38.15% |
+| Heat 25 °C, 2 h | 8.6% | 4.82% |
+| Heat 25 °C, 3 h | 12.9% | 5.33% |
+| Heat 25 °C, 4 h | 19.35% | 9.37% |
+| Heat 30 °C, 4 h | 29.25% | 14.17% |
+| Heat 35 °C, 4 h | 29.25% | 18.97% |
+| Heat 40 °C, 4 h | 29.25% | 23.76% |
 | Marathon band, VO2max 50 | 4:50–4:25/km | 4:50–4:31/km |
 | Splits marathon 3:00:00 `:negative` (halves) | 1:33:36 + 1:26:24 | 1:30:54 + 1:29:06 |
 | Splits marathon 3:00:00 `:positive` (halves) | 1:26:24 + 1:33:36 | 1:29:06 + 1:30:54 |
