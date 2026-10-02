@@ -11,17 +11,23 @@
 #   target = hr_rest + pct * (hr_max - hr_rest)
 module TrainingZones
   # Training intensities as fraction of VO2max (Daniels' Running Formula).
-  # The fast end of the marathon band is :race_pace — Daniels' M pace is the
-  # runner's predicted marathon race pace, so it comes from the VDOT race
-  # prediction (FitnessPredictor#predict_time_from_vo2max) instead of a fixed
-  # fraction: ~80% of VO2max for slow marathoners, ~83% at VO2max 70.
+  # The marathon :high (0.84) is the nominal upper bound only: the band's fast
+  # end is the predicted race pace (see PREDICTED_RACE_PACE_ZONES).
   TRAINING_INTENSITIES = {
     easy: { low: 0.59, high: 0.74 },
-    marathon: { low: 0.75, high: :race_pace },
+    marathon: { low: 0.75, high: 0.84 },
     threshold: { low: 0.83, high: 0.88 },
     interval: { low: 0.95, high: 1.00 },
     repetition: { low: 1.05, high: 1.10 }
   }.freeze
+
+  # Zones whose fast end is the VDOT-predicted race pace instead of
+  # TRAINING_INTENSITIES[zone][:high]. Daniels' M pace is the runner's
+  # predicted marathon race pace (FitnessPredictor#predict_time_from_vo2max),
+  # which is 0.800–0.849 of VO2max across VO2max 10–100 (0.805 at 30, 0.830
+  # at 70). That keeps the marathon band slower than the threshold band
+  # (from 0.83) below VO2max ~69.5.
+  PREDICTED_RACE_PACE_ZONES = %i[marathon].freeze
 
   # A pace band for one training zone (paces per kilometre or mile).
   # slow = lower-intensity end of the band, fast = higher-intensity end.
@@ -65,16 +71,12 @@ module TrainingZones
     check_positive(vo2max.to_f, 'VO2max')
     meters = pace_unit_meters(unit)
 
-    TRAINING_INTENSITIES.transform_values do |band|
+    TRAINING_INTENSITIES.to_h do |zone, band|
       slow = pace_seconds_at_pct(vo2max.to_f, band[:low], meters)
-      fast = pace_seconds_at_pct(vo2max.to_f, intensity(band[:high], vo2max.to_f), meters)
+      fast = pace_seconds_at_pct(vo2max.to_f, fast_intensity(zone, band, vo2max.to_f), meters)
 
-      PaceBand.new(
-        slow_seconds: slow,
-        fast_seconds: fast,
-        slow_clock: convert_to_clocktime(slow),
-        fast_clock: convert_to_clocktime(fast)
-      )
+      [zone, PaceBand.new(slow_seconds: slow, fast_seconds: fast,
+                          slow_clock: convert_to_clocktime(slow), fast_clock: convert_to_clocktime(fast))]
     end
   end
 
@@ -344,8 +346,8 @@ module TrainingZones
           "Resting heart rate (#{hr_rest}) must be lower than maximum heart rate (#{hr_max})"
   end
 
-  def intensity(pct, vo2max)
-    pct == :race_pace ? marathon_race_intensity(vo2max) : pct
+  def fast_intensity(zone, band, vo2max)
+    PREDICTED_RACE_PACE_ZONES.include?(zone) ? marathon_race_intensity(vo2max) : band[:high]
   end
 
   # Fraction of VO2max a runner holds at the VDOT-predicted marathon pace.

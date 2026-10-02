@@ -86,6 +86,26 @@ class TestTrainingZones < CalcpaceTest
     end
   end
 
+  def test_training_intensities_stay_numeric
+    TrainingZones::TRAINING_INTENSITIES.each_value do |band|
+      assert_kind_of Numeric, band[:low]
+      assert_kind_of Numeric, band[:high]
+    end
+    assert_in_delta 0.84, TrainingZones::TRAINING_INTENSITIES[:marathon][:high], 0.0
+  end
+
+  def test_marathon_is_the_zone_whose_fast_end_is_the_predicted_race_pace
+    assert_equal %i[marathon], TrainingZones::PREDICTED_RACE_PACE_ZONES
+  end
+
+  def test_marathon_and_threshold_bands_do_not_overlap_below_vo2max_sixty_nine
+    (30..69).each do |vo2|
+      zones = @calc.training_paces(vo2)
+
+      assert_operator zones[:marathon].fast_seconds, :>=, zones[:threshold].slow_seconds, "VO2 #{vo2}"
+    end
+  end
+
   def test_marathon_band_works_outside_the_vdot_prediction_range
     # predict_time_from_vo2max supports 10–100; outside it the race-pace
     # intensity of the nearest bound is used
