@@ -301,10 +301,24 @@ Summary of the other models:
   - `vo2max_percentile(value, age:, sex:)` — linearly interpolated percentile,
     bounded to the table's 5–95. Ages 18–19 use the 20–29 row and 80+ the
     70–79 row; under 18 is rejected.
-- New public constants: `CameronPredictor::CAMERON_MAX_DISTANCE_KM`,
-  `EnvironmentalAdjuster::REFERENCE_HUMIDITY`,
-  `EnvironmentalAdjuster::HEAT_DURATION_FACTORS` and
-  `TrainingZones::PREDICTED_RACE_PACE_ZONES`.
+- New public constants (removed ones are under Breaking):
+  - `CameronPredictor`: `CAMERON_CONSTANT`, `CAMERON_LINEAR_COEFFICIENT`,
+    `CAMERON_POWER_COEFFICIENT`, `CAMERON_POWER_EXPONENT`,
+    `CAMERON_MAX_DISTANCE_KM`.
+  - `Checker::CLOCK_FORMAT` — the clock grammar every time string is read with.
+  - `EnvironmentalAdjuster`: `HEAT_DURATION_FACTORS`, `REFERENCE_HUMIDITY`, and
+    the `EnvironmentalAdjuster::Humidity` module with `REFERENCE_HUMIDITY`,
+    `WBGT_TEMPERATURE_COEFFICIENT`, `WBGT_VAPOUR_PRESSURE_COEFFICIENT`,
+    `MIN_DEW_POINT_CELSIUS`, `BRACKET_CELSIUS` and `BISECTION_STEPS`.
+  - `GradeAdjustedPace`: `MINETTI_RUNNING_COEFFICIENTS`, `MINETTI_GRADE_RANGE`.
+  - `PersonalizedPredictor`: `TANDA_INTERCEPT`, `TANDA_VOLUME_AMPLITUDE`,
+    `TANDA_VOLUME_DECAY`, `TANDA_PACE_SLOPE`, `TANDA_MARATHON_KM`,
+    `TANDA_WEEKLY_DISTANCE_RANGE_KM`, `TANDA_TRAINING_PACE_RANGE_SECONDS_PER_KM`,
+    `TANDA_MARATHON_TIME_RANGE_SECONDS`, `PERSONAL_EXPONENT_RANGE`.
+  - `TrackCalculator`: `GRADE_SEGMENT_MIN_KM`, `GRADE_SEGMENT_TOLERANCE_KM`.
+  - `TrainingZones::PREDICTED_RACE_PACE_ZONES`.
+  - `Vo2maxNorms`: `NORMS_DATA_PATH`, `VO2MAX_NORMS`, `VO2MAX_NORMS_VERSION`,
+    `VO2MAX_NORM_PERCENTILES`, `VO2MAX_PERCENTILE_LABELS`.
 
 ### Fixed
 - `check_positive` let `Float::INFINITY` through, so every method guarded by it
@@ -982,7 +996,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v1.18.1...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/0jonjo/calcpace/compare/v1.18.1...v2.0.0
 [1.18.1]: https://github.com/0jonjo/calcpace/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/0jonjo/calcpace/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/0jonjo/calcpace/compare/v1.16.0...v1.17.0
