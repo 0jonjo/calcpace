@@ -11,6 +11,17 @@ module EnvironmentalAdjuster
   DATA_PATH = File.expand_path('data/environmental_factors.yml', __dir__).freeze
   FACTORS = YAML.safe_load_file(DATA_PATH, permitted_classes: [], aliases: false).freeze
 
+  # Heat duration scaling: [minutes, factor] points, joined by straight lines
+  # and flat outside the first and last point. The base heat penalty in
+  # environmental_factors.yml is for a 60-minute effort (factor 1.0).
+  # Rule based on Matthew Ely (2007) heat degradation curve.
+  HEAT_DURATION_FACTORS = [
+    [30.0, 0.5],
+    [60.0, 1.0],
+    [180.0, 3.0],
+    [240.0, 4.5]
+  ].freeze
+
   # Calculates the performance penalty percentage for given environmental conditions
   #
   # @param temperature [Numeric, nil] ambient temperature
@@ -89,23 +100,11 @@ module EnvironmentalAdjuster
   def duration_factor(time_seconds)
     return 1.0 if time_seconds.nil?
 
-    minutes = time_seconds / 60.0
+    minutes = (time_seconds / 60.0).clamp(HEAT_DURATION_FACTORS.first.first, HEAT_DURATION_FACTORS.last.first)
+    (from_minutes, from_factor), (to_minutes, to_factor) =
+      HEAT_DURATION_FACTORS.each_cons(2).find { |_, (upper, _)| minutes <= upper }
 
-    # Rule based on Matthew Ely (2007) heat degradation curve.
-    # Scaled for piecewise linear interpolation to avoid jumps.
-    if minutes <= 30
-      0.5
-    elsif minutes <= 60
-      # Scale from 0.5x (30m) up to 1.0x (60m)
-      0.5 + (((minutes - 30.0) / 30.0) * 0.5)
-    elsif minutes <= 180
-      # Scale from 1.0x (60m) up to 3.0x (180m / 3h)
-      1.0 + (((minutes - 60.0) / 120.0) * 2.0)
-    else
-      # Scale from 3.0x (3h) up to 4.5x (4h)
-      capped_minutes = [minutes, 240.0].min
-      3.0 + (((capped_minutes - 180.0) / 60.0) * 1.5)
-    end
+    from_factor + (((minutes - from_minutes) / (to_minutes - from_minutes)) * (to_factor - from_factor))
   end
 
   def normalize_temperature(temp, unit)
