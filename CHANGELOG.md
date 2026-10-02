@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Humidity in the heat penalty.** `calculate_penalty` — and therefore
+  `adjust_time`, `normalize_time`, `predict_time_adjusted` and
+  `predict_time_cameron_adjusted`, which forward their options — accepts
+  `humidity:` (relative humidity, 0–100 %) or `dew_point:` (in
+  `temperature_unit`). 30 °C dry and 30 °C at 80% (typical of coastal Brazil)
+  used to get the same penalty. The temperature is replaced by an effective
+  temperature: the air temperature that, at `REFERENCE_HUMIDITY` (50%), has the
+  same simplified WBGT (Australian Bureau of Meteorology:
+  `WBGT = 0.567·Ta + 0.393·e + 3.94`, `e` = vapour pressure in hPa) as the real
+  temperature and humidity. The existing heat curve and the
+  `base(temperature) × duration_factor(seconds)` shape are untouched, and
+  `humidity: 50` gives exactly the temperature-only numbers. 50% is the
+  humidity at which that WBGT equals the air temperature between 20 °C and
+  35 °C (51–56%), which is how the temperature points — calibrated on Ely et
+  al.'s WBGT figures — already read. `factors` gains
+  `:effective_temperature_celsius` when humidity or dew point is given.
+  `ArgumentError` for humidity outside 0–100 or non-numeric, a dew point above
+  the temperature, both keywords together, or either without a temperature.
+
+  | 30 °C at | Effective temperature | 60 min | 4 h |
+  | --- | --- | --- | --- |
+  | 30% RH | 26.69 °C | 5.04% | 17.64% |
+  | 50% RH (= no humidity) | 30.0 °C | 6.5% | 22.75% |
+  | 70% RH | 33.07 °C | 7.85% | 27.48% |
+  | 90% RH | 35.94 °C | 9.11% | 31.89% |
+
 ### Changed (numbers)
 Four models produced unrealistic numbers. The method names, signatures, return
 shapes and the structure of `environmental_factors.yml` are unchanged; only the
@@ -43,7 +70,46 @@ above 100 km (see Breaking).
 - **Heat above 30 °C keeps increasing.** 35 °C and 40 °C used to get the same
   penalty as 30 °C. Two points extrapolate the 25→30 °C slope (0.44 points/°C):
   35 °C → 8.7% and 40 °C → 10.9% at the 60-minute baseline (capped at 40 °C).
-  The ideal range and the duration scaling are unchanged.
+  The ideal range is unchanged.
+- **Heat penalty grows less between 3 h and 4 h.** The duration factor went
+  from 3.0× at 3 h to 4.5× at 4 h (+50% heat penalty for one more hour); it now
+  ends at 3.5× at 4 h and stays flat after. El Helou et al. (2012, PLoS One,
+  1.8 million finishers, Table S3) give, against the optimum temperature,
+  8.45% at 20 °C and 16.9% at 25 °C for the men's median (~3:58) — 3.0× and
+  3.9× the 60-minute base — and no more for the men's Q3 (~4:28); 4.5× was
+  above every group, men or women. The 3 h anchor (Ely et al. 2007: ~9% for a
+  3 h runner at 20 °C WBGT) and everything up to 3 h are unchanged. The
+  duration points now live in `EnvironmentalAdjuster::HEAT_DURATION_FACTORS`;
+  `duration_factor(time_seconds)` keeps its name and signature.
+
+  | Heat penalty (%) | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 20 °C | 1.4 | 2.8 | 5.6 | 8.4 | 12.6 → 9.8 | 12.6 → 9.8 |
+  | 25 °C | 2.15 | 4.3 | 8.6 | 12.9 | 19.35 → 15.05 | 19.35 → 15.05 |
+  | 30 °C | 3.25 | 6.5 | 13.0 | 19.5 | 29.25 → 22.75 | 29.25 → 22.75 |
+  | 35 °C | 4.35 | 8.7 | 17.4 | 26.1 | 39.15 → 30.45 | 39.15 → 30.45 |
+  | 40 °C | 5.45 | 10.9 | 21.8 | 32.7 | 49.05 → 38.15 | 49.05 → 38.15 |
+
+  (35 °C and 40 °C columns compare against the extrapolated points above; in
+  1.18.1 both were capped at the 30 °C values.)
+- **The marathon pace band ends at the runner's predicted marathon pace.**
+  Daniels' M pace is the predicted marathon race pace, but
+  `training_paces(50)[:marathon]` ran from 4:50 to 4:25/km (75–84% VO2max)
+  while the VDOT marathon prediction for VO2max 50 is 3:10:39, 4:31/km. The
+  fast end now comes from `predict_time_from_vo2max(vo2max, 'marathon')`
+  (about 80–83% VO2max); the slow end stays at 75%. The prediction covers
+  VO2max 10–100, and beyond it the race-pace fraction of the nearest bound
+  is used, so `training_paces` still accepts any positive VO2max.
+  `TRAINING_INTENSITIES[:marathon][:high]` is now `:race_pace` instead of
+  `0.84`.
+
+  | VO2max | M band before | M band after | Predicted marathon pace |
+  | --- | --- | --- | --- |
+  | 30 | 7:15–6:38/km | 7:15–6:52/km | 6:52/km |
+  | 40 | 5:47–5:17/km | 5:47–5:27/km | 5:27/km |
+  | 50 | 4:50–4:25/km | 4:50–4:31/km | 4:31/km |
+  | 60 | 4:11–3:49/km | 4:11–3:52/km | 3:52/km |
+  | 70 | 3:41–3:22/km | 3:41–3:24/km | 3:24/km |
 
 | Case | Before (1.18.1) | After |
 | --- | --- | --- |
@@ -58,8 +124,11 @@ above 100 km (see Breaking).
 | Altitude 3600 m | 5.9% | 10.42% |
 | Heat 35 °C, 60 min | 6.5% | 8.7% |
 | Heat 40 °C, 60 min | 6.5% | 10.9% |
-| Heat 35 °C, 4 h | 29.25% | 39.15% |
-| Heat 40 °C, 4 h | 29.25% | 49.05% |
+| Heat 25 °C, 4 h | 19.35% | 15.05% |
+| Heat 30 °C, 4 h | 29.25% | 22.75% |
+| Heat 35 °C, 4 h | 29.25% | 30.45% |
+| Heat 40 °C, 4 h | 29.25% | 38.15% |
+| Marathon band, VO2max 50 | 4:50–4:25/km | 4:50–4:31/km |
 | Splits marathon 3:00:00 `:negative` (halves) | 1:33:36 + 1:26:24 | 1:30:54 + 1:29:06 |
 | Splits marathon 3:00:00 `:positive` (halves) | 1:26:24 + 1:33:36 | 1:29:06 + 1:30:54 |
 

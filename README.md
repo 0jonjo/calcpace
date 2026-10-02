@@ -37,15 +37,41 @@ calc.checked_distance('01:21:32', '00:06:27') # => 12.64
 
 ### Environmental Performance Adjustments
 
-Adjust race performance based on heat and altitude. Calculations are based on scientific models
-(Matthew Ely 2007 for heat, NCAA standards for altitude).
+Adjust race performance based on heat, humidity and altitude. Calculations are based on scientific models
+(Ely et al. 2007 and El Helou et al. 2012 for heat, the Australian Bureau of Meteorology's
+simplified WBGT for humidity, NCAA standards for altitude).
 
 - **Altitude**: no penalty up to 300 m, then a linear ramp to the first NCAA point
   (914.4 m → 1.41%), the NCAA table up to 2438.4 m (5.90%), and an extrapolated
   curve beyond it (3000 m → 7.92%, 3500 m → 9.97%, 4000 m → 12.2%, capped there).
   São Paulo (760 m) gets ~1.06%.
 - **Heat**: 60-minute baseline from 15 °C (0%) to 30 °C (6.5%), extrapolated to
-  35 °C (8.7%) and 40 °C (10.9%, capped there), then scaled by effort duration.
+  35 °C (8.7%) and 40 °C (10.9%, capped there), then scaled by effort duration:
+  0.5× up to 30 min, 1.0× at 60 min, 3.0× at 3 h, 3.5× at 4 h and beyond
+  (linear in between).
+- **Humidity** (optional): pass `humidity:` (relative humidity, %) or
+  `dew_point:` (in `temperature_unit`). Without either, the heat curve assumes
+  50% humidity. With one, the temperature is replaced by the effective
+  temperature that has the same simplified WBGT (`0.567·Ta + 0.393·e + 3.94`)
+  at 50% humidity, and `factors` reports it as `:effective_temperature_celsius`.
+
+| Heat penalty (%) | 20 min | 60 min | 120 min | 180 min | 240 min | 300 min |
+| --- | --- | --- | --- | --- | --- | --- |
+| 20 °C | 1.4 | 2.8 | 5.6 | 8.4 | 9.8 | 9.8 |
+| 25 °C | 2.15 | 4.3 | 8.6 | 12.9 | 15.05 | 15.05 |
+| 30 °C | 3.25 | 6.5 | 13.0 | 19.5 | 22.75 | 22.75 |
+| 35 °C | 4.35 | 8.7 | 17.4 | 26.1 | 30.45 | 30.45 |
+| 40 °C | 5.45 | 10.9 | 21.8 | 32.7 | 38.15 | 38.15 |
+
+| 30 °C at | Effective temperature | 60 min | 4 h |
+| --- | --- | --- | --- |
+| 30% RH | 26.69 °C | 5.04% | 17.64% |
+| 50% RH (= no humidity) | 30.0 °C | 6.5% | 22.75% |
+| 70% RH | 33.07 °C | 7.85% | 27.48% |
+| 90% RH | 35.94 °C | 9.11% | 31.89% |
+
+Above ~30 °C (and above ~25 °C for 4 h+) the numbers are extrapolations: the
+marathon studies behind the curve have little or no data there.
 
 ```ruby
 # Calculate penalty for 25°C and 2000m altitude (Defaults to 60-min effort)
@@ -59,14 +85,19 @@ penalty = calc.calculate_penalty(temperature: 25, altitude: 2000)
 calc.calculate_penalty(temperature: 80, temperature_unit: :f)
 # => { total_penalty_percent: 5.03, ... }
 
+# Humidity: 30 °C at 90% hits like 35.94 °C at 50%
+calc.calculate_penalty(temperature: 30, humidity: 90)[:total_penalty_percent]  # => 9.11
+calc.calculate_penalty(temperature: 30, humidity: 90)[:factors][:effective_temperature_celsius]  # => 35.94
+calc.calculate_penalty(temperature: 86, dew_point: 77, temperature_unit: :f)[:total_penalty_percent]  # => 8.15
+
 # Adjust a 3:30 marathon time (12600s) for these conditions (High exposure penalty)
 result = calc.adjust_time(12600, temperature: 25, altitude: 2000)
 # => {
 #      original_time: 12600,
-#      adjusted_time: 15176.7,
-#      adjusted_time_clock: "04:12:56",
-#      penalty_percent: 20.45,
-#      factors: { heat: 16.13, altitude: 4.32 }
+#      adjusted_time: 14905.8,
+#      adjusted_time_clock: "04:08:25",
+#      penalty_percent: 18.3,
+#      factors: { heat: 13.98, altitude: 4.32 }
 #    }
 
 # Predicted adjusted times (Riegel formula)
@@ -75,7 +106,7 @@ calc.predict_time_adjusted('5k', '00:20:00', '10k', temperature: 28)
 
 # Predicted adjusted times (Cameron formula)
 calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 80, temperature_unit: :f)
-# => { adjusted_time: 13045.91, adjusted_time_clock: "03:37:25", penalty_percent: 16.02, ... }
+# => { adjusted_time: 12976.19, adjusted_time_clock: "03:36:16", penalty_percent: 15.4, ... }
 ```
 
 ---
@@ -423,6 +454,7 @@ Personalized training paces (Daniels' Running Formula) and Karvonen heart-rate z
 zones = calc.training_paces(50.0)
 zones[:threshold].fast_clock   # => "00:04:15" per km
 zones[:easy].slow_clock        # => "00:05:52" per km
+zones[:marathon].fast_clock    # => "00:04:31" per km (the VDOT-predicted marathon pace)
 
 calc.training_paces(50.0, unit: :mi)[:threshold].fast_clock  # => "00:06:51" per mile
 
@@ -441,13 +473,17 @@ calc.hr_zones_from_max(hr_max: 190)
 | Zone | %VO2max | Purpose |
 |------|---------|---------|
 | Easy | 59–74% | Base building, recovery |
-| Marathon | 75–84% | Marathon race pace |
+| Marathon | 75% – predicted marathon pace (~80–83%) | Marathon race pace |
 | Threshold | 83–88% | Lactate threshold, tempo runs |
 | Interval | 95–100% | VO2max development |
 | Repetition | 105–110% | Speed and running economy |
 
 Pace accuracy vs published VDOT tables: within a few seconds per km
-(threshold matches exactly; easy band is a range heuristic).
+(threshold matches exactly; easy band is a range heuristic). The fast end of the
+marathon band is the marathon pace `predict_time_from_vo2max` gives for the same
+VO2max (Daniels' M pace is the predicted marathon race pace); that prediction
+covers VO2max 10–100, and outside it the race-pace intensity of the nearest bound
+is used.
 
 `unit:` sets the unit of the returned pace bands; `distance_unit:` sets the unit of a
 numeric race distance you pass in. Combining `distance_unit:` with a race name raises
