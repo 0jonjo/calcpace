@@ -8,9 +8,10 @@
 #
 # Table 3, "Sex-Specific Percentiles for CRF From Treadmill Exercise Tests With
 # Measured VO2max Obtained From FRIEND [...]", rows "Men from FRIEND" and
-# "Women from FRIEND". 7,783 apparently healthy US adults (4,611 men, 3,172
-# women) free of known cardiovascular disease, VO2max measured by
-# cardiopulmonary exercise testing (not predicted).
+# "Women from FRIEND". 7,783 treadmill tests (4,611 on men, 3,172 on women)
+# on US adults free of known cardiovascular disease (Table 3 footnote; the
+# paper notes some had other conditions, e.g. diabetes or obesity), VO2max
+# measured by cardiopulmonary exercise testing (not predicted).
 #
 # The same Table 3 also reproduces the Cooper Clinic percentiles as printed in
 # ACSM's Guidelines for Exercise Testing and Prescription, 9th ed. (2014),

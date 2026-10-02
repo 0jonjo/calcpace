@@ -111,7 +111,8 @@ module Vo2maxEstimator
   # 60-year-old woman.
   #
   # @param value [Numeric] VO2max in ml/kg/min
-  # @param age [Integer, nil] age in years (18 or over); give it with sex
+  # @param age [Integer, nil] age in years (18 or over, a fractional age is
+  #   truncated); give it with sex
   # @param sex [String, Symbol, nil] male or female; give it with age
   # @return [String] label: "Beginner", "Fair", "Good", "Very Good", "Excellent", or "Elite"
   # @raise [Calcpace::NonPositiveInputError] if value is not positive

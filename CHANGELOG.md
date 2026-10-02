@@ -17,11 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `track_splits` splits with a `:gap` pace per split, computed segment by
   segment from `:ele`. Grades are measured over segments of at least 100 m of
   horizontal distance so GPS elevation noise does not become fake climbing;
-  stretches without `:ele` are flat. `track_splits` output is unchanged.
+  stretches without `:ele` (or with a non-finite one), and stretches with
+  elevation too short to grade, are flat. `track_splits` output is unchanged.
 - VO2max norms by age and sex from the FRIEND registry (Kaminsky, Arena &
   Myers, Mayo Clin Proc 2015;90(11):1515–1523, Table 3: treadmill, measured
   VO2max), stored in `lib/calcpace/data/friend_2015_vo2max_percentiles.yml`:
-  - `vo2max_label(value, age:, sex:)` — optional keywords; with both, the
+  - `vo2max_label(value, age: nil, sex: nil)` — optional keywords; with both, the
     label comes from the percentile among the same sex and age decade (≥95th
     Elite, ≥90th Excellent, ≥75th Very Good, ≥50th Good, ≥25th Fair, else
     Beginner). Without them the fixed thresholds and labels are unchanged.

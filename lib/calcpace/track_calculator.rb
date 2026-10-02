@@ -182,8 +182,12 @@ module TrackCalculator
   #   elevation change over its length. A leftover shorter than that at the end
   #   of a stretch is merged into the segment before it. Grades are clamped to
   #   ±45%, the range the model was measured on.
-  # - A stretch between points without :ele is flat (factor 1.0), and a missing
-  #   :ele ends the grade segment in progress.
+  # - A stretch between points without :ele (or with a NaN/infinite one) is
+  #   flat (factor 1.0), and a missing :ele ends the grade segment in progress.
+  #   A stretch with elevation shorter than one grade segment and with no full
+  #   segment before it to join — or a whole track that short — is flat too.
+  # - Distances are the horizontal (Haversine) ones; the factor is applied to
+  #   them as is, without the √(1 + grade²) slope correction (0.5% at 10%).
   # - Each split's distance is weighted by the grade factor of the segments it
   #   covers, and :gap is the split's time over that flat-equivalent distance.
   #   A split on flat ground, or with no elevation data, has :gap equal to :pace.
@@ -314,15 +318,21 @@ module TrackCalculator
               accumulated_km: 0.0, split_number: 1, compact: compact,
               grade_factors: grade_factors, flat_equivalent_km: 0.0 }
 
-    points.each_cons(2).with_index { |(a, b), index| process_segment(a, b, split_km, state, index) }
+    if grade_factors
+      points.each_cons(2).with_index { |(a, b), index| process_segment(a, b, split_km, state, index) }
+    else
+      points.each_cons(2) { |a, b| process_segment(a, b, split_km, state) }
+    end
     append_partial_split(points.last, split_km, state)
     state[:splits]
   end
 
-  def process_segment(point_a, point_b, split_km, state, index)
+  # index is only given, and the segment only tracked, when computing :gap —
+  # track_splits keeps its original per-segment cost
+  def process_segment(point_a, point_b, split_km, state, index = nil)
     segment_km = segment_distance_km(point_a, point_b)
     state[:accumulated_km] += segment_km
-    state[:segment] = { km: segment_km, assigned_km: 0.0, factor: state[:grade_factors]&.fetch(index) }
+    state[:segment] = { assigned_km: 0.0, factor: state[:grade_factors].fetch(index) } if index
 
     while state[:accumulated_km] >= split_km * state[:split_number]
       record_split(point_a, point_b, segment_km, split_km, state)
@@ -373,8 +383,9 @@ module TrackCalculator
   # Adds the flat-equivalent distance of the current segment up to
   # distance_into_segment, for the part not yet credited to an earlier split
   def accumulate_flat_equivalent(state, distance_into_segment)
+    return unless state[:grade_factors]
+
     segment = state[:segment]
-    return unless segment[:factor]
 
     state[:flat_equivalent_km] += (distance_into_segment - segment[:assigned_km]) * segment[:factor]
     segment[:assigned_km] = distance_into_segment
@@ -406,8 +417,8 @@ module TrackCalculator
   end
 
   def extend_grade_window(window, factors, point_a, point_b, index)
-    ele_a = fetch_ele(point_a)
-    ele_b = fetch_ele(point_b)
+    ele_a = finite_ele(point_a)
+    ele_b = finite_ele(point_b)
     if ele_a.nil? || ele_b.nil?
       close_grade_window(window, factors, final: true)
       return new_grade_window
@@ -420,6 +431,12 @@ module TrackCalculator
     new_grade_window(window.except(:previous))
   end
 
+  # Grade segments treat a NaN or infinite elevation like a missing one
+  def finite_ele(point)
+    ele = fetch_ele(point)
+    ele if ele&.finite?
+  end
+
   def add_to_grade_window(window, index, segment_km, ele_a, ele_b)
     window[:start_ele] ||= ele_a
     window[:end_ele] = ele_b
@@ -428,18 +445,20 @@ module TrackCalculator
   end
 
   # A full window gets its own grade. A short leftover — the end of the track
-  # or of a stretch with elevation — is merged into the full window before it,
-  # when there is one, rather than graded on its own over a few noisy metres.
+  # or of a stretch with elevation — is merged into the full window before it;
+  # with no full window before it (a stretch shorter than a grade segment
+  # between missing elevations, or a whole track that short) it stays flat
+  # rather than being graded over a few noisy metres.
   def close_grade_window(window, factors, final:)
     return if window[:indexes].empty?
 
-    window = merge_grade_windows(window[:previous], window) if final && short_with_previous?(window)
+    unless full_grade_window?(window)
+      return unless final && window[:previous]
+
+      window = merge_grade_windows(window[:previous], window)
+    end
     factor = grade_adjustment_factor(window_grade(window))
     window[:indexes].each { |index| factors[index] = factor }
-  end
-
-  def short_with_previous?(window)
-    !full_grade_window?(window) && window[:previous]
   end
 
   def full_grade_window?(window)

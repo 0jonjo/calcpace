@@ -214,6 +214,35 @@ class TestGradeAdjustedPace < CalcpaceTest
     assert_equal second[:pace], second[:gap]
   end
 
+  # Every third fix without altitude leaves 20 m stretches with elevation:
+  # too short to grade, with no full segment before them to join, so they are
+  # flat rather than read as ±20% from 2 m of jitter
+  def test_short_isolated_stretches_with_elevation_are_flat
+    points = build_track(distance_m: 3000, ele: ->(m) { 100 + (2.0 * Math.sin(m * 1.7)) })
+    points.each_with_index { |point, i| point.delete(:ele) if (i % 3) == 2 }
+
+    @calc.track_grade_adjusted_splits(points, 1.0).each do |split|
+      assert_equal split[:pace], split[:gap]
+    end
+  end
+
+  def test_track_shorter_than_one_grade_segment_is_flat
+    points = build_track(distance_m: 50, ele: ->(m) { 100 + (0.1 * m) })
+    split = @calc.track_grade_adjusted_splits(points, 1.0).first
+
+    assert_equal split[:pace], split[:gap]
+  end
+
+  def test_non_finite_elevation_counts_as_missing
+    points = build_track(distance_m: 2000)
+    points[50][:ele] = Float::NAN
+    points[120][:ele] = Float::INFINITY
+
+    @calc.track_grade_adjusted_splits(points, 1.0).each do |split|
+      assert_equal split[:pace], split[:gap]
+    end
+  end
+
   def test_string_keys_are_accepted
     points = build_track(distance_m: 1000, ele: ->(m) { 100 + (0.05 * m) })
              .map { |point| point.transform_keys(&:to_s) }

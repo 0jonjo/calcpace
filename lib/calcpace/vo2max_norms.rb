@@ -7,7 +7,8 @@ require_relative 'errors'
 #
 # Uses the FRIEND registry (Fitness Registry and the Importance of Exercise
 # National Database) percentiles of VO2max measured by cardiopulmonary
-# exercise testing on a treadmill in 7,783 apparently healthy US adults:
+# exercise testing in 7,783 treadmill tests on US adults free of known
+# cardiovascular disease:
 #
 #   Kaminsky, L. A., Arena, R., & Myers, J. (2015). Reference Standards for
 #   Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing:
@@ -70,11 +71,12 @@ module Vo2maxNorms
   #   percentile, 95.0 at or above the 95th.
   #
   # @param value [Numeric] VO2max in ml/kg/min
-  # @param age [Integer] age in years (18 or over)
+  # @param age [Integer] age in years (18 or over; a fractional age is
+  #   truncated, as in AgeGrading)
   # @param sex [String, Symbol] male or female
   # @return [Float] percentile between 5.0 and 95.0, rounded to one decimal
   # @raise [Calcpace::NonPositiveInputError] if value is not positive
-  # @raise [ArgumentError] if age is under 18 or not an integer, or sex is not male/female
+  # @raise [ArgumentError] if age is under 18 or not a number, or sex is not male/female
   #
   # @example
   #   calc.vo2max_percentile(48.0, age: 25, sex: :male)  #=> 50.0

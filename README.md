@@ -283,8 +283,12 @@ GAP    = pace / factor
   over **grade segments of at least 100 m** of horizontal distance — read
   between fixes a metre apart, ±2 m of jitter would be a ±400% grade. A short
   leftover at the end of a stretch joins the segment before it. Stretches
-  between points without `:ele` count as flat, so a track with no elevation
-  has `:gap` equal to `:pace`.
+  between points without `:ele` (or with a NaN/infinite one) count as flat,
+  so a track with no elevation has `:gap` equal to `:pace`; so does a stretch
+  with elevation shorter than 100 m that has no full segment before it to
+  join (between missing fixes, or a whole track that short).
+- Track distances are horizontal (Haversine), and the factor is applied to
+  them without the √(1 + grade²) slope-length correction — 0.5% at 10%.
 - `estimate_detailed_vo2max` keeps its own flat elevation heuristic (100 m of
   gain = 600 m of flat), so its numbers do not change.
 
@@ -397,6 +401,16 @@ calc.vo2max_label(51.9)  # => "Very Good"
 
 *Thresholds based on Daniels, J. (2014). Daniels' Running Formula (3rd ed.), consistent with ACSM guidelines and McArdle, Katch & Katch (2015) Exercise Physiology.*
 
+**Formula:**
+```
+velocity (m/min) = distance_m / time_min
+VO2              = −4.60 + 0.182258·v + 0.000104·v²
+%VO2max          = 0.8 + 0.1894393·e^(−0.012778·t) + 0.2989558·e^(−0.1932605·t)
+VO2max           = VO2 / %VO2max
+```
+
+Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
+
 #### By age and sex
 
 The fixed thresholds above are the same for everyone. Give `vo2max_label` an
@@ -438,17 +452,7 @@ calc.vo2max_percentile(45, age: 60, sex: :male)    # => 95.0
 - The registry measured VO2max in a lab; a VO2max estimated from a race time
   carries its own ±3–5 ml/kg/min on top.
 
-*Kaminsky, L. A., Arena, R., & Myers, J. (2015). Reference Standards for Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing: Data From the Fitness Registry and the Importance of Exercise National Database. Mayo Clinic Proceedings, 90(11), 1515–1523, Table 3 (rows "Men/Women from FRIEND"; 7,783 adults free of known cardiovascular disease). https://doi.org/10.1016/j.mayocp.2015.07.026. The same table also lists the Cooper Clinic norms printed in ACSM's Guidelines for Exercise Testing and Prescription (9th ed., 2014); those are predicted from treadmill time rather than measured, and are not used here.*
-
-**Formula:**
-```
-velocity (m/min) = distance_m / time_min
-VO2              = −4.60 + 0.182258·v + 0.000104·v²
-%VO2max          = 0.8 + 0.1894393·e^(−0.012778·t) + 0.2989558·e^(−0.1932605·t)
-VO2max           = VO2 / %VO2max
-```
-
-Accuracy: ±3–5 ml/kg/min vs. laboratory testing. Best with efforts between **5 and 60 minutes** at near-maximal pace.
+*Kaminsky, L. A., Arena, R., & Myers, J. (2015). Reference Standards for Cardiorespiratory Fitness Measured With Cardiopulmonary Exercise Testing: Data From the Fitness Registry and the Importance of Exercise National Database. Mayo Clinic Proceedings, 90(11), 1515–1523, Table 3 (rows "Men/Women from FRIEND"; 7,783 treadmill tests on adults free of known cardiovascular disease). https://doi.org/10.1016/j.mayocp.2015.07.026. The same table also lists the Cooper Clinic norms printed in ACSM's Guidelines for Exercise Testing and Prescription (9th ed., 2014); those are predicted from treadmill time rather than measured, and are not used here.*
 
 #### Contextualized estimation
 
