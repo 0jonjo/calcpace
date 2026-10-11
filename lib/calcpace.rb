@@ -64,7 +64,6 @@ class Calcpace
   include StrideCalculator
   include TrackCalculator
   include TrainingZones
-  include Vo2maxEffort
   include Vo2maxEstimator
   include Vo2maxNorms
 

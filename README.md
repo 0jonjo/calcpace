@@ -656,7 +656,7 @@ The formula assumes an all-out effort, and duration is only a proxy for that. Wh
 | `:easy` | Could talk freely | `:low` | `true` |
 | `:moderate` | Short sentences, still comfortable | `:low` | `true` |
 | `:hard` | A few words at a time | duration and heart-rate rules, as without `effort:` | |
-| `:max` | Everything I had: a race or a test | `:high` from 5 min on, however long it took | `false` |
+| `:max` | Everything I had: a race or a test | `:high` from 5 min on, however long it took (unless HR < 85 %) | `false` (unless HR < 85 %) |
 | `nil` (default) | — | exactly as in 2.0.0 | |
 
 ```ruby

@@ -14,6 +14,8 @@
 # Accuracy: ±3–5 ml/kg/min vs laboratory testing. Best results with efforts
 # between 5 and 60 minutes at race pace (i.e. near-maximal effort).
 module Vo2maxEstimator
+  include Vo2maxEffort
+
   # Classification thresholds based on:
   # Daniels, J. (2014). Daniels' Running Formula (3rd ed.). Human Kinetics.
   # General ranges are consistent with ACSM guidelines and widely cited in
@@ -63,6 +65,10 @@ module Vo2maxEstimator
     (vo2 / pct_vo2max).round(1)
   end
 
+  # The public signature: every input is a keyword a caller already passes, and
+  # bundling them into an options object would break the 2.x API.
+  # rubocop:disable Metrics/ParameterLists
+
   # Estimates a detailed and contextualized VO2max
   #
   # Elevation is folded in with a flat heuristic — every 100 m of gain adds
@@ -95,9 +101,6 @@ module Vo2maxEstimator
   # @example a marathon run all-out
   #   calc.estimate_detailed_vo2max(42.195, '03:30:00').confidence               #=> :low
   #   calc.estimate_detailed_vo2max(42.195, '03:30:00', effort: :max).confidence #=> :high
-  # The public signature: every input is a keyword a caller already passes, and
-  # bundling them into an options object would break the 2.x API.
-  # rubocop:disable Metrics/ParameterLists
   def estimate_detailed_vo2max(distance, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil, distance_unit: :km,
                                effort: nil)
     effort = normalize_effort(effort)

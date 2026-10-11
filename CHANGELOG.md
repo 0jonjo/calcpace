@@ -19,7 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   2.0.0 rules. An unknown effort raises `Calcpace::InvalidEffortError`.
 - **`Vo2maxResult#basis`** — what set the confidence: `:declared`,
   `:heart_rate` or `:duration`. Added as the last member, so positional
-  construction is unchanged.
+  construction and reading the four existing members are unchanged. It is
+  always set, so it does show up in `==` (a result no longer equals a
+  four-member `Vo2maxResult.new(...)`), in `to_a`/`to_h` (five entries) and in
+  array patterns (`in [value, confidence, sub_maximal, adjusted]` no longer
+  matches; use a hash pattern or add a fifth element).
 
 Without `effort:` every result is the same as in 2.0.0.
 

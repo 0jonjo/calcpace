@@ -20,7 +20,7 @@ class Calcpace
     end
   end
 
-  # Raised when an effort is not one of Vo2maxEstimator::EFFORT_LEVELS
+  # Raised when an effort is not one of Vo2maxEffort::EFFORT_LEVELS
   class InvalidEffortError < Error
     def initialize(msg = 'Invalid effort. Valid efforts: :easy, :moderate, :hard, :max')
       super

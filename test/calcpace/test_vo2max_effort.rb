@@ -119,6 +119,23 @@ class TestVo2maxEffort < CalcpaceTest
     end
   end
 
+  def test_max_switches_to_declared_at_exactly_five_minutes
+    just_under = @calc.estimate_detailed_vo2max(1.2, 299, effort: :max)
+    at_five = @calc.estimate_detailed_vo2max(1.2, 300, effort: :max)
+
+    assert_equal [:low, false, :duration], verdict(just_under)
+    assert_equal [:high, false, :declared], verdict(at_five)
+  end
+
+  def test_effort_works_with_numeric_time_and_miles
+    km = @calc.estimate_detailed_vo2max(42.195, 12_600, effort: :max)
+    mi = @calc.estimate_detailed_vo2max(26.2188, 12_600, distance_unit: :mi, effort: :max)
+
+    assert_equal [:high, false, :declared], verdict(km)
+    assert_equal verdict(km), verdict(mi)
+    assert_in_delta km.value, mi.value, 0.1
+  end
+
   def test_heart_rate_still_overrules_a_declared_max
     EFFORTS.each_key do |effort_key|
       assert_equal [:low, true, :heart_rate], verdict(detailed(effort_key, :sub_maximal, effort: :max)),
@@ -150,8 +167,15 @@ class TestVo2maxEffort < CalcpaceTest
   end
 
   def test_rejects_an_unknown_effort_before_any_other_check
-    assert_raises(Calcpace::InvalidEffortError) do
-      @calc.estimate_detailed_vo2max(10.0, '00:40:00', hr_avg: 140, effort: :tempo)
+    [
+      [[10.0, '00:40:00'], { hr_avg: 140 }],
+      [[0, '00:40:00'], {}],
+      [[10.0, 'abc'], {}],
+      [[10.0, '00:40:00'], { distance_unit: :furlong }]
+    ].each do |args, kwargs|
+      assert_raises(Calcpace::InvalidEffortError, kwargs.inspect) do
+        @calc.estimate_detailed_vo2max(*args, **kwargs, effort: :tempo)
+      end
     end
   end
 
