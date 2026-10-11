@@ -645,6 +645,32 @@ easy.value        # => 29.3   (underestimates real aerobic capacity)
 > If you provide heart rate data, both `hr_avg` and `hr_max` must be present.
 > `elevation_gain_m` must be zero or positive.
 
+`result.basis` says what set the confidence: `:duration` (the table above), `:heart_rate` (average HR under 85 % of max) or `:declared` (the `effort:` below).
+
+#### Effort
+
+The formula assumes an all-out effort, and duration is only a proxy for that. When the runner knows how hard it was, pass `effort:` — one of `Calcpace::EFFORT_LEVELS`, easiest first (a Symbol or a String):
+
+| `effort` | How it felt | `confidence` | `sub_maximal` |
+|---|---|---|---|
+| `:easy` | Could talk freely | `:low` | `true` |
+| `:moderate` | Short sentences, still comfortable | `:low` | `true` |
+| `:hard` | A few words at a time | duration and heart-rate rules, as without `effort:` | |
+| `:max` | Everything I had: a race or a test | `:high` from 5 min on, however long it took | `false` |
+| `nil` (default) | — | exactly as in 2.0.0 | |
+
+```ruby
+calc.estimate_detailed_vo2max(42.195, '03:30:00').confidence                # => :low   (over 2 h)
+calc.estimate_detailed_vo2max(42.195, '03:30:00', effort: :max).confidence  # => :high  (a race says it was all-out)
+calc.estimate_detailed_vo2max(10.0, '00:55:00', effort: :easy).sub_maximal  # => true
+calc.estimate_detailed_vo2max(10.0, '00:55:00', effort: :easy).basis        # => :declared
+```
+
+- **The value never changes.** An easy run still gives the number the formula gives, which then reads as "at least this much"; only `confidence`, `sub_maximal` and `basis` move.
+- An easy or moderate effort is sub-maximal whatever the heart rate says. Heart rate under 85 % of max still overrules a declared `:max` (`basis: :heart_rate`), and a `:max` under five minutes keeps the duration rule, where the formula itself is unreliable.
+- Without heart rate, `:hard` and `:max` are not sub-maximal: nothing says they were.
+- An unknown effort raises `Calcpace::InvalidEffortError`.
+
 ---
 
 ### Training Zones

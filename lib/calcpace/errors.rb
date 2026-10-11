@@ -20,6 +20,13 @@ class Calcpace
     end
   end
 
+  # Raised when an effort is not one of Vo2maxEstimator::EFFORT_LEVELS
+  class InvalidEffortError < Error
+    def initialize(msg = 'Invalid effort. Valid efforts: :easy, :moderate, :hard, :max')
+      super
+    end
+  end
+
   # Raised when versioned/static gem data fails an internal consistency check
   class InvalidDataError < Error; end
 

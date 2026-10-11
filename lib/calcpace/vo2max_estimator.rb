@@ -28,7 +28,11 @@ module Vo2maxEstimator
   ].freeze
 
   # Represents a contextualized VO2max estimation result
-  Vo2maxResult = Struct.new(:value, :confidence, :sub_maximal, :adjusted_distance_km)
+  #
+  # basis names what set confidence and sub_maximal: :declared (the effort
+  # given), :heart_rate (average HR under 85 % of max) or :duration (the
+  # Daniels & Gilbert window alone)
+  Vo2maxResult = Struct.new(:value, :confidence, :sub_maximal, :adjusted_distance_km, :basis)
 
   # Estimates VO2max from a race performance using Daniels & Gilbert formula
   #
@@ -75,11 +79,28 @@ module Vo2maxEstimator
   # @param hr_avg [Numeric] average heart rate during the effort
   # @param hr_max [Numeric] athlete's maximum heart rate
   # @param distance_unit [Symbol] unit of the distance input — :km (default) or :mi
+  # @param effort [Symbol, String, nil] how hard the runner says it was, one of
+  #   Vo2maxEffort::EFFORT_LEVELS. It never changes the value, only how far it can be
+  #   trusted: :easy and :moderate make it sub-maximal and low confidence
+  #   whatever the duration or heart rate; :max makes it high confidence from
+  #   five minutes on, however long it took, unless heart rate says
+  #   sub-maximal; :hard and nil leave the duration and heart-rate rules as
+  #   they are.
   # @return [Vo2maxResult] structured result with value and metadata
   #   (adjusted_distance_km is always in kilometres)
   # @raise [Calcpace::NonPositiveInputError] if distance or time are not positive
   # @raise [Calcpace::UnsupportedUnitError] if distance_unit is not :km or :mi
-  def estimate_detailed_vo2max(distance, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil, distance_unit: :km)
+  # @raise [Calcpace::InvalidEffortError] if effort is not one of Vo2maxEffort::EFFORT_LEVELS
+  #
+  # @example a marathon run all-out
+  #   calc.estimate_detailed_vo2max(42.195, '03:30:00').confidence               #=> :low
+  #   calc.estimate_detailed_vo2max(42.195, '03:30:00', effort: :max).confidence #=> :high
+  # The public signature: every input is a keyword a caller already passes, and
+  # bundling them into an options object would break the 2.x API.
+  # rubocop:disable Metrics/ParameterLists
+  def estimate_detailed_vo2max(distance, time, elevation_gain_m: 0, hr_avg: nil, hr_max: nil, distance_unit: :km,
+                               effort: nil)
+    effort = normalize_effort(effort)
     distance_km = normalize_distance_km(distance, distance_unit)
     # Validated before the elevation adjustment, which would otherwise turn a
     # negative distance into a positive equivalent-flat one
@@ -87,18 +108,14 @@ module Vo2maxEstimator
 
     adj_dist_km = adjusted_distance_for_vo2(distance_km, elevation_gain_m)
     vo2max_val  = estimate_vo2max(adj_dist_km, time)
-    confidence  = calculate_time_confidence(parse_time_minutes(time))
+    time_min    = parse_time_minutes(time)
+    hr_data     = validate_and_analyze_hr(hr_avg, hr_max)
+    verdict     = effort_verdict(effort, time_min, duration_confidence: calculate_time_confidence(time_min),
+                                                   hr_sub_maximal: hr_data[:sub_maximal])
 
-    hr_data = validate_and_analyze_hr(hr_avg, hr_max)
-    confidence = :low if hr_data[:sub_maximal]
-
-    Vo2maxResult.new(
-      value: vo2max_val,
-      confidence: confidence,
-      sub_maximal: hr_data[:sub_maximal],
-      adjusted_distance_km: adj_dist_km.round(2)
-    )
+    Vo2maxResult.new(value: vo2max_val, adjusted_distance_km: adj_dist_km.round(2), **verdict)
   end
+  # rubocop:enable Metrics/ParameterLists
 
   # Returns a descriptive label for a given VO2max value
   #
