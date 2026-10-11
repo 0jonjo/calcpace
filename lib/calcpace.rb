@@ -20,6 +20,7 @@ require_relative 'calcpace/race_splits'
 require_relative 'calcpace/stride_calculator'
 require_relative 'calcpace/track_calculator'
 require_relative 'calcpace/training_zones'
+require_relative 'calcpace/vo2max_effort'
 require_relative 'calcpace/vo2max_estimator'
 require_relative 'calcpace/vo2max_norms'
 

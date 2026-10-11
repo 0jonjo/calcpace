@@ -28,6 +28,14 @@ class TestModuleComposition < CalcpaceTest
     assert_raises(Calcpace::NonPositiveInputError) { norms.vo2max_percentile(0, age: 25, sex: :male) }
   end
 
+  def test_vo2max_effort_works_included_alone
+    effort = Class.new { include Vo2maxEffort }.new
+
+    assert_equal({ confidence: :high, sub_maximal: false, basis: :declared },
+                 effort.send(:effort_verdict, :max, 240, duration_confidence: :low, hr_sub_maximal: false))
+    assert_raises(Calcpace::InvalidEffortError) { effort.send(:normalize_effort, :tempo) }
+  end
+
   def test_age_and_sex_rules_are_shared_by_age_grading_and_vo2max_norms
     assert_equal Checker, Calcpace.instance_method(:normalize_age).owner
     assert_equal Checker, Calcpace.instance_method(:normalize_sex).owner

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-11
+
+### Added
+- **`effort:` in `estimate_detailed_vo2max`** — how hard the runner says it
+  was, one of `EFFORT_LEVELS` (`:easy`, `:moderate`, `:hard`, `:max`; Symbol
+  or String, any case). The value is never changed; only how far it can be
+  trusted. `:easy`/`:moderate` → sub-maximal and `:low` whatever the duration
+  or heart rate; `:max` → `:high` from five minutes on however long it took,
+  unless average heart rate is under 85 % of max; `:hard` and `nil` → the
+  2.0.0 rules. An unknown effort raises `Calcpace::InvalidEffortError`.
+- **`Vo2maxResult#basis`** — what set the confidence: `:declared`,
+  `:heart_rate` or `:duration`. Added as the last member, so positional
+  construction and reading the four existing members are unchanged. It is
+  always set, so it does show up in `==` (a result no longer equals a
+  four-member `Vo2maxResult.new(...)`), in `to_a`/`to_h` (five entries) and in
+  array patterns (`in [value, confidence, sub_maximal, adjusted]` no longer
+  matches; use a hash pattern or add a fifth element).
+
+Without `effort:` every result is the same as in 2.0.0.
+
 ## [2.0.0] - 2026-10-02
 
 A major release. Four physiological models gave unrealistic numbers and now
@@ -1001,7 +1021,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/0jonjo/calcpace/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/0jonjo/calcpace/compare/v1.18.1...v2.0.0
 [1.18.1]: https://github.com/0jonjo/calcpace/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/0jonjo/calcpace/compare/v1.17.0...v1.18.0
