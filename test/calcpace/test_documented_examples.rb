@@ -2,7 +2,7 @@
 
 require_relative '../test_helper'
 
-# Runs the examples in the README and in the YARD docstrings and compares them
+# Runs the examples in the README, the usage guide (docs/) and the YARD docstrings and compares them
 # with what the library actually returns.
 #
 # This exists because discipline failed twice. v1.14.0 shipped after its README
@@ -79,11 +79,11 @@ class TestDocumentedExamples < CalcpaceTest
   end
 
   def documented_files
-    [File.join(ROOT, 'README.md')] + Dir[File.join(ROOT, 'lib/calcpace/**/*.rb')]
+    [File.join(ROOT, 'README.md')] + Dir[File.join(ROOT, 'docs/*.md')] + Dir[File.join(ROOT, 'lib/calcpace/**/*.rb')]
   end
 
   # The documented call, sent to a real Calcpace instance. What gets evaluated
-  # is a method call scraped from our own README and docstrings — never user
+  # is a method call scraped from our own README, usage guide and docstrings — never user
   # input — so `race_time(300, '5k')` becomes `calc.race_time(300, '5k')`.
   #
   # `calc` is a local here rather than the receiver of an instance_eval so that
