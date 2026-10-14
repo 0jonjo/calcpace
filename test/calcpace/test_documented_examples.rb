@@ -2,7 +2,7 @@
 
 require_relative '../test_helper'
 
-# Runs the examples in the README and in the YARD docstrings and compares them
+# Runs the examples in the README, the usage guide (docs/) and the YARD docstrings and compares them
 # with what the library actually returns.
 #
 # This exists because discipline failed twice. v1.14.0 shipped after its README
@@ -49,16 +49,16 @@ class TestDocumentedExamples < CalcpaceTest
   # would one that finds examples and then skips every one of them. Both numbers
   # are pinned: how many were found, and how many were actually compared.
   def test_the_scanner_finds_and_compares_a_known_number_of_examples
-    assert_operator documented_examples.size, :>=, 85,
+    assert_operator documented_examples.size, :>=, 150,
                     'the example scanner stopped finding examples — check EXAMPLE before trusting a green run'
 
     compared = documented_examples.count do |_file, _line, call, documented|
       evaluate(call) != :uncomparable && parse_expected(documented) != :uncomparable
     end
 
-    # 71 of 91 at the time of writing. The gap is deliberate: multi-line hash
+    # 125 of 155 at the time of writing (README + docs/USAGE.md + docstrings). The gap is deliberate: multi-line hash
     # results and examples that document a raise are not comparable this way.
-    assert_operator compared, :>=, 65,
+    assert_operator compared, :>=, 120,
                     "only #{compared} of #{documented_examples.size} examples were compared — " \
                     'this file is passing without checking what it claims to check'
   end
@@ -79,11 +79,11 @@ class TestDocumentedExamples < CalcpaceTest
   end
 
   def documented_files
-    [File.join(ROOT, 'README.md')] + Dir[File.join(ROOT, 'lib/calcpace/**/*.rb')]
+    [File.join(ROOT, 'README.md')] + Dir[File.join(ROOT, 'docs/*.md')] + Dir[File.join(ROOT, 'lib/calcpace/**/*.rb')]
   end
 
   # The documented call, sent to a real Calcpace instance. What gets evaluated
-  # is a method call scraped from our own README and docstrings — never user
+  # is a method call scraped from our own README, usage guide and docstrings — never user
   # input — so `race_time(300, '5k')` becomes `calc.race_time(300, '5k')`.
   #
   # `calc` is a local here rather than the receiver of an instance_eval so that
