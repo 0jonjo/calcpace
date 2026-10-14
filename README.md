@@ -4,8 +4,8 @@
 
 A Ruby gem for runners: pace, time, and distance calculations, unit conversions, race predictions (including personalized ones), GPS track analysis with grade-adjusted pace, heat, humidity and altitude adjustments, age grading, VO2max estimation and norms, and training zones.
 
-- **Sourced:** every model names the paper or table it comes from (Riegel, Cameron, Daniels & Gilbert, El Helou, Minetti, FRIEND, the 2025 age-grading tables), and the guide says where the published data ends and an extrapolation begins.
-- **Checked:** the examples in this README and in the [usage guide](docs/USAGE.md) run in the test suite, so a documented value is the value the code returns.
+- **Built on published models:** Riegel, Cameron, Daniels & Gilbert, El Helou, Minetti, FRIEND and the 2025 age-grading tables. The guide names the source behind each number and says where the published data ends and an extrapolation begins.
+- **Checked:** the single-line examples in this README and in the [usage guide](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md) run in the test suite against the real code.
 - **No runtime dependencies.** Ruby >= 3.3.
 
 > **See it in action:** [calcpace.app](https://calcpace.app) — free running calculators, race predictors and a training log in 16 languages, all powered by this gem. Also on Android: [Google Play](https://play.google.com/store/apps/details?id=app.calcpace.twa).
@@ -33,25 +33,25 @@ calc.training_paces(50.0)[:threshold].fast_clock         # => "00:04:15"
 
 ## What's in it
 
-Every method, with examples, is in the **[usage guide](docs/USAGE.md)**:
+Every method, with examples, is in the **[usage guide](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md)**:
 
 | Area | What it does |
 | --- | --- |
-| [Basic calculations](docs/USAGE.md#basic-calculations) | Pace, time, distance and velocity, in seconds or `HH:MM:SS` |
-| [Environmental adjustments](docs/USAGE.md#environmental-performance-adjustments) | Heat, humidity and altitude penalties, applied to a time or a prediction |
-| [Unit](docs/USAGE.md#unit-conversions) and [pace conversions](docs/USAGE.md#pace-conversions) | 30+ units; min/km ↔ min/mi ↔ km/h |
-| [Race pace & time](docs/USAGE.md#race-pace--time) | Any named race or plain distance |
-| [Race splits](docs/USAGE.md#race-splits) | Even, negative or positive splits |
-| [Race time predictions](docs/USAGE.md#race-time-predictions) | Riegel and Cameron |
-| [Personalized predictions](docs/USAGE.md#personalized-predictions) | Tanda marathon from training volume, personal Riegel exponent |
-| [GPS track analysis](docs/USAGE.md#gps-track-analysis) | Distance, elevation gain, per-km splits, grade-adjusted pace (Minetti) |
-| [Age grading](docs/USAGE.md#age-grading-road-races) | 2025 road tables |
-| [VO2max estimation](docs/USAGE.md#vo2max-estimation) | Daniels & Gilbert, FRIEND age/sex norms, effort and elevation context |
-| [Training zones](docs/USAGE.md#training-zones) | Daniels paces, Karvonen and %HRmax zones, time in zones |
-| [Lap analysis](docs/USAGE.md#lap-analysis) | Detects intervals and steady runs from laps |
-| [Stride & cadence](docs/USAGE.md#stride--cadence) | Stride length from pace and cadence, and back |
-| [Fitness predictor](docs/USAGE.md#fitness-predictor-race-times-from-vo2max) | Race times from a VO2max |
-| [Other utilities](docs/USAGE.md#other-utilities) and [errors](docs/USAGE.md#errors) | Helpers and the error classes |
+| [Basic calculations](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#basic-calculations) | Pace, time, distance and velocity, in seconds or `HH:MM:SS` |
+| [Environmental adjustments](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#environmental-performance-adjustments) | Heat, humidity and altitude penalties, applied to a time or a prediction |
+| [Unit](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#unit-conversions) and [pace conversions](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#pace-conversions) | 40+ conversions between distance and speed units; pace per km ↔ per mile |
+| [Race pace & time](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#race-pace--time) | Any named race or plain distance |
+| [Race splits](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#race-splits) | Even, negative or positive splits |
+| [Race time predictions](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#race-time-predictions) | Riegel and Cameron |
+| [Personalized predictions](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#personalized-predictions) | Tanda marathon from training volume, personal Riegel exponent |
+| [GPS track analysis](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#gps-track-analysis) | Distance, elevation gain, per-km splits, grade-adjusted pace (Minetti) |
+| [Age grading](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#age-grading-road-races) | 2025 road tables |
+| [VO2max estimation](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#vo2max-estimation) | Daniels & Gilbert, FRIEND age/sex norms, effort and elevation context |
+| [Training zones](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#training-zones) | Daniels paces, Karvonen and %HRmax zones, time in zones |
+| [Lap analysis](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#lap-analysis) | Reads an interval session (reps, work and rest paces) from laps |
+| [Stride & cadence](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#stride--cadence) | Stride length from pace and cadence, and back |
+| [Fitness predictor](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#fitness-predictor-race-times-from-vo2max) | Race times from a VO2max |
+| [Other utilities](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#other-utilities) and [errors](https://github.com/0jonjo/calcpace/blob/main/docs/USAGE.md#errors) | Helpers and the error classes |
 
 ## Testing
 

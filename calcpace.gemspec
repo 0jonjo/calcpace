@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary       = 'Running calculations: pace, race predictions, GPS track analysis, ' \
                        'heat and altitude adjustments, age grading, VO2max, and training zones.'
   spec.description   = 'Ruby gem for runners: pace, time, and distance calculations, ' \
-                       'unit conversions (30+ units), race time predictions (Riegel, Cameron, ' \
+                       'unit conversions (40+ conversions), race time predictions (Riegel, Cameron, ' \
                        'personal Riegel exponent, and Tanda marathon from training volume), ' \
                        'GPS track analysis (Haversine, elevation gain, per-km splits, ' \
                        'Minetti grade-adjusted pace), heat, humidity, and altitude adjustments, ' \
@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 3.3.0'
 
   spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+  spec.metadata['documentation_uri'] = "#{spec.homepage}/blob/main/docs/USAGE.md"
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do

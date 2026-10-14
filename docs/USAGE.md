@@ -1,8 +1,8 @@
 # Calcpace usage guide
 
-Every public method of the gem, with examples. The examples are checked by the
-test suite (`test/calcpace/test_documented_examples.rb`), so what you read here
-is what the code returns. Back to the [README](../README.md).
+The gem's calculations, with examples. The single-line examples are run by the
+test suite (`test/calcpace/test_documented_examples.rb`) and compared with what
+the code returns. Back to the [README](https://github.com/0jonjo/calcpace#readme).
 
 - [Basic Calculations](#basic-calculations)
 - [Environmental Performance Adjustments](#environmental-performance-adjustments)
@@ -132,7 +132,7 @@ calc.predict_time_cameron_adjusted('10k', '00:40:00', 'marathon', temperature: 8
 
 ## Unit Conversions
 
-30+ units supported. String or symbol format:
+42 conversions between 13 distance and speed units. String or symbol format:
 
 ```ruby
 calc.convert(10, :km_to_mi)         # => 6.213711922...
