@@ -26,7 +26,7 @@ require_relative 'checker'
 # - age-graded time
 # - open standard time for the selected distance/sex
 # - performance category
-# rubocop:disable Metrics/ModuleLength
+# rubocop:disable-next Metrics/ModuleLength
 module AgeGrading
   # normalize_age / normalize_sex live in Checker, shared with Vo2maxNorms
   include Checker
@@ -232,4 +232,3 @@ module AgeGrading
     lower_factor + ((upper_factor - lower_factor) * ratio)
   end
 end
-# rubocop:enable Metrics/ModuleLength
