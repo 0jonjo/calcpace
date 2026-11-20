@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-20
+
+### Changed
+- Bump development Ruby from 4.0.4 to 4.0.10 (Regexp and String security fixes).
+- Development dependency bumps: rubocop 1.92, minitest 6.1, rdoc 8.1,
+  simplecov 1.3, rake-compiler 1.3.3. The `Metrics/ModuleLength` exemption in
+  `AgeGrading` now uses `rubocop:disable-next` (new in RuboCop 1.92).
+  No library code changes.
+
 ## [2.1.0] - 2026-10-11
 
 ### Added
@@ -1021,7 +1030,8 @@ predictors are untouched.
 
 See git history for changes in earlier versions.
 
-[Unreleased]: https://github.com/0jonjo/calcpace/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/0jonjo/calcpace/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/0jonjo/calcpace/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/0jonjo/calcpace/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/0jonjo/calcpace/compare/v1.18.1...v2.0.0
 [1.18.1]: https://github.com/0jonjo/calcpace/compare/v1.18.0...v1.18.1
